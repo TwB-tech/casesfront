@@ -1,6 +1,6 @@
 import React from 'react';
 import { Row, Col, Card } from 'antd';
-import { TeamOutlined, EyeOutlined, AimOutlined, RocketOutlined, ShieldOutlined, HeartOutlined } from '@ant-design/icons';
+import { TeamOutlined, EyeOutlined, AimOutlined, RocketOutlined, SafetyOutlined, HeartOutlined } from '@ant-design/icons';
 import { useTheme } from '../contexts/ThemeContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 
@@ -183,7 +183,7 @@ const About = () => {
         <Row gutter={[24, 24]}>
           {[
             { icon: RocketOutlined, title: 'AI-Powered', desc: 'Intelligent automation that handles routine tasks' },
-            { icon: ShieldOutlined, title: 'Secure', desc: 'Bank-grade encryption and compliance features' },
+            { icon: SafetyOutlined, title: 'Secure', desc: 'Bank-grade encryption and compliance features' },
             { icon: TeamOutlined, title: 'Scalable Support', desc: 'On-demand paralegals when you need them' },
             { icon: HeartOutlined, title: 'Built by Lawyers', desc: 'Created by legal professionals who understand your needs' },
           ].map((feature, idx) => (
