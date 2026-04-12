@@ -87,6 +87,25 @@ module.exports = {
           accent: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
           hero: 'linear-gradient(106.5deg, #f0f4f8 0%, #ffffff 100%)',
           card: 'linear-gradient(180deg, #ffffff 0%, #f7fafc 100%)',
+          // Futuristic theme gradients
+          cyber: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
+          aurora: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%)',
+        },
+        // Futuristic Theme Colors
+        cyber: {
+          bg: '#0a0a0f',
+          surface: '#12121a',
+          card: '#1a1a24',
+          border: '#2a2a3a',
+          hover: '#22222e',
+        },
+        aurora: {
+          primary: '#6366f1',
+          secondary: '#8b5cf6',
+          accent: '#06b6d4',
+          glow: '#a855f7',
+          text: '#f8fafc',
+          muted: '#94a3b8',
         }
       },
       fontFamily: {
@@ -113,11 +132,31 @@ module.exports = {
         'elevated': '0 8px 32px rgba(16, 42, 67, 0.15)',
         'card': '0 2px 8px rgba(0, 0, 0, 0.08)',
         'floating': '0 12px 48px rgba(16, 42, 67, 0.2)',
+        // Futuristic shadows
+        'glow-sm': '0 0 10px rgba(99, 102, 241, 0.3)',
+        'glow-md': '0 0 20px rgba(99, 102, 241, 0.4)',
+        'glow-lg': '0 0 40px rgba(99, 102, 241, 0.5)',
+        'neon': '0 0 15px rgba(99, 102, 241, 0.3), 0 0 30px rgba(139, 92, 246, 0.2)',
       },
       borderRadius: {
         'xl': '0.75rem',
         '2xl': '1rem',
         '3xl': '1.5rem',
+      },
+      animation: {
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'glow': 'glow 2s ease-in-out infinite alternate',
+        'float': 'float 6s ease-in-out infinite',
+      },
+      keyframes: {
+        glow: {
+          '0%': { boxShadow: '0 0 5px rgba(99, 102, 241, 0.3)' },
+          '100%': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.6)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
       },
       transitionTimingFunction: {
         'natural': 'cubic-bezier(0.4, 0, 0.2, 1)',

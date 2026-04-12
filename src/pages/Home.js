@@ -5,6 +5,7 @@ import { UserOutlined, CalendarOutlined, FileOutlined, FilePdfOutlined, CheckSqu
 import moment from 'moment';
 import useAuth from '../hooks/useAuth';
 import axiosInstance from '../axiosConfig';
+import { useTheme } from '../contexts/ThemeContext';
 
 
 const dataPie1 = [
@@ -57,7 +58,7 @@ const COLORS1 = ['#FFBB28', '#FF8042', '#0088FE'];
 const COLORS2 = ['#0088FE', '#00C49F'];
 
 function Home() {
-
+  const { isFuturistic, themeConfig } = useTheme();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const { user } = useAuth();
   const [cases, setCases] = useState([])
@@ -158,14 +159,18 @@ function Home() {
   };
 
   return (
-    <div style={{ padding: '20px', zIndex:1 }}>
+    <div style={{ padding: '20px', zIndex: 1 }}>
 
         {/* Welcome & Insight Card */}
         <Card style={{
-          background: 'linear-gradient(135deg, #102a43 0%, #243b53 100%)',
+          background: isFuturistic 
+            ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+            : 'linear-gradient(135deg, #102a43 0%, #243b53 100%)',
           borderRadius: '16px',
           padding: '24px',
-          boxShadow: '0 8px 32px rgba(16, 42, 67, 0.2)',
+          boxShadow: isFuturistic 
+            ? '0 8px 32px rgba(99, 102, 241, 0.3)'
+            : '0 8px 32px rgba(16, 42, 67, 0.2)',
           marginBottom: '24px',
           border: 'none'
         }}>
@@ -205,11 +210,12 @@ function Home() {
                 type="primary" 
                 size="large"
                 style={{ 
-                  background: '#38c172', 
+                  background: isFuturistic ? '#8b5cf6' : '#38c172', 
                   border: 'none',
                   borderRadius: '10px',
                   fontWeight: 500
                 }}
+                onClick={() => window.location.href = '/paralegals'}
               >
                 Need Paralegal Support?
               </Button>
@@ -223,91 +229,103 @@ function Home() {
         <Col xs={12} sm={6} md={4}>
           <Card 
             hoverable 
+            className={isFuturistic ? 'hover-glow' : ''}
             style={{ 
               borderRadius: '12px', 
               textAlign: 'center',
               cursor: 'pointer',
-              border: '1px solid #e2e8f0',
+              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
+              background: isFuturistic ? '#1a1a24' : '#ffffff',
               padding: '16px 8px'
             }}
             onClick={() => window.location.href = '/case-form'}
           >
-            <p style={{ margin: 0, fontWeight: 500, color: '#102a43' }}>New Case</p>
+            <p style={{ margin: 0, fontWeight: 500, color: isFuturistic ? '#f8fafc' : '#102a43' }}>New Case</p>
           </Card>
         </Col>
         <Col xs={12} sm={6} md={4}>
           <Card 
             hoverable 
+            className={isFuturistic ? 'hover-glow' : ''}
             style={{ 
               borderRadius: '12px', 
               textAlign: 'center',
               cursor: 'pointer',
-              border: '1px solid #e2e8f0',
+              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
+              background: isFuturistic ? '#1a1a24' : '#ffffff',
               padding: '16px 8px'
             }}
             onClick={() => window.location.href = '/new-document'}
           >
-            <p style={{ margin: 0, fontWeight: 500, color: '#102a43' }}>New Document</p>
+            <p style={{ margin: 0, fontWeight: 500, color: isFuturistic ? '#f8fafc' : '#102a43' }}>New Document</p>
           </Card>
         </Col>
         <Col xs={12} sm={6} md={4}>
           <Card 
             hoverable 
+            className={isFuturistic ? 'hover-glow' : ''}
             style={{ 
               borderRadius: '12px', 
               textAlign: 'center',
               cursor: 'pointer',
-              border: '1px solid #e2e8f0',
+              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
+              background: isFuturistic ? '#1a1a24' : '#ffffff',
               padding: '16px 8px'
             }}
             onClick={() => window.location.href = '/tasks/create/'}
           >
-            <p style={{ margin: 0, fontWeight: 500, color: '#102a43' }}>Create Task</p>
+            <p style={{ margin: 0, fontWeight: 500, color: isFuturistic ? '#f8fafc' : '#102a43' }}>Create Task</p>
           </Card>
         </Col>
         <Col xs={12} sm={6} md={4}>
           <Card 
             hoverable 
+            className={isFuturistic ? 'hover-glow' : ''}
             style={{ 
               borderRadius: '12px', 
               textAlign: 'center',
               cursor: 'pointer',
-              border: '1px solid #e2e8f0',
+              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
+              background: isFuturistic ? '#1a1a24' : '#ffffff',
               padding: '16px 8px'
             }}
             onClick={() => window.location.href = '/clients'}
           >
-            <p style={{ margin: 0, fontWeight: 500, color: '#102a43' }}>New Client</p>
+            <p style={{ margin: 0, fontWeight: 500, color: isFuturistic ? '#f8fafc' : '#102a43' }}>New Client</p>
           </Card>
         </Col>
         <Col xs={12} sm={6} md={4}>
           <Card 
             hoverable 
+            className={isFuturistic ? 'hover-glow' : ''}
             style={{ 
               borderRadius: '12px', 
               textAlign: 'center',
               cursor: 'pointer',
-              border: '1px solid #e2e8f0',
+              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
+              background: isFuturistic ? '#1a1a24' : '#ffffff',
               padding: '16px 8px'
             }}
             onClick={() => window.location.href = '/new-invoice'}
           >
-            <p style={{ margin: 0, fontWeight: 500, color: '#102a43' }}>New Invoice</p>
+            <p style={{ margin: 0, fontWeight: 500, color: isFuturistic ? '#f8fafc' : '#102a43' }}>New Invoice</p>
           </Card>
         </Col>
         <Col xs={12} sm={6} md={4}>
           <Card 
             hoverable 
+            className={isFuturistic ? 'hover-glow' : ''}
             style={{ 
               borderRadius: '12px', 
               textAlign: 'center',
               cursor: 'pointer',
-              border: '1px solid #e2e8f0',
-              background: '#f8fafc',
+              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
+              background: isFuturistic ? '#1a1a24' : '#f8fafc',
               padding: '16px 8px'
             }}
+            onClick={() => window.location.href = '/paralegals'}
           >
-            <p style={{ margin: 0, fontWeight: 500, color: '#102a43' }}>Hire Paralegal</p>
+            <p style={{ margin: 0, fontWeight: 500, color: isFuturistic ? '#6366f1' : '#102a43' }}>Hire Paralegal</p>
           </Card>
         </Col>
       </Row>
@@ -315,20 +333,29 @@ function Home() {
       <Row gutter={[16, 16]}>
         {/* Stats Cards - Optimized layout */}
         <Col xs={24} sm={12} md={6} lg={3}>
-          <Card style={{ borderRadius: "16px", boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }} hoverable>
+          <Card 
+            className={isFuturistic ? 'hover-glow' : ''}
+            style={{ 
+              borderRadius: "16px", 
+              boxShadow: isFuturistic ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
+              background: isFuturistic ? '#1a1a24' : '#ffffff',
+              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid transparent'
+            }} 
+            hoverable
+          >
             {loadingCases ? (
               <Skeleton active />
             ) : (
               <>
                 <Statistic 
-                  title="Active Cases" 
+                  title={<span style={{ color: isFuturistic ? '#94a3b8' : '#627d98' }}>Active Cases</span>} 
                   value={cases.cases_count || 0} 
-                  valueStyle={{ color: '#102a43', fontWeight: 600, fontSize: '32px' }}
-                  prefix={<FileOutlined style={{ color: '#1890ff', marginRight: '8px' }} />}
+                  valueStyle={{ color: isFuturistic ? '#f8fafc' : '#102a43', fontWeight: 600, fontSize: '32px' }}
+                  prefix={<FileOutlined style={{ color: isFuturistic ? '#6366f1' : '#1890ff', marginRight: '8px' }} />}
                 />
                 <div style={{ marginTop: '8px' }}>
-                  <span style={{ color: '#38c172', fontWeight: 500 }}>▲ 8.2% </span>
-                  <span style={{ color: '#627d98', fontSize: '12px' }}>since last month</span>
+                  <span style={{ color: '#38c172', fontWeight: 500 }}>8.2% </span>
+                  <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontSize: '12px' }}>since last month</span>
                 </div>
               </>
             )}
@@ -336,20 +363,29 @@ function Home() {
         </Col>
          
         <Col xs={24} sm={12} md={6} lg={3}>
-          <Card style={{ borderRadius: "16px", boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }} hoverable>
+          <Card 
+            className={isFuturistic ? 'hover-glow' : ''}
+            style={{ 
+              borderRadius: "16px", 
+              boxShadow: isFuturistic ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
+              background: isFuturistic ? '#1a1a24' : '#ffffff',
+              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid transparent'
+            }} 
+            hoverable
+          >
             {loadingClients ? (
               <Skeleton active />
             ) : (
               <>
                 <Statistic 
-                  title="Total Clients" 
+                  title={<span style={{ color: isFuturistic ? '#94a3b8' : '#627d98' }}>Total Clients</span>} 
                   value={clients.clients_count || 0} 
-                  valueStyle={{ color: '#102a43', fontWeight: 600, fontSize: '32px' }}
-                  prefix={<UserOutlined style={{ color: '#722ed1', marginRight: '8px' }} />}
+                  valueStyle={{ color: isFuturistic ? '#f8fafc' : '#102a43', fontWeight: 600, fontSize: '32px' }}
+                  prefix={<UserOutlined style={{ color: isFuturistic ? '#8b5cf6' : '#722ed1', marginRight: '8px' }} />}
                 />
                 <div style={{ marginTop: '8px' }}>
-                  <span style={{ color: '#38c172', fontWeight: 500 }}>▲ 3.4% </span>
-                  <span style={{ color: '#627d98', fontSize: '12px' }}>since last month</span>
+                  <span style={{ color: '#38c172', fontWeight: 500 }}>3.4% </span>
+                  <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontSize: '12px' }}>since last month</span>
                 </div>
               </>
             )}
@@ -357,31 +393,49 @@ function Home() {
         </Col>
 
         <Col xs={24} sm={12} md={6} lg={3}>
-          <Card style={{ borderRadius: "16px", boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }} hoverable>
+          <Card 
+            className={isFuturistic ? 'hover-glow' : ''}
+            style={{ 
+              borderRadius: "16px", 
+              boxShadow: isFuturistic ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
+              background: isFuturistic ? '#1a1a24' : '#ffffff',
+              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid transparent'
+            }} 
+            hoverable
+          >
             <Statistic 
-              title="Monthly Revenue" 
+              title={<span style={{ color: isFuturistic ? '#94a3b8' : '#627d98' }}>Monthly Revenue</span>} 
               value={25410} 
               prefix="$" 
-              valueStyle={{ color: '#102a43', fontWeight: 600, fontSize: '32px' }}
+              valueStyle={{ color: isFuturistic ? '#f8fafc' : '#102a43', fontWeight: 600, fontSize: '32px' }}
             />
             <div style={{ marginTop: '8px' }}>
-              <span style={{ color: '#f5222d', fontWeight: 500 }}>▼ 0.4% </span>
-              <span style={{ color: '#627d98', fontSize: '12px' }}>since last month</span>
+              <span style={{ color: '#f5222d', fontWeight: 500 }}>0.4% </span>
+              <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontSize: '12px' }}>since last month</span>
             </div>
           </Card>
         </Col>
 
         <Col xs={24} sm={12} md={6} lg={3}>
-          <Card style={{ borderRadius: "16px", boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }} hoverable>
+          <Card 
+            className={isFuturistic ? 'hover-glow' : ''}
+            style={{ 
+              borderRadius: "16px", 
+              boxShadow: isFuturistic ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
+              background: isFuturistic ? '#1a1a24' : '#ffffff',
+              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid transparent'
+            }} 
+            hoverable
+          >
             <Statistic 
-              title="Pending Revenue" 
+              title={<span style={{ color: isFuturistic ? '#94a3b8' : '#627d98' }}>Pending Revenue</span>} 
               value={1352} 
               prefix="$" 
-              valueStyle={{ color: '#faad14', fontWeight: 600, fontSize: '32px' }}
+              valueStyle={{ color: isFuturistic ? '#f59e0b' : '#faad14', fontWeight: 600, fontSize: '32px' }}
             />
             <div style={{ marginTop: '8px' }}>
-              <span style={{ color: '#faad14', fontWeight: 500 }}>⚡ Action Required</span>
-              <span style={{ color: '#627d98', fontSize: '12px' }}> - {Math.round((1352/25410)*100)}% outstanding</span>
+              <span style={{ color: isFuturistic ? '#f59e0b' : '#faad14', fontWeight: 500 }}>Action Required</span>
+              <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontSize: '12px' }}> - {Math.round((1352/25410)*100)}% outstanding</span>
             </div>
           </Card>
         </Col>
@@ -390,8 +444,17 @@ function Home() {
       <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
         {/* Analytics Section */}
         <Col xs={24} md={8}>
-          <Card style={{ borderRadius: "16px", height: '100%' }} hoverable>
-            <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, color: '#102a43' }}>Client Distribution</h3>
+          <Card 
+            className={isFuturistic ? 'hover-glow' : ''}
+            style={{ 
+              borderRadius: "16px", 
+              height: '100%',
+              background: isFuturistic ? '#1a1a24' : '#ffffff',
+              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid transparent'
+            }} 
+            hoverable
+          >
+            <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, color: isFuturistic ? '#f8fafc' : '#102a43' }}>Client Distribution</h3>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
@@ -419,8 +482,17 @@ function Home() {
         </Col>
 
         <Col xs={24} md={8}>
-          <Card style={{ borderRadius: "16px", height: '100%' }} hoverable>
-            <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, color: '#102a43' }}>Billing Status</h3>
+          <Card 
+            className={isFuturistic ? 'hover-glow' : ''}
+            style={{ 
+              borderRadius: "16px", 
+              height: '100%',
+              background: isFuturistic ? '#1a1a24' : '#ffffff',
+              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid transparent'
+            }} 
+            hoverable
+          >
+            <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, color: isFuturistic ? '#f8fafc' : '#102a43' }}>Billing Status</h3>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
@@ -447,7 +519,18 @@ function Home() {
         </Col>
 
         <Col xs={24} md={8}>
-          <Card style={{ borderRadius: "16px", height: '100%', background: 'linear-gradient(135deg, #102a43 0%, #243b53 100%)', color: 'white' }}>
+          <Card style={{ 
+            borderRadius: "16px", 
+            height: '100%', 
+            background: isFuturistic 
+              ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' 
+              : 'linear-gradient(135deg, #102a43 0%, #243b53 100%)', 
+            color: 'white',
+            border: 'none',
+            boxShadow: isFuturistic 
+              ? '0 8px 32px rgba(99, 102, 241, 0.4)' 
+              : '0 8px 32px rgba(16, 42, 67, 0.2)'
+          }}>
             <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, color: 'white' }}>Need Extra Support?</h3>
             <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '16px' }}>
               Access vetted remote paralegals on-demand. No recruitment fees. No long-term commitments.
@@ -462,6 +545,7 @@ function Home() {
                   fontWeight: 600,
                   width: '100%'
                 }}
+                onClick={() => window.location.href = '/paralegals'}
               >
                 Browse Available Paralegals
               </Button>
@@ -473,6 +557,7 @@ function Home() {
                   borderRadius: '8px',
                   width: '100%'
                 }}
+                onClick={() => window.location.href = '/paralegals'}
               >
                 Post Urgent Request
               </Button>

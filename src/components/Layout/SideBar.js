@@ -1,32 +1,130 @@
-import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, Drawer } from 'antd';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Layout, Menu } from 'antd';
 import { 
   DashboardOutlined, 
   FileOutlined, 
   CalendarOutlined, 
   BarChartOutlined, 
   SettingOutlined, 
-  BarsOutlined, 
+  BarsOutlined,
   TwitterOutlined, 
   FacebookOutlined, 
   InstagramOutlined, 
   LinkedinOutlined, 
   UserOutlined, 
-  FilePdfOutlined ,
+  FilePdfOutlined,
   CheckSquareOutlined,
   WechatWorkOutlined,
   MailOutlined,
-  MessageOutlined,
   CloseOutlined
 } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
 import { useMediaQuery } from 'react-responsive';
-import './nav.css'
+import { useTheme } from '../../contexts/ThemeContext';
+import ThemeSwitcher from './ThemeSwitcher';
+import './nav.css';
 
 const { Sider } = Layout;
 
-const Sidebar = ({ collapsed, setCollapsed, theme }) => {
+const ROUTE_CONFIG = [
+  {
+    key: '1',
+    path: '/home',
+    label: 'Dashboard',
+    icon: DashboardOutlined,
+    routes: ['/home'],
+  },
+  {
+    key: '2',
+    path: '/case-list',
+    label: 'Cases',
+    icon: FileOutlined,
+    routes: ['/case-list', '/case-details', '/case-form'],
+  },
+  {
+    key: '3',
+    path: '/clients',
+    label: 'Clients',
+    icon: UserOutlined,
+    routes: ['/clients', '/client-details', '/new-client'],
+  },
+  {
+    key: '4',
+    path: '/documents',
+    label: 'Documents',
+    icon: FilePdfOutlined,
+    routes: ['/documents', '/document-details', '/new-document'],
+  },
+  {
+    key: '5',
+    path: '/invoices',
+    label: 'Billings',
+    icon: FileOutlined,
+    routes: ['/invoices', '/invoice-details', '/new-invoice'],
+  },
+  {
+    key: '6',
+    path: '/calendar-tasks',
+    label: 'Calendar',
+    icon: CalendarOutlined,
+    routes: ['/calendar-tasks', '/calendar-tasks-details', '/new-appointment'],
+  },
+  {
+    key: '9',
+    path: '/tasks',
+    label: 'Tasks',
+    icon: CheckSquareOutlined,
+    routes: ['/tasks', '/task-details', '/new-task'],
+  },
+  {
+    key: '10',
+    path: '/mailing',
+    label: 'Mailing',
+    icon: MailOutlined,
+    routes: ['/mailing', '/mail-details', '/new-mail'],
+  },
+  {
+    key: '11',
+    path: '/chat-users',
+    label: 'Chats',
+    icon: WechatWorkOutlined,
+    routes: ['/chat', '/chats', '/new-chat', '/chat-users'],
+  },
+  {
+    key: '12',
+    path: '/paralegals',
+    label: 'Paralegals',
+    icon: UserOutlined,
+    routes: ['/paralegals'],
+  },
+  {
+    key: '7',
+    path: '/reports',
+    label: 'Reports',
+    icon: BarChartOutlined,
+    routes: ['/reports', '/report-details', '/new-report'],
+    marginBottom: true,
+  },
+  {
+    key: '8',
+    path: '/settings',
+    label: 'Settings',
+    icon: SettingOutlined,
+    routes: ['/settings', '/user-settings', '/system-settings'],
+    marginBottom: true,
+  },
+];
+
+const SOCIAL_LINKS = [
+  { icon: TwitterOutlined, href: 'https://x.com/techwithbrands', label: 'Twitter' },
+  { icon: FacebookOutlined, href: 'https://www.facebook.com/TwBonFB', label: 'Facebook' },
+  { icon: InstagramOutlined, href: 'https://www.instagram.com/techwithbrands/', label: 'Instagram' },
+  { icon: LinkedinOutlined, href: 'https://www.linkedin.com/company/techwithbrands/', label: 'LinkedIn' },
+];
+
+const Sidebar = ({ collapsed, setCollapsed }) => {
     const location = useLocation();
+    const { themeConfig, isFuturistic } = useTheme();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const isMobile = useMediaQuery({ query: '(max-width: 780px)' });
 
@@ -34,189 +132,200 @@ const Sidebar = ({ collapsed, setCollapsed, theme }) => {
         if (isMobile) {
             setCollapsed(true);
         }
-
         if (!isMobile) {
-            setCollapsed(false);
+            setDrawerVisible(false);
         }
     }, [isMobile, setCollapsed]);
 
-    const selectedKey = () => {
-        if (location.pathname.startsWith('/case-list') || location.pathname.startsWith('/case-details') || location.pathname.startsWith('/case-form')) {
-            return '2';
+    const selectedKey = useMemo(() => {
+        const currentPath = location.pathname;
+        for (const route of ROUTE_CONFIG) {
+            if (route.routes.some(r => currentPath.startsWith(r))) {
+                return route.key;
+            }
         }
-        if (location.pathname.startsWith('/clients') || location.pathname.startsWith('/client-details') || location.pathname.startsWith('/new-client')) {
-            return '3';
-        }
-        if (location.pathname.startsWith('/documents') || location.pathname.startsWith('/document-details') || location.pathname.startsWith('/new-document')) {
-            return '4';
-        }
-        if (location.pathname.startsWith('/invoices') || location.pathname.startsWith('/invoice-details') || location.pathname.startsWith('/new-invoice')) {
-            return '5';
-        }
-        if (location.pathname.startsWith('/calendar-tasks') || location.pathname.startsWith('/calendar-tasks-details') || location.pathname.startsWith('/new-appointment')) {
-            return '6';
-        }
-        if (location.pathname.startsWith('/reports') || location.pathname.startsWith('/report-details') || location.pathname.startsWith('/new-report')) {
-            return '7';
-        }
-        if (location.pathname.startsWith('/settings') || location.pathname.startsWith('/user-settings') || location.pathname.startsWith('/system-settings')) {
-            return '8';
-        }
-        if (location.pathname.startsWith('/tasks') || location.pathname.startsWith('/task-details') || location.pathname.startsWith('/new-task')) {
-            return '9';
-        }
-        if (location.pathname.startsWith('/mailing') || location.pathname.startsWith('/mail-details') || location.pathname.startsWith('/new-mail')) {
-            return '10';
-        }
-
-        if(location.pathname.startsWith('/chat') || location.pathname.startsWith('/chats') || location.pathname.startsWith('/new-chat')) {   
-            return '11';
-        }
-
         return '1';
-    };
+    }, [location.pathname]);
 
-    const showDrawer = () => {
-        setDrawerVisible(true);
-      };
-    
-      const closeDrawer = () => {
-        setDrawerVisible(false);
-      };
+    const showDrawer = () => setDrawerVisible(true);
+    const closeDrawer = () => setDrawerVisible(false);
+    const toggleCollapsed = () => setCollapsed(!collapsed);
 
-    const toggleCollapsed = () => {
-        setCollapsed(!collapsed);
-    };
-
-
-    const sidebarContent = ( 
-        <Menu 
-        mode="inline" 
-        selectedKeys={[selectedKey()]} 
-        style={{
-            borderRight: 0,
-            background: theme === 'dark' ? '#001529' : '#fff',
-            color: theme === 'dark' ? '#fff' : '#001529',
-            overflowY:"auto"
-        }}
-    >
-        <Menu.Item key="1" icon={<DashboardOutlined style={{ color: theme === 'dark' ? '#fff' : '#001529' }}/>} style={{background: theme === 'dark' && selectedKey() === "1" ? '#1890ff' : theme === 'light' && selectedKey() === "1" ? '#4ba2f3c7' : 'transparent',}} onClick={closeDrawer}>
-            <Link to="/home" style={{ color: theme === 'dark' ? '#fff' : '#001529' }}>Dashboard</Link>
-        </Menu.Item>
-        <Menu.Item key="2" icon={<FileOutlined style={{ color: theme === 'dark' ? '#fff' : '#001529' }}/>} style={{background: theme === 'dark' && selectedKey() === "2" ? '#1890ff' : theme === 'light' && selectedKey() === "2" ? '#4ba2f3c7' : 'transparent',}} onClick={closeDrawer}>
-            <Link to="/case-list" style={{ color: theme === 'dark' ? '#fff' : '#001529' }}>Cases</Link>
-        </Menu.Item>
-        <Menu.Item key="3" icon={<UserOutlined style={{ color: theme === 'dark' ? '#fff' : '#001529' }}/>} style={{background: theme === 'dark' && selectedKey() === "3" ? '#1890ff' : theme === 'light' && selectedKey() === "3" ? '#4ba2f3c7' : 'transparent',}} onClick={closeDrawer}>
-            <Link to="/clients" style={{ color: theme === 'dark' ? '#fff' : '#001529' }}>Clients</Link>
-        </Menu.Item>
-        <Menu.Item key="4" icon={<FilePdfOutlined style={{ color: theme === 'dark' ? '#fff' : '#001529' }}/>} style={{background: theme === 'dark' && selectedKey() === "4" ? '#1890ff' : theme === 'light' && selectedKey() === "4" ? '#4ba2f3c7' : 'transparent',}}onClick={closeDrawer}>
-            <Link to="/documents" style={{ color: theme === 'dark' ? '#fff' : '#001529' }}>Documents</Link>
-        </Menu.Item>
-        <Menu.Item key="5" icon={<FilePdfOutlined style={{ color: theme === 'dark' ? '#fff' : '#001529' }}/>} style={{background: theme === 'dark' && selectedKey() === "5" ? '#1890ff' : theme === 'light' && selectedKey() === "5" ? '#4ba2f3c7' : 'transparent',}} onClick={closeDrawer}>
-            <Link to="/invoices" style={{ color: theme === 'dark' ? '#fff' : '#001529' }}>Billings</Link>
-        </Menu.Item>
-        <Menu.Item key="9" icon={<CheckSquareOutlined style={{ color: theme === 'dark' ? '#fff' : '#001529' }}/>} style={{background: theme === 'dark' && selectedKey() === "9" ? '#1890ff' : theme === 'light' && selectedKey() === "9" ? '#4ba2f3c7' : 'transparent',}} onClick={closeDrawer}>
-            <Link to="/tasks" style={{ color: theme === 'dark' ? '#fff' : '#001529' }}>Tasks</Link>
-        </Menu.Item>
-        <Menu.Item key="6" icon={<CalendarOutlined style={{ color: theme === 'dark' ? '#fff' : '#001529' }}/>} style={{background: theme === 'dark' && selectedKey() === "6" ? '#1890ff' : theme === 'light' && selectedKey() === "6" ? '#4ba2f3c7' : 'transparent',}} onClick={closeDrawer}>
-            <Link to="/calendar-tasks" style={{ color: theme === 'dark' ? '#fff' : '#001529' }}>Calendar</Link>
-        </Menu.Item>
-        <Menu.Item key="10" icon={<MailOutlined style={{ color: theme === 'dark' ? '#fff' : '#001529' }}/>} style={{background: theme === 'dark' && selectedKey() === "10" ? '#1890ff' : theme === 'light' && selectedKey() === "10" ? '#4ba2f3c7' : 'transparent',}} onClick={closeDrawer}>
-            <Link to="/mailing" style={{ color: theme === 'dark' ? '#fff' : '#001529' }}>Mailing</Link>
-        </Menu.Item>
-        <Menu.Item key="11" icon={<WechatWorkOutlined style={{ color: theme === 'dark' ? '#fff' : '#001529' }}/>} style={{background: theme === 'dark' && selectedKey() === "11" ? '#1890ff' : theme === 'light' && selectedKey() === "11" ? '#1890ff' : 'transparent', marginBottom:"40px"}} onClick={closeDrawer}>
-            <Link to="/chat-users" style={{ color: theme === 'dark' ? '#fff' : '#001529' }}>Chats</Link>
-        </Menu.Item>
-        <Menu.Item key="8" icon={<SettingOutlined style={{ color: theme === 'dark' ? '#fff' : '#001529' }}/>} style={{background: theme === 'dark' && selectedKey() === "8" ? '#1890ff' : theme === 'light' && selectedKey() === "8" ? '#1890ff' : 'transparent'}} onClick={closeDrawer}>
-            <Link to="/settings" style={{ color: theme === 'dark' ? '#fff' : '#001529' }}>Settings</Link>
-        </Menu.Item>
-        <Menu.Item key="7" icon={<BarChartOutlined style={{ color: theme === 'dark' ? '#fff' : '#001529' }}/>} style={{background: theme === 'dark' && selectedKey() === "7" ? '#1890ff' : theme === 'light' && selectedKey() === "7" ? '#1890ff' : 'transparent',  marginBottom:"40px"}} onClick={closeDrawer}>
-            <Link to="/reports" style={{ color: theme === 'dark' ? '#fff' : '#001529' }}>Reports</Link>
-        </Menu.Item>
-        {/* <Menu.Item key="11" icon={<MessageOutlined style={{ color: theme === 'dark' ? '#fff' : '#001529' }}/>} style={{background: theme === 'dark' && selectedKey() === "11" ? '#1890ff' : theme === 'light' && selectedKey() === "11" ? '#1890ff' : 'transparent',}}>
-            <Link to="/chats" style={{ color: theme === 'dark' ? '#fff' : '#001529' }}>Chat</Link>
-        </Menu.Item> */}
+    const getMenuItemStyle = (itemKey) => {
+        const isSelected = selectedKey === itemKey;
         
-        <div className="bottom-menu-items">
-            <div className="social-media-header" style={{ fontSize: collapsed ? '14px' : '16px', marginBottom: "23px", color: theme === 'dark' ? '#fff' : '#001529' }}>
-                Follow Us
-            </div>
-            <div className="social-media-icons" style={{ color: theme === 'dark' ? '#fff' : '#001529' }}>
-               <a href='https://x.com/techwithbrands' target="_blank"  rel="noreferrer" className='hover'> <TwitterOutlined  style={{color: theme === 'dark' ? '#fff' : '#001529', cursor: 'pointer'}}/></a>
-               <a href='https://www.facebook.com/TwBonFB' target="_blank"  rel="noreferrer" className='hover'><FacebookOutlined  style={ {color: theme === 'dark' ? '#fff' : '#001529', cursor: 'pointer'}}/></a> 
-               <a href='https://www.instagram.com/techwithbrands/' target="_blank"  rel="noreferrer" className='hover'> <InstagramOutlined style={ {color: theme === 'dark' ? '#fff' : '#001529', cursor: 'pointer'}}/></a>
-               <a href='https://www.linkedin.com/company/techwithbrands/' target="_blank"  rel="noreferrer" className='hover'>  <LinkedinOutlined  style={ {color: theme === 'dark' ? '#fff' : '#001529', cursor: 'pointer'}}/></a>
-            </div>
+        if (isFuturistic) {
+            return {
+                background: isSelected ? `${themeConfig.accent}20` : 'transparent',
+                borderLeft: isSelected ? `3px solid ${themeConfig.accent}` : '3px solid transparent',
+                marginLeft: isSelected ? '-3px' : '0',
+                borderRadius: '0 8px 8px 0',
+            };
+        }
+        
+        return {
+            background: isSelected ? (themeConfig.sidebar.active + '15') : 'transparent',
+        };
+    };
+
+    const renderMenuItems = (onItemClick = closeDrawer) => (
+        <div className="flex flex-col h-full">
+            <Menu
+                mode="inline"
+                selectedKeys={[selectedKey]}
+                style={{
+                    borderRight: 0,
+                    background: 'transparent',
+                    overflowY: 'auto',
+                    flex: 1,
+                }}
+            >
+                {ROUTE_CONFIG.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                        <Menu.Item
+                            key={item.key}
+                            icon={<Icon className={isFuturistic ? 'text-aurora-muted' : ''} />}
+                            style={{
+                                ...getMenuItemStyle(item.key),
+                                marginBottom: item.marginBottom ? '40px' : '4px',
+                                color: isFuturistic 
+                                    ? (selectedKey === item.key ? themeConfig.accent : themeConfig.sidebar.text)
+                                    : themeConfig.sidebar.text,
+                            }}
+                            className={`menu-item-custom ${isFuturistic ? 'futuristic-menu-item' : ''}`}
+                            onClick={onItemClick}
+                        >
+                            <Link to={item.path}>{item.label}</Link>
+                        </Menu.Item>
+                    );
+                })}
+            </Menu>
+
+            {isFuturistic && !collapsed && (
+                <div className="p-4 border-t border-cyber-border">
+                    <ThemeSwitcher compact />
+                </div>
+            )}
+
+            {!collapsed && (
+                <div className="p-4 border-t border-neutral-200 dark:border-cyber-border">
+                    <div className={`text-xs font-semibold uppercase tracking-wider mb-4 ${
+                        isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'
+                    }`}>
+                        Follow Us
+                    </div>
+                    <div className={`flex gap-4 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}`}>
+                        {SOCIAL_LINKS.map((social) => (
+                            <a
+                                key={social.label}
+                                href={social.href}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={`transition-colors hover:scale-110 ${
+                                    isFuturistic ? 'hover:text-aurora-primary' : 'hover:text-accent-600'
+                                }`}
+                            >
+                                <social.icon />
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
-    </Menu>
-    )
+    );
+
+    const sidebarStyles = {
+        background: isFuturistic ? themeConfig.sidebar.bg : '#fff',
+        height: '100vh',
+        position: 'fixed',
+        top: '64px',
+        left: 0,
+        overflowY: 'auto',
+        borderRight: isFuturistic ? `1px solid ${themeConfig.sidebar.border}` : '1px solid #e0e0e0',
+        ...(isFuturistic && {
+            background: `
+                linear-gradient(180deg, ${themeConfig.sidebar.bg} 0%, #0f0f18 100%)
+            `,
+        }),
+    };
 
     return (
         <>
-        {!isMobile ? (
-        <Sider 
-            collapsed={collapsed} 
-            onCollapse={toggleCollapsed} 
-            style={{
-                background: theme === 'dark' ? '#001529' : '#fff',
-                height: '100vh',
-                position: 'fixed',
-                top: '70px',
-                left: 0,
-                overflowY: "auto",
-            }}
-        >
-            <Button 
-                type="text" 
-                icon={<BarsOutlined style={{ color: theme === 'dark' ? '#fff' : '#001529' }}/>} 
-                onClick={toggleCollapsed} 
-                style={{
-                    margin: '10px',
-                    color: theme === 'dark' ? '#fff' : '#001529',
-                    fontSize: '18px',
-                }} 
-                />
-                {sidebarContent}
-        </Sider>):(
-        <>
-            <Button 
-                type="text" 
-                icon={<BarsOutlined style={{ color:'blue', fontSize: '24px', zIndex:3000 }}/>} 
-                onClick={showDrawer} 
-                style={{
-                    margin: '10px',
-                    color: 'blue',
-                    fontSize: '24px',
-                    position: 'fixed'
-                }} 
-            />
-                 <Drawer
-                    title={
-                        <span style={{ color: theme === 'dark' ? '#fff' : '#000' }}>
-                            Menu
-                        </span>
-                    }
-                    placement="left"
-                    onClose={closeDrawer}
-                    visible={drawerVisible}
-                    bodyStyle={{ padding: 0 }}
-                    closeIcon={
-                        <CloseOutlined
-                            style={{ color: theme === 'dark' ? '#fff' : '#000' }}
-                        />
-                    }
-                    style={{
-                        background: theme === 'dark' ? '#001529' : '#fff',
-                        height: '100vh',
-                        marginTop: '70px',
-                        left: 0,
-                        overflowY: "auto",
-                    }}
+            {!isMobile ? (
+                <Sider 
+                    collapsed={collapsed} 
+                    onCollapse={toggleCollapsed}
+                    width={260}
+                    collapsedWidth={80}
+                    style={sidebarStyles}
+                    className={isFuturistic ? 'sidebar-futuristic' : ''}
                 >
-                    {sidebarContent}
-                </Drawer>
-            </>
-        )}
+                    <button 
+                        type="button"
+                        onClick={toggleCollapsed} 
+                        className={`
+                            w-full flex items-center justify-center p-3
+                            transition-colors duration-200
+                            ${isFuturistic 
+                                ? 'text-aurora-muted hover:text-aurora-text hover:bg-cyber-hover' 
+                                : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100'
+                            }
+                        `}
+                    >
+                        <BarsOutlined className="text-lg" />
+                    </button>
+                    {renderMenuItems()}
+                </Sider>
+            ) : (
+                <>
+                    <button
+                        type="button"
+                        onClick={showDrawer} 
+                        className={`
+                            fixed top-4 left-4 z-[3000] p-2 rounded-lg
+                            ${isFuturistic 
+                                ? 'bg-cyber-surface text-aurora-text' 
+                                : 'bg-white text-primary-900 shadow-md'
+                            }
+                        `}
+                    >
+                        <BarsOutlined className="text-xl" />
+                    </button>
+                    
+                    <Layout.Sider
+                        open={drawerVisible}
+                        onClose={closeDrawer}
+                        placement="left"
+                        width={280}
+                        style={{
+                            background: isFuturistic ? themeConfig.sidebar.bg : '#fff',
+                            height: '100vh',
+                            marginTop: '64px',
+                        }}
+                        drawerStyle={{
+                            background: 'transparent',
+                        }}
+                        className={isFuturistic ? 'mobile-drawer-futuristic' : ''}
+                    >
+                        <div className={`
+                            flex items-center justify-between p-4 border-b
+                            ${isFuturistic ? 'border-cyber-border' : 'border-neutral-200'}
+                        `}>
+                            <span className={`font-semibold ${isFuturistic ? 'text-aurora-text' : 'text-primary-900'}`}>
+                                Menu
+                            </span>
+                            <button
+                                onClick={closeDrawer}
+                                className={`p-1 rounded ${isFuturistic ? 'text-aurora-muted hover:text-aurora-text' : 'text-neutral-500 hover:text-neutral-700'}`}
+                            >
+                                <CloseOutlined />
+                            </button>
+                        </div>
+                        {renderMenuItems()}
+                    </Layout.Sider>
+                </>
+            )}
         </>
     );
 };

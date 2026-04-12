@@ -1,34 +1,266 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --sidebar-bg: #001529;
+    --sidebar-text: #ffffff;
+    --navbar-bg: #ffffff;
+    --body-bg: #f0f4f8;
+    --card-bg: #ffffff;
+    --accent-color: #1890ff;
+    --scrollbar-track: #f1f1f1;
+    --scrollbar-thumb: #829ab1;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: var(--body-bg);
+    color: #1a1a1a;
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
-/* Hide the default scrollbar */
+/* Scrollbar Styling */
 ::-webkit-scrollbar {
-  width: 10px; /* Set the width of the scrollbar */
+    width: 10px;
+    height: 10px;
 }
 
-/* Track (the background of the scrollbar) */
 ::-webkit-scrollbar-track {
-  background: #f1f1f1; /* Set the background color of the track */
+    background: var(--scrollbar-track);
+    border-radius: 5px;
 }
 
-/* Handle (the draggable part of the scrollbar) */
 ::-webkit-scrollbar-thumb {
-  background: #888; /* Set the color of the scrollbar handle */
-  border-radius: 5px; /* Add some rounded corners to the handle */
+    background: var(--scrollbar-thumb);
+    border-radius: 5px;
+    transition: background 0.2s ease;
 }
 
-/* When hovering over the scrollbar */
 ::-webkit-scrollbar-thumb:hover {
-  background: #555; /* Change the handle color on hover */
+    background: #486581;
+}
+
+::-webkit-scrollbar-corner {
+    background: var(--scrollbar-track);
+}
+
+/* Selection */
+::selection {
+    background: rgba(24, 144, 255, 0.3);
+    color: inherit;
+}
+
+/* Focus States */
+:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Utility Classes */
+.transition-base {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-morphism {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Futuristic Theme Variables */
+[data-theme="futuristic"] {
+    --scrollbar-track: #12121a;
+    --scrollbar-thumb: #4b5563;
+}
+
+[data-theme="futuristic"] body {
+    background: #0a0a0f;
+    color: #f8fafc;
+}
+
+[data-theme="futuristic"] ::-webkit-scrollbar-thumb:hover {
+    background: #6366f1;
+}
+
+[data-theme="futuristic"] ::selection {
+    background: rgba(99, 102, 241, 0.4);
+}
+
+/* Typography Enhancements */
+.text-gradient-primary {
+    background: linear-gradient(135deg, #102a43 0%, #243b53 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.text-gradient-accent {
+    background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+[data-theme="futuristic"] .text-gradient-primary {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Card Hover Effects */
+.card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(16, 42, 67, 0.15);
+}
+
+[data-theme="futuristic"] .card-hover:hover {
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Button Press Effect */
+.btn-press:active {
+    transform: scale(0.98);
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Loading skeleton animation */
+.skeleton-shimmer {
+    background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.06) 25%,
+        rgba(0, 0, 0, 0.1) 50%,
+        rgba(0, 0, 0, 0.06) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+[data-theme="futuristic"] .skeleton-shimmer {
+    background: linear-gradient(
+        90deg,
+        #1a1a24 25%,
+        #2a2a3a 50%,
+        #1a1a24 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+/* Neon Glow Effects */
+[data-theme="futuristic"] .neon-border {
+    position: relative;
+}
+
+[data-theme="futuristic"] .neon-border::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+[data-theme="futuristic"] .neon-border:hover::before {
+    opacity: 1;
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

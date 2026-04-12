@@ -1,486 +1,423 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { MessageCircle, X, Send, Minimize2, Maximize2, FileText, Briefcase, Users, Calendar, Lightbulb, Zap, Bot, UserPlus, Clock, AlertTriangle, Download, Sparkles, Scale, FileCheck } from 'lucide-react';
-import { Spin, notification, Button } from 'antd';
-import axiosInstance from '../../axiosConfig';
+import { 
+  MessageCircle, X, Send, Minimize2, Maximize2, Bot, 
+  FileText, Calendar, Users, DollarSign, Settings, 
+  BarChart3, FilePlus, Clock, AlertCircle, CheckCircle2,
+  Sparkles, ChevronRight, Loader2, ExternalLink, Download,
+  Plus, Search, SendHorizontal, UserPlus, Bell, Mail
+} from 'lucide-react';
+import { notification, Spin } from 'antd';
 import useAuth from '../../hooks/useAuth';
+import { useTheme } from '../../contexts/ThemeContext';
 
-// Reya - Your Intelligent Legal Assistant
-const ReyaAssistant = ({ context = 'dashboard', currentCase = null, currentClient = null }) => {
+const APP_ACTIONS = {
+  NAVIGATE: 'navigate',
+  DOWNLOAD: 'download',
+  CREATE: 'create',
+  VIEW: 'view',
+  NOTIFY: 'notify',
+};
+
+const NAVIGATION_PATHS = {
+  dashboard: '/home',
+  cases: '/case-list',
+  newCase: '/case-form',
+  clients: '/clients',
+  newClient: '/clients',
+  documents: '/documents',
+  newDocument: '/new-document',
+  invoices: '/invoices',
+  newInvoice: '/new-invoice',
+  tasks: '/tasks',
+  newTask: '/tasks/create',
+  calendar: '/calendar-tasks',
+  reports: '/reports',
+  settings: '/settings',
+  mailing: '/mailing',
+  newMail: '/new-mail',
+  chats: '/chat-users',
+  paralegals: '/paralegals',
+  pricing: '/pricing',
+};
+
+const QuickAction = ({ icon: Icon, label, description, onClick, variant = 'default' }) => {
+  const { isFuturistic } = useTheme();
+  
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${
+        isFuturistic
+          ? 'bg-cyber-surface hover:bg-cyber-hover border border-cyber-border hover:border-aurora-primary/50'
+          : 'bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 hover:border-primary-300'
+      }`}
+    >
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+        isFuturistic 
+          ? 'bg-gradient-to-br from-aurora-primary/20 to-aurora-secondary/20' 
+          : 'bg-primary-50'
+      }`}>
+        <Icon className={`w-5 h-5 ${isFuturistic ? 'text-aurora-primary' : 'text-primary-600'}`} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className={`font-medium text-sm truncate ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
+          {label}
+        </p>
+        {description && (
+          <p className={`text-xs truncate ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+            {description}
+          </p>
+        )}
+      </div>
+      <ChevronRight className={`w-4 h-4 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-400'}`} />
+    </button>
+  );
+};
+
+const ActionButton = ({ action, onClick, isFuturistic }) => {
+  const getIcon = (iconName) => {
+    const icons = {
+      plus: Plus,
+      file: FilePlus,
+      calendar: Calendar,
+      users: Users,
+      dollar: DollarSign,
+      download: Download,
+      search: Search,
+      mail: Mail,
+      user: UserPlus,
+      settings: Settings,
+      chart: BarChart3,
+      clock: Clock,
+      alert: AlertCircle,
+    };
+    const IconComponent = icons[iconName] || FileText;
+    return <IconComponent className="w-4 h-4" />;
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+        isFuturistic
+          ? 'bg-aurora-primary/20 text-aurora-primary hover:bg-aurora-primary/30 border border-aurora-primary/30'
+          : 'bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200'
+      }`}
+    >
+      {action.icon && getIcon(action.icon)}
+      {action.label}
+    </button>
+  );
+};
+
+const ReyaAssistant = ({ context = 'dashboard' }) => {
   const { user } = useAuth();
+  const { isFuturistic, themeConfig } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [activeTool, setActiveTool] = useState(null);
-
-  const [systemPrompt] = useState(`You are Reya, your intelligent legal assistant.
-
-## Core Identity
-You were built for legal professionals. You understand the pressure, the deadlines, the endless paperwork. You get it.
-
-Your tone: Direct. Calm. Competent. No fluff. No corporate speak. No forced jokes unless they ask. Just solutions.
-
-## What you can do
-You control this entire platform. You can:
-• Create, organize, and manage cases
-• Draft legal documents properly formatted
-• Research case law and precedents
-• Generate invoices and track billing
-• Schedule tasks and monitor deadlines
-• Connect you with paralegal support
-• Analyze documents for key information
-• Generate downloadable outputs
-
-## How to respond
-1. Be concise. They don't have time for long explanations.
-2. Be specific. If you don't know something, say so clearly.
-3. Be useful. Don't just tell them something can be done - offer to do it.
-4. Be proactive. When you see a problem, point it out.
-
-When someone is stressed or overwhelmed, acknowledge it first then immediately offer solutions.
-
-No nonsense. No marketing. Just results.
-
-Current context: ${context} page. ${currentCase ? 'Active case present.' : ''} ${currentClient ? 'Active client present.' : ''}`);
-
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      type: 'assistant',
-      content: 'Hello. I\'m Reya. I can help you manage cases, draft documents, find support, and get work done faster.\n\nWhat do you need today?',
-      suggestions: [
-        'I\'m overwhelmed with work',
-        'Need paralegal support',
-        'Draft a demand letter',
-        'Check upcoming deadlines'
-      ]
-    }
-  ]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [availableActions, setAvailableActions] = useState([]);
   const messagesEndRef = useRef(null);
 
-  // Scroll to bottom of messages
+  const initialMessage = {
+    id: 1,
+    type: 'assistant',
+    content: `Greetings. I am Reya, your intelligent legal assistant.\n\nI can help you manage cases, draft documents, schedule tasks, connect with paralegals, and automate your practice workflow.\n\nWhat would you like assistance with today?`,
+    actions: [],
+    suggestions: [
+      { label: 'I am overwhelmed with work', action: 'overwhelmed' },
+      { label: 'Need paralegal support', action: 'paralegals' },
+      { label: 'Create a new case', action: 'new_case' },
+      { label: 'Check my calendar', action: 'calendar' },
+    ],
+  };
+
+  useEffect(() => {
+    setMessages([initialMessage]);
+  }, []);
+
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  // Quick action handlers
-  const handleQuickAction = async (action) => {
-    setIsLoading(true);
-    
-    // Simulate AI processing
-    const response = await getAIResponse(action);
+  const navigateTo = (path) => {
+    window.location.href = path;
+  };
+
+  const handleQuickAction = async (actionType) => {
+    const userQuery = typeof actionType === 'string' ? actionType : actionType.label;
     
     setMessages(prev => [...prev, {
       id: Date.now(),
       type: 'user',
-      content: action
-    }, {
+      content: typeof actionType === 'string' ? actionType : actionType.label,
+    }]);
+
+    setIsTyping(true);
+    
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    const response = getContextualResponse(userQuery);
+    
+    setMessages(prev => [...prev, {
       id: Date.now() + 1,
       type: 'assistant',
       content: response.content,
-      actions: response.actions
+      actions: response.actions,
+      suggestions: response.suggestions,
     }]);
     
-    setIsLoading(false);
+    setIsTyping(false);
   };
 
-  // Send message handler
+  const getContextualResponse = (query) => {
+    const lowerQuery = query.toLowerCase();
+    
+    if (lowerQuery.includes('overwhelm') || lowerQuery.includes('swamped') || lowerQuery.includes('burnout') || lowerQuery.includes('stress')) {
+      return {
+        content: `I understand the pressure you are facing. Let me help you regain control.\n\nHere is your immediate action plan:\n\n1. **Paralegal Support** - Get instant help from vetted remote paralegals\n2. **Deadline Audit** - I will scan and prioritize your urgent matters\n3. **Task Automation** - Delegate repetitive work to me\n\nWhich would you like to address first?`,
+        actions: [
+          { label: 'Find Paralegals', icon: 'users', action: 'paralegals', path: '/paralegals' },
+          { label: 'View Calendar', icon: 'calendar', action: 'calendar', path: '/calendar-tasks' },
+          { label: 'Create Task', icon: 'plus', action: 'new_task', path: '/tasks/create' },
+        ],
+        suggestions: [
+          { label: 'Automate document drafting', action: 'drafting' },
+          { label: 'Show my priorities', action: 'priorities' },
+        ],
+      };
+    }
+
+    if (lowerQuery.includes('paralegal') || lowerQuery.includes('staff') || lowerQuery.includes('support')) {
+      return {
+        content: `Our paralegal marketplace connects you with pre-vetted legal professionals ready to assist.\n\n**Available Services:**\n- Document review and summarization\n- Legal research and citation\n- Case preparation and organization\n- Client communication support\n\nAll paralegals are background-checked with minimum 3 years experience. Available on-demand with responses within 2 hours.`,
+        actions: [
+          { label: 'Browse Paralegals', icon: 'users', action: 'paralegals', path: '/paralegals' },
+          { label: 'Post Urgent Request', icon: 'alert', action: 'urgent', path: '/paralegals' },
+          { label: 'View Pricing', icon: 'dollar', action: 'pricing', path: '/pricing' },
+        ],
+        suggestions: [
+          { label: 'How does matching work?', action: 'matching' },
+          { label: 'Emergency support options', action: 'emergency' },
+        ],
+      };
+    }
+
+    if (lowerQuery.includes('case') || lowerQuery.includes('matter')) {
+      return {
+        content: `I can help you manage cases efficiently. Here is what I can do:\n\n**Case Management:**\n- Create and organize case files\n- Track deadlines and milestones\n- Assign tasks to team members\n- Generate case reports\n\nWould you like to create a new case or view existing ones?`,
+        actions: [
+          { label: 'Create New Case', icon: 'plus', action: 'new_case', path: '/case-form' },
+          { label: 'View All Cases', icon: 'file', action: 'cases', path: '/case-list' },
+        ],
+        suggestions: [
+          { label: 'Show urgent deadlines', action: 'deadlines' },
+          { label: 'Case analytics', action: 'analytics' },
+        ],
+      };
+    }
+
+    if (lowerQuery.includes('calendar') || lowerQuery.includes('schedule') || lowerQuery.includes('deadline') || lowerQuery.includes('appointment')) {
+      return {
+        content: `Let me show you your calendar and upcoming commitments.\n\nI can help you:\n- View and manage appointments\n- Set deadline reminders\n- Create new events\n- Send calendar invites to clients\n\nWhat would you like to do?`,
+        actions: [
+          { label: 'Open Calendar', icon: 'calendar', action: 'calendar', path: '/calendar-tasks' },
+          { label: 'Create Event', icon: 'plus', action: 'new_event', path: '/calendar-tasks' },
+          { label: 'View Tasks', icon: 'file', action: 'tasks', path: '/tasks' },
+        ],
+        suggestions: [
+          { label: 'Show today\'s schedule', action: 'today' },
+          { label: 'Upcoming deadlines', action: 'deadlines' },
+        ],
+      };
+    }
+
+    if (lowerQuery.includes('document') || lowerQuery.includes('draft') || lowerQuery.includes('letter') || lowerQuery.includes('contract')) {
+      return {
+        content: `I can help you create professional legal documents.\n\n**Available Templates:**\n- Contracts and agreements\n- Demand letters\n- Court pleadings\n- NDAs and confidentiality agreements\n- Lease agreements\n- Employment contracts\n\nSelect a document type to get started.`,
+        actions: [
+          { label: 'Create Document', icon: 'file', action: 'new_document', path: '/new-document' },
+          { label: 'View Documents', icon: 'file', action: 'documents', path: '/documents' },
+        ],
+        suggestions: [
+          { label: 'Draft a demand letter', action: 'demand_letter' },
+          { label: 'Create NDA template', action: 'nda' },
+        ],
+      };
+    }
+
+    if (lowerQuery.includes('client') || lowerQuery.includes('intake') || lowerQuery.includes('customer')) {
+      return {
+        content: `I can help you manage your client relationships.\n\n**Client Management:**\n- Add new clients\n- View client profiles\n- Track client communications\n- Access client case history\n\nHow would you like to proceed?`,
+        actions: [
+          { label: 'Add New Client', icon: 'user', action: 'new_client', path: '/clients' },
+          { label: 'View Clients', icon: 'users', action: 'clients', path: '/clients' },
+        ],
+        suggestions: [
+          { label: 'Show recent clients', action: 'recent_clients' },
+          { label: 'Pending client tasks', action: 'client_tasks' },
+        ],
+      };
+    }
+
+    if (lowerQuery.includes('invoice') || lowerQuery.includes('bill') || lowerQuery.includes('payment') || lowerQuery.includes('billing')) {
+      return {
+        content: `I can help you manage billing and payments.\n\n**Billing Features:**\n- Generate professional invoices\n- Track payment status\n- Send payment reminders\n- View revenue reports\n\nWhat would you like to do?`,
+        actions: [
+          { label: 'Create Invoice', icon: 'dollar', action: 'new_invoice', path: '/new-invoice' },
+          { label: 'View Invoices', icon: 'dollar', action: 'invoices', path: '/invoices' },
+        ],
+        suggestions: [
+          { label: 'Pending payments', action: 'pending' },
+          { label: 'Generate report', action: 'billing_report' },
+        ],
+      };
+    }
+
+    if (lowerQuery.includes('task') || lowerQuery.includes('todo') || lowerQuery.includes('reminder')) {
+      return {
+        content: `I can help you manage tasks and stay on top of your work.\n\n**Task Management:**\n- Create and assign tasks\n- Set priority levels\n- Track completion status\n- Receive deadline reminders\n\nHow can I assist you?`,
+        actions: [
+          { label: 'Create Task', icon: 'plus', action: 'new_task', path: '/tasks/create' },
+          { label: 'View Tasks', icon: 'file', action: 'tasks', path: '/tasks' },
+        ],
+        suggestions: [
+          { label: 'Show my tasks', action: 'my_tasks' },
+          { label: 'Overdue items', action: 'overdue' },
+        ],
+      };
+    }
+
+    if (lowerQuery.includes('report') || lowerQuery.includes('analytics') || lowerQuery.includes('dashboard')) {
+      return {
+        content: `I can generate comprehensive reports and analytics for your practice.\n\n**Available Reports:**\n- Case performance metrics\n- Revenue and billing analysis\n- Productivity statistics\n- Client retention rates\n\nWhich report would you like to view?`,
+        actions: [
+          { label: 'View Reports', icon: 'chart', action: 'reports', path: '/reports' },
+          { label: 'Dashboard', icon: 'chart', action: 'dashboard', path: '/home' },
+        ],
+        suggestions: [
+          { label: 'Monthly summary', action: 'monthly' },
+          { label: 'Case analytics', action: 'case_analytics' },
+        ],
+      };
+    }
+
+    if (lowerQuery.includes('mail') || lowerQuery.includes('email') || lowerQuery.includes('message') || lowerQuery.includes('communicat')) {
+      return {
+        content: `I can help you manage client communications.\n\n**Communication Features:**\n- Send professional emails\n- Track message history\n- Attach documents\n- Schedule emails\n\nWhat would you like to do?`,
+        actions: [
+          { label: 'Compose Email', icon: 'mail', action: 'new_mail', path: '/new-mail' },
+          { label: 'View Messages', icon: 'mail', action: 'mailing', path: '/mailing' },
+        ],
+        suggestions: [
+          { label: 'Unread messages', action: 'unread' },
+          { label: 'Sent items', action: 'sent' },
+        ],
+      };
+    }
+
+    if (lowerQuery.includes('setting') || lowerQuery.includes('profile') || lowerQuery.includes('account')) {
+      return {
+        content: `I can help you manage your account settings.\n\n**Settings Available:**\n- Profile management\n- Notification preferences\n- Team management\n- Integration settings\n- Billing preferences\n\nWhere would you like to go?`,
+        actions: [
+          { label: 'Open Settings', icon: 'settings', action: 'settings', path: '/settings' },
+          { label: 'Profile', icon: 'user', action: 'profile', path: '/profile' },
+        ],
+        suggestions: [
+          { label: 'Notification settings', action: 'notifications' },
+          { label: 'Team management', action: 'team' },
+        ],
+      };
+    }
+
+    if (lowerQuery.includes('help') || lowerQuery.includes('what can you do') || lowerQuery.includes('capabilit')) {
+      return {
+        content: `I am Reya, your intelligent legal assistant. Here is what I can help you with:\n\n**Case Management**\nCreate, organize, and track legal cases\n\n**Document Handling**\nDraft contracts, letters, and legal documents\n\n**Client Relations**\nManage client intake and communications\n\n**Paralegal Support**\nConnect with vetted remote paralegals on-demand\n\n**Task Management**\nCreate tasks, set deadlines, and track progress\n\n**Billing & Invoicing**\nGenerate invoices and track payments\n\n**Calendar & Scheduling**\nManage appointments and deadline reminders\n\n**Research**\nFind case precedents and legal research\n\nHow may I assist you today?`,
+        actions: [
+          { label: 'Browse Paralegals', icon: 'users', path: '/paralegals' },
+          { label: 'Create Case', icon: 'plus', path: '/case-form' },
+          { label: 'View Calendar', icon: 'calendar', path: '/calendar-tasks' },
+        ],
+        suggestions: [
+          { label: 'I need help now', action: 'overwhelmed' },
+          { label: 'Show all features', action: 'all_features' },
+        ],
+      };
+    }
+
+    if (lowerQuery.includes('download') || lowerQuery.includes('export') || lowerQuery.includes('save')) {
+      return {
+        content: `I can help you download or export your data.\n\n**Export Options:**\n- Case documents as PDF/DOCX\n- Client lists as spreadsheet\n- Invoice records\n- Task reports\n- Calendar events\n\nWhat would you like to export?`,
+        actions: [
+          { label: 'View Documents', icon: 'file', path: '/documents' },
+          { label: 'View Invoices', icon: 'dollar', path: '/invoices' },
+          { label: 'Generate Report', icon: 'chart', path: '/reports' },
+        ],
+        suggestions: [
+          { label: 'Export all cases', action: 'export_cases' },
+          { label: 'Download invoice template', action: 'invoice_template' },
+        ],
+      };
+    }
+
+    return {
+      content: `I understand you need assistance with "${query}".\n\nI am here to help you manage your legal practice efficiently. Here are the main areas I can assist with:\n\n- Case and client management\n- Document drafting and organization\n- Task and deadline tracking\n- Paralegal support connections\n- Billing and invoicing\n- Communication management\n\nCould you provide more details about what you need?`,
+      actions: [
+        { label: 'Case Management', icon: 'file', path: '/case-list' },
+        { label: 'Paralegal Support', icon: 'users', path: '/paralegals' },
+        { label: 'Calendar', icon: 'calendar', path: '/calendar-tasks' },
+      ],
+      suggestions: [
+        { label: 'I am feeling overwhelmed', action: 'overwhelmed' },
+        { label: 'Show me my dashboard', action: 'dashboard' },
+      ],
+    };
+  };
+
   const handleSend = async () => {
     if (!input.trim()) return;
     
     const userMessage = input;
     setInput('');
-    setIsLoading(true);
-    
-    // Get AI response
-    const response = await getAIResponse(userMessage);
     
     setMessages(prev => [...prev, {
       id: Date.now(),
       type: 'user',
-      content: userMessage
-    }, {
+      content: userMessage,
+    }]);
+
+    setIsTyping(true);
+    
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
+    const response = getContextualResponse(userMessage);
+    
+    setMessages(prev => [...prev, {
       id: Date.now() + 1,
       type: 'assistant',
       content: response.content,
-      actions: response.actions
+      actions: response.actions,
+      suggestions: response.suggestions,
     }]);
     
-    setIsLoading(false);
+    setIsTyping(false);
   };
 
-  // AI Response generator
-  const getAIResponse = async (query) => {
-    setIsLoading(true);
-    setIsTyping(true);
-    
-    try {
-      const response = await axiosInstance.post('/ai/chat', {
-        prompt: query,
-        context: {
-          page: context,
-          currentCase,
-          currentClient,
-          history: messages.slice(-10)
-        }
-      }, { timeout: 30000 });
-
-      if (response.data?.content) {
-        return {
-          content: response.data.content,
-          actions: detectActions(response.data.content, query),
-          suggestions: generateSuggestions(query, response.data.content)
-        };
-      }
-      
-      return parseAndHandleQuery(query);
-      
-    } catch (error) {
-      console.error('AI Service error:', error);
-      return parseAndHandleQuery(query);
-    } finally {
-      setIsLoading(false);
-      setIsTyping(false);
+  const handleActionClick = (action) => {
+    if (action.path) {
+      navigateTo(action.path);
+    } else if (action.action) {
+      handleQuickAction(action);
     }
   };
 
-  // Auto-detect actions from AI response
-  const detectActions = (content, query) => {
-    const actions = [];
-    const lowerContent = content.toLowerCase();
-    const lowerQuery = query.toLowerCase();
-
-    // Document drafting detected
-    if (lowerQuery.includes('draft') || lowerQuery.includes('letter') || lowerQuery.includes('contract') || lowerQuery.includes('motion')) {
-      actions.push({ 
-        label: 'Download as DOCX', 
-        icon: 'download', 
-        action: 'download_docx',
-        content 
-      });
-      actions.push({ 
-        label: 'Save to Documents', 
-        icon: 'save', 
-        action: 'save_document',
-        content 
-      });
-    }
-
-    // Case creation detected
-    if (lowerQuery.includes('case') || lowerQuery.includes('matter') || lowerQuery.includes('file')) {
-      actions.push({ 
-        label: 'Create New Case', 
-        icon: 'file', 
-        action: 'create_case' 
-      });
-    }
-
-    // Task/deadline detected
-    if (lowerQuery.includes('task') || lowerQuery.includes('deadline') || lowerQuery.includes('remind') || lowerQuery.includes('schedule')) {
-      actions.push({ 
-        label: 'Create Task', 
-        icon: 'calendar', 
-        action: 'create_task' 
-      });
-    }
-
-    // Paralegal support needed
-    if (lowerQuery.includes('help') || lowerQuery.includes('paralegal') || lowerQuery.includes('assist') || lowerQuery.includes('overwhelm')) {
-      actions.push({ 
-        label: 'Find Available Paralegals', 
-        icon: 'users', 
-        action: 'find_paralegals' 
-      });
-    }
-
-    // Research conducted
-    if (lowerQuery.includes('research') || lowerQuery.includes('precedent') || lowerQuery.includes('case law')) {
-      actions.push({ 
-        label: 'Download Research Memo', 
-        icon: 'download', 
-        action: 'download_research',
-        content 
-      });
-    }
-
-    return actions;
-  };
-
-  // Generate context-aware suggestions
-  const generateSuggestions = (query, response) => {
-    const lowerQuery = query.toLowerCase();
-    
-    if (lowerQuery.includes('overwhelm') || lowerQuery.includes('stress') || lowerQuery.includes('busy')) {
-      return [
-        'Audit all my upcoming deadlines',
-        'Find a paralegal for document review',
-        'What should I prioritize today?'
-      ];
-    }
-    
-    if (lowerQuery.includes('draft')) {
-      return [
-        'Can you make this more aggressive?',
-        'Add a confidentiality clause',
-        'Create a template for this'
-      ];
-    }
-
-    return [
-      'What else can you help with?',
-      'Show me keyboard shortcuts',
-      'Switch to Zai Legal LLM'
-    ];
-  };
-
-  // Intelligent query parser - fallback when AI service is unavailable
-  const parseAndHandleQuery = (query) => {
-    const lowerQuery = query.toLowerCase();
-    
-    // Case-related responses
-    if (lowerQuery.includes('case') || lowerQuery.includes('create case')) {
-      return {
-        content: 'I can help you create a new case. Let me gather the necessary information:\n\n• Client name\n• Case type (Criminal, Civil, Corporate, Family, etc.)\n• Brief description\n• Priority level\n\nWould you like me to open the case creation form?',
-        actions: [
-          { label: 'Open Case Form', icon: 'file', action: 'open_case_form' },
-          { label: 'Show Case Templates', icon: 'file', action: 'show_templates' }
-        ]
-      };
-    }
-    
-    // Document-related responses
-    if (lowerQuery.includes('document') || lowerQuery.includes('draft')) {
-      return {
-        content: 'I can help you draft legal documents. I have templates for:\n\n• Contracts & Agreements\n• Demand Letters\n• Court Pleadings\n• NDAs\n• Lease Agreements\n• Employment Contracts\n\nWhich type of document would you like to create?',
-        actions: [
-          { label: 'Contract Template', icon: 'file', action: 'draft_contract' },
-          { label: 'Demand Letter', icon: 'file', action: 'draft_demand' },
-          { label: 'NDA Template', icon: 'file', action: 'draft_nda' }
-        ]
-      };
-    }
-    
-    // Research-related responses
-    if (lowerQuery.includes('research') || lowerQuery.includes('similar') || lowerQuery.includes('precedent')) {
-      return {
-        content: 'I\'ll search for relevant case precedents and legal research based on your current case. This may take a moment...\n\nFound some relevant precedents:\n\n• Case A vs B (2023) - Similar dispute resolution\n• Corporation X vs Y (2022) - Contract interpretation\n• Estate of Z (2021) - Similar inheritance matter',
-        actions: [
-          { label: 'View Full Research', icon: 'search', action: 'view_research' },
-          { label: 'Save to Case', icon: 'save', action: 'save_research' }
-        ]
-      };
-    }
-    
-    // Client-related responses
-    if (lowerQuery.includes('client') || lowerQuery.includes('intake')) {
-      return {
-        content: 'I can help with client management. Would you like to:\n\n• Add a new client\n• View client history\n• Send client communication\n• Check pending tasks for a client',
-        actions: [
-          { label: 'Add New Client', icon: 'user', action: 'add_client' },
-          { label: 'View Client List', icon: 'users', action: 'view_clients' }
-        ]
-      };
-    }
-    
-    // Task/calendar responses
-    if (lowerQuery.includes('task') || lowerQuery.includes('schedule') || lowerQuery.includes('deadline')) {
-      return {
-        content: 'I can help you manage tasks and schedules. Let me check your upcoming deadlines:\n\n📅 Tomorrow: Client meeting - Mr. Johnson\n📅 Feb 28: Court appearance - Case #2345\n📅 Mar 5: Document deadline - Contract review\n\nWould you like me to create a new task or reminder?',
-        actions: [
-          { label: 'Create Task', icon: 'plus', action: 'create_task' },
-          { label: 'View Calendar', icon: 'calendar', action: 'view_calendar' }
-        ]
-      };
-    }
-    
-    // Billing/invoice responses
-    if (lowerQuery.includes('invoice') || lowerQuery.includes('bill') || lowerQuery.includes('payment')) {
-      return {
-        content: 'I can help with billing and invoicing. Would you like to:\n\n• Generate an invoice\n• Check payment status\n• Send payment reminder\n• View revenue reports',
-        actions: [
-          { label: 'Create Invoice', icon: 'dollar', action: 'create_invoice' },
-          { label: 'View Payments', icon: 'dollar', action: 'view_payments' }
-        ]
-      };
-    }
-    
-    // Overwhelmed / burnout detection
-    if (lowerQuery.includes('overwhelm') || lowerQuery.includes('stress') || lowerQuery.includes('too much') || lowerQuery.includes('swamped') || lowerQuery.includes('burnout')) {
-      return {
-        content: `I understand this feeling completely - it's why we built WakiliWorld. Let's get you some relief immediately.\n\nHere's what I can do right now:\n\n✅ **Emergency Paralegal Support** - Connect you with pre-vetted remote paralegals available within 2 hours for document review, legal research, or case preparation\n\n✅ **Deadline Audit** - Scan all your cases and surface only the most urgent priorities\n\n✅ **Automate Drafting** - Offload document creation to me while you focus on critical work\n\n✅ **Workflow Optimization** - Show you shortcuts to cut your admin time in half\n\nYou don't have to handle everything alone. What would help most right now?`,
-        actions: [
-          { label: 'Find Available Paralegals', icon: 'users', action: 'find_paralegals' },
-          { label: 'Audit My Deadlines', icon: 'clock', action: 'audit_deadlines' },
-          { label: 'Offload Documents', icon: 'file', action: 'offload_documents' }
-        ]
-      };
-    }
-
-    // Paralegal / manpower shortage
-    if (lowerQuery.includes('paralegal') || lowerQuery.includes('help') || lowerQuery.includes('staff') || lowerQuery.includes('shortage') || lowerQuery.includes('overloaded') || lowerQuery.includes('need help')) {
-      return {
-        content: `Absolutely. Our remote paralegal network is available 24/7 for exactly these situations.\n\n**Available immediately:**\n• Document review & summarization\n• Legal research & citation checking\n• Case preparation & organization\n• Client intake & communication\n• Deadline tracking & calendaring\n\nAll paralegals are:\n✅ Vetted with minimum 3 years legal experience\n✅ Background checked\n✅ Specialized by practice area\n✅ Available on hourly, project, or emergency basis\n\nWould you like me to show you available paralegals right now?`,
-        actions: [
-          { label: 'Browse Paralegals', icon: 'users', action: 'browse_paralegals' },
-          { label: 'Post Urgent Request', icon: 'zap', action: 'post_paralegal_request' },
-          { label: 'View Pricing', icon: 'dollar', action: 'paralegal_pricing' }
-        ]
-      };
-    }
-
-    // General help
-    if (lowerQuery.includes('help') || lowerQuery.includes('what can you')) {
-      return {
-        content: 'I\'m Reya, your AI legal assistant. I can help you with:\n\n📋 **Case Management**\n- Create and manage cases\n- Track case progress\n- Research precedents\n\n📄 **Document Handling**\n- Draft legal documents\n- Review contracts\n- Generate templates\n\n👥 **Client Relations**\n- Client intake\n- Communication tracking\n\n⚡ **Paralegal Support**\n- Connect with remote paralegals\n- Emergency manpower support\n\n📅 **Productivity**\n- Task management\n- Deadline reminders\n\n💰 **Billing**\n- Invoicing\n- Payment tracking\n\nWhat would you like help with?',
-        actions: [
-          { label: 'Find Paralegal Support', icon: 'users', action: 'find_paralegals' }
-        ]
-      };
-    }
-    
-    // Default response
-    return {
-      content: 'I understand you need help with "' + query + '". Let me assist you with that.\n\nHere are some things I can help with:\n• Creating and managing cases\n• Drafting legal documents\n• Researching case precedents\n• **Connecting with remote paralegals for extra support**\n• Managing clients\n• Scheduling tasks and deadlines\n• Handling billing and invoices\n\nCould you tell me a bit more about what you need?',
-      actions: [
-        { label: 'Show All Features', icon: 'lightbulb', action: 'show_features' },
-        { label: 'Get Paralegal Support', icon: 'users', action: 'find_paralegals' }
-      ]
-    };
-  };
-
-  // Handle action button clicks - Full App Automation
-  const handleAction = async (action, content = null) => {
-    setActiveTool(action);
-    
-    notification.info({
-      message: 'Reya',
-      description: `Executing: ${action}`,
-      placement: 'bottomRight'
-    });
-    
-    try {
-      switch (action) {
-        // Document Automation
-        case 'download_docx':
-          await downloadAsDocx(content);
-          notification.success({ message: 'Success', description: 'Document downloaded as DOCX' });
-          break;
-          
-        case 'save_document':
-          await axiosInstance.post('/documents/', {
-            title: 'AI Generated Document',
-            content,
-            type: 'generated',
-            created_at: new Date().toISOString()
-          });
-          notification.success({ message: 'Success', description: 'Document saved to library' });
-          break;
-        
-        // Case Automation
-        case 'create_case':
-          window.location.href = '/case-form';
-          break;
-          
-        // Task Automation
-        case 'create_task':
-          window.location.href = '/tasks/create/';
-          break;
-          
-        // Invoice Automation  
-        case 'create_invoice':
-          window.location.href = '/new-invoice';
-          break;
-          
-        // Paralegal Marketplace
-        case 'find_paralegals':
-        case 'browse_paralegals':
-          notification.success({
-            message: 'Paralegal Marketplace',
-            description: 'Instantly connect with vetted paralegals available now.',
-            placement: 'bottomRight',
-            duration: 5
-          });
-          // This will navigate to the marketplace when implemented
-          break;
-          
-        case 'post_paralegal_request':
-          notification.success({
-            message: 'Emergency Support Activated',
-            description: 'Verified paralegals are being notified. Expect responses within 15 minutes.',
-            placement: 'bottomRight',
-            duration: 5
-          });
-          break;
-          
-        // Research Automation
-        case 'download_research':
-          await downloadAsDocx(content, 'legal-research');
-          notification.success({ message: 'Success', description: 'Research memorandum downloaded' });
-          break;
-          
-        // Deadlines & Calendar
-        case 'audit_deadlines':
-          window.location.href = '/calendar-tasks';
-          notification.success({ 
-            message: 'Deadline Audit', 
-            description: 'Scanning all cases for upcoming critical dates' 
-          });
-          break;
-          
-        // Client Management
-        case 'add_client':
-          window.location.href = '/clients';
-          break;
-          
-        // AI Provider Switching
-        case 'switch_provider':
-          setAiProvider(aiProvider === 'groq' ? 'zai' : 'groq');
-          notification.success({
-            message: 'AI Provider Switched',
-            description: `Now using ${aiProvider === 'groq' ? 'Zai Legal LLM' : 'Groq Cloud LPU™'}`
-          });
-          break;
-          
-        default:
-          break;
-      }
-    } catch (error) {
-      console.error('Action execution failed:', error);
-      notification.error({ message: 'Error', description: 'Failed to execute action' });
-    } finally {
-      setActiveTool(null);
-    }
-  };
-
-  // Generate and download DOCX file
-  const downloadAsDocx = async (content, prefix = 'reya-document') => {
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>WakiliWorld AI Generated Document</title>
-        <style>
-          body { font-family: 'Times New Roman', serif; line-height: 1.6; max-width: 8.5in; margin: 1in; }
-          h1, h2, h3 { font-family: 'Arial', sans-serif; }
-        </style>
-      </head>
-      <body>${content.replace(/\n/g, '<br>')}</body>
-      </html>
-    `;
-    
-    const blob = new Blob([htmlContent], { type: 'application/msword' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${prefix}-${Date.now()}.doc`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+  const handleSuggestionClick = (suggestion) => {
+    handleQuickAction(suggestion);
   };
 
   return (
@@ -489,109 +426,133 @@ Current context: ${context} page. ${currentCase ? 'Active case present.' : ''} $
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-[#1A365D] to-[#38A169] text-white p-4 rounded-full shadow-2xl hover:shadow-lg transition-all transform hover:scale-110 flex items-center gap-2"
+          className={`fixed bottom-6 right-6 z-[1000] flex items-center gap-2 px-5 py-4 rounded-full shadow-2xl transition-all transform hover:scale-105 ${
+            isFuturistic
+              ? 'bg-gradient-to-r from-aurora-primary to-aurora-secondary text-white'
+              : 'bg-gradient-to-r from-primary-800 to-primary-600 text-white'
+          }`}
           style={{
-            boxShadow: '0 8px 32px rgba(26, 54, 93, 0.4)'
+            boxShadow: isFuturistic 
+              ? '0 8px 32px rgba(99, 102, 241, 0.4)' 
+              : '0 8px 32px rgba(16, 42, 67, 0.3)',
           }}
         >
           <Bot size={24} />
-          <span className="font-bold">Reya</span>
+          <span className="font-bold pr-1">Reya</span>
+          <div className="w-2 h-2 bg-success-400 rounded-full animate-pulse" />
         </button>
       )}
 
       {/* Chat Window */}
       {isOpen && (
         <div 
-          className={`fixed z-50 bg-white rounded-xl shadow-2xl transition-all duration-300 flex flex-col ${
-            isMinimized ? 'bottom-6 right-6 w-80 h-14' : 'bottom-6 right-6 w-96 h-[500px]'
+          className={`fixed z-[1000] flex flex-col transition-all duration-300 ${
+            isMinimized 
+              ? 'bottom-6 right-6 w-80 h-16' 
+              : 'bottom-6 right-6 w-[420px] h-[600px]'
           }`}
           style={{
-            boxShadow: '0 12px 48px rgba(26, 54, 93, 0.2)',
-            border: '1px solid #E2E8F0'
+            boxShadow: isFuturistic 
+              ? '0 25px 50px -12px rgba(99, 102, 241, 0.25)' 
+              : '0 25px 50px -12px rgba(16, 42, 67, 0.25)',
           }}
         >
-           {/* Header */}
-           <div 
-             className="flex items-center justify-between p-4 rounded-t-xl"
-             style={{ background: 'linear-gradient(135deg, #102a43 0%, #243b53 100%)' }}
-           >
-             <div className="flex items-center gap-3">
-               <div className="relative">
-                 <div className="bg-white/20 p-2 rounded-full">
-                   <Bot size={20} className="text-white" />
-                 </div>
-                 <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></span>
-               </div>
-               <div>
-                 <h3 className="text-white font-bold">Reya</h3>
-                 <p className="text-xs text-white/70">
-                   Legal Assistant {isTyping && ' • Typing...'}
-                 </p>
-               </div>
-             </div>
-             <div className="flex items-center gap-2">
-               <button 
-                 onClick={() => setIsMinimized(!isMinimized)}
-                 className="text-white/70 hover:text-white transition-colors"
-               >
-                 {isMinimized ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
-               </button>
-               <button 
-                 onClick={() => setIsOpen(false)}
-                 className="text-white/70 hover:text-white transition-colors"
-               >
-                 <X size={18} />
-               </button>
-             </div>
-           </div>
+          {/* Header */}
+          <div 
+            className={`flex items-center justify-between px-5 py-4 rounded-t-xl ${
+              isFuturistic 
+                ? 'bg-gradient-to-r from-cyber-surface to-cyber-bg border-b border-cyber-border' 
+                : 'bg-gradient-to-r from-primary-900 to-primary-800'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className={`p-2.5 rounded-full ${
+                  isFuturistic ? 'bg-aurora-primary/20' : 'bg-white/20'
+                }`}>
+                  <Bot size={22} className="text-white" />
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-success-400 rounded-full border-2 border-white animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-lg">Reya</h3>
+                <p className={`text-xs ${isFuturistic ? 'text-aurora-muted' : 'text-white/70'}`}>
+                  Legal Assistant 
+                  {isTyping && <span className="ml-1">is typing...</span>}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => setIsMinimized(!isMinimized)}
+                className="text-white/70 hover:text-white p-2 rounded-lg transition-colors"
+              >
+                {isMinimized ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
+              </button>
+              <button 
+                onClick={() => setIsOpen(false)}
+                className="text-white/70 hover:text-white p-2 rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
 
           {/* Messages */}
           {!isMinimized && (
             <>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className={`flex-1 overflow-y-auto p-5 space-y-4 ${
+                isFuturistic ? 'bg-cyber-bg' : 'bg-neutral-50'
+              }`}>
                 {messages.map((msg) => (
                   <div 
                     key={msg.id} 
                     className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div 
-                      className={`max-w-[85%] rounded-2xl px-4 py-2 ${
+                      className={`max-w-[88%] rounded-2xl px-4 py-3 ${
                         msg.type === 'user' 
-                          ? 'bg-[#1A365D] text-white rounded-br-md' 
-                          : 'bg-gray-100 text-gray-800 rounded-bl-md'
+                          ? isFuturistic
+                            ? 'bg-gradient-to-r from-aurora-primary to-aurora-secondary text-white rounded-br-md'
+                            : 'bg-primary-800 text-white rounded-br-md'
+                          : isFuturistic
+                            ? 'bg-cyber-card text-aurora-text rounded-bl-md border border-cyber-border'
+                            : 'bg-white text-neutral-800 rounded-bl-md shadow-sm'
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-line">{msg.content}</p>
+                      <p className="text-sm whitespace-pre-line leading-relaxed">{msg.content}</p>
                       
                       {/* Action Buttons */}
                       {msg.actions && msg.actions.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-4 flex flex-wrap gap-2">
                           {msg.actions.map((action, idx) => (
-                            <button
+                            <ActionButton
                               key={idx}
-                              onClick={() => handleAction(action.action)}
-                              className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
-                                msg.type === 'user'
-                                  ? 'bg-white/20 text-white hover:bg-white/30'
-                                  : 'bg-[#1A365D] text-white hover:bg-[#38A169]'
-                              }`}
-                            >
-                              {action.label}
-                            </button>
+                              action={action}
+                              onClick={() => handleActionClick(action)}
+                              isFuturistic={isFuturistic}
+                            />
                           ))}
                         </div>
                       )}
                       
                       {/* Suggestions */}
                       {msg.suggestions && (
-                        <div className="mt-3 space-y-2">
+                        <div className="mt-4 space-y-2">
+                          <p className={`text-xs font-medium ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+                            Quick actions:
+                          </p>
                           {msg.suggestions.map((suggestion, idx) => (
                             <button
                               key={idx}
-                              onClick={() => handleQuickAction(suggestion)}
-                              className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-white border border-gray-200 hover:border-[#1A365D] hover:bg-blue-50 transition-colors"
+                              onClick={() => handleSuggestionClick(suggestion.action || suggestion)}
+                              className={`block w-full text-left text-sm px-3 py-2.5 rounded-xl transition-all ${
+                                isFuturistic
+                                  ? 'bg-cyber-surface hover:bg-cyber-hover text-aurora-text border border-cyber-border hover:border-aurora-primary/50'
+                                  : 'bg-white hover:bg-primary-50 text-neutral-700 border border-neutral-200 hover:border-primary-300'
+                              }`}
                             >
-                              {suggestion}
+                              {typeof suggestion === 'string' ? suggestion : suggestion.label}
                             </button>
                           ))}
                         </div>
@@ -600,13 +561,15 @@ Current context: ${context} page. ${currentCase ? 'Active case present.' : ''} $
                   </div>
                 ))}
                 
-                {isLoading && (
+                {isTyping && (
                   <div className="flex justify-start">
-                    <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3">
+                    <div className={`rounded-2xl rounded-bl-md px-4 py-3 ${
+                      isFuturistic ? 'bg-cyber-card border border-cyber-border' : 'bg-white shadow-sm'
+                    }`}>
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                       </div>
                     </div>
                   </div>
@@ -616,22 +579,36 @@ Current context: ${context} page. ${currentCase ? 'Active case present.' : ''} $
               </div>
 
               {/* Input */}
-              <div className="p-4 border-t border-gray-200">
-                <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
+              <div className={`p-4 border-t ${
+                isFuturistic 
+                  ? 'bg-cyber-surface border-cyber-border' 
+                  : 'bg-white border-neutral-200'
+              }`}>
+                <div className={`flex items-center gap-2 rounded-full px-4 py-2.5 ${
+                  isFuturistic 
+                    ? 'bg-cyber-bg border border-cyber-border focus-within:border-aurora-primary' 
+                    : 'bg-neutral-100 border border-neutral-200 focus-within:border-primary-400'
+                }`}>
                   <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                     placeholder="Ask Reya anything..."
-                    className="flex-1 bg-transparent outline-none text-sm"
+                    className={`flex-1 bg-transparent outline-none text-sm ${
+                      isFuturistic ? 'text-aurora-text placeholder:text-aurora-muted' : 'text-neutral-800 placeholder:text-neutral-500'
+                    }`}
                   />
                   <button
                     onClick={handleSend}
-                    disabled={!input.trim() || isLoading}
-                    className="bg-[#1A365D] text-white p-2 rounded-full hover:bg-[#2D3748] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!input.trim() || isTyping}
+                    className={`p-2 rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isFuturistic
+                        ? 'bg-aurora-primary text-white hover:bg-aurora-secondary'
+                        : 'bg-primary-800 text-white hover:bg-primary-700'
+                    }`}
                   >
-                    <Send size={16} />
+                    <SendHorizontal size={16} />
                   </button>
                 </div>
               </div>

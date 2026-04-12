@@ -6,6 +6,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import intitializeAnalytics from './analytics';
 import { AuthProvider } from './contexts/authContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 // Initializing Google Analytics in the application
 intitializeAnalytics();
@@ -13,11 +14,13 @@ intitializeAnalytics();
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <AuthProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   </React.StrictMode>
 );
 

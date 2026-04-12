@@ -11,6 +11,8 @@ import { Layout, Skeleton } from 'antd';
 import ProtectedRoute from './utils/ProtectedRoute';
 import ReactGA from 'react-ga4';
 import ReyaAssistant from './components/Reya/ReyaAssistant';
+import { useTheme, THEMES } from './contexts/ThemeContext';
+import Breadcrumbs from './components/ui/Breadcrumbs';
 
 const { Content } = Layout;
 
@@ -43,6 +45,7 @@ const AboutPage = lazy(() => import('./pages/About'));
 const ContactUsPage = lazy(() => import('./pages/ContactUs'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const OnboardingRequest = lazy(() => import('./components/OnboardingRequest'));
+const ParalegalsMarketplace = lazy(() => import('./pages/ParalegalsMarketplace'));
 
 
 const Settings = lazy(() => import('./pages/Settings'));
@@ -69,12 +72,12 @@ const usePageTracking = () => {
   }, [location]);
 };
 
-function App() {
+function AppContent() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const [theme, setTheme] = useState('light');
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768); // Adjust the breakpoint as needed
-  const { user, isAuthenticated } = useAuth();
+  const { themeConfig, isFuturistic } = useTheme();
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleResize = () => {
@@ -85,19 +88,7 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    setTheme(savedTheme);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
-
-  // Define routes where the sidebar should be hidden
-  const hideSidebarRoutes = ['/login', '/signup', '/', '/register-success', '/hero', '/about', '/contact', '/forgot-password' , '/reset-password', '/password-reset-success', '/verify-email', '*'];
+  const hideSidebarRoutes = ['/login', '/signup', '/', '/register-success', '/hero', '/about', '/contact', '/forgot-password', '/reset-password', '/password-reset-success', '/verify-email', '/pricing', '/paralegals', '*'];
 
   const shouldHideSidebar = hideSidebarRoutes.includes(location.pathname) || location.pathname === '*';
 
@@ -105,23 +96,29 @@ function App() {
 
   return (
     <>
-     <Layout className={`app-layout ${theme}`} style={{ minHeight: '100vh' }}>
-      <Navbar theme={theme} toggleTheme={toggleTheme} />
+     <Layout className={`app-layout ${isFuturistic ? 'futuristic' : 'classic'}`} style={{ minHeight: '100vh' }}>
+      <Navbar />
         <Layout>
-          {!shouldHideSidebar && <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} theme={theme} />}
+          {!shouldHideSidebar && <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />}
            <Layout
              style={{
-               marginLeft: !shouldHideSidebar && (collapsed ? (isMobile ? 0 : 80) : 200),
+               marginLeft: !shouldHideSidebar && (collapsed ? (isMobile ? 0 : 80) : 260),
                marginTop: 0,
                padding: '24px',
                flexGrow: 1,
-               transition: 'margin-left 0.2s',
-               background: theme === 'light' 
-                 ? 'linear-gradient(106.5deg, #f8fafc 0%, #f1f5f9 100%)' 
-                 : 'linear-gradient(106.5deg, #0f172a 0%, #1e293b 100%)',
-             }}
-           >
-            <Content>
+               transition: 'margin-left 0.2s, background 0.3s ease',
+               background: isFuturistic
+                 ? 'linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0f0f18 100%)'
+                 : 'linear-gradient(106.5deg, #f8fafc 0%, #f1f5f9 100%)',
+               minHeight: 'calc(100vh - 64px)',
+           }}
+         >
+           {!shouldHideSidebar && (
+             <div className={`mb-6 ${isFuturistic ? '' : ''}`}>
+               <Breadcrumbs />
+             </div>
+           )}
+           <Content>
               <Suspense fallback={<div><Skeleton active avatar paragraph={{ rows: 4 }} /></div>}>
                 <Routes>
 
@@ -223,13 +220,14 @@ function App() {
                   <Route path="/contact" element={<ContactUsPage />} />
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/onboarding" element={<OnboardingRequest />} />
+                  <Route path="/paralegals" element={<ParalegalsMarketplace />} />
 
                   
                   <Route path='*' element={<ErrorBoundary />} />
                 </Routes>
               </Suspense>
             </Content>
-            <AppFooter theme={theme}/>
+            {!shouldHideSidebar && <AppFooter />}
           </Layout>
         </Layout>
       </Layout>
@@ -238,6 +236,10 @@ function App() {
       {isAuthenticated && <ReyaAssistant />}
     </>
   );
+}
+
+function App() {
+  return <AppContent />;
 }
 
 export default App;

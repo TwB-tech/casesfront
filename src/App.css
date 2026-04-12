@@ -8,29 +8,53 @@ html, body, #root {
 
 .overflow-auto {
   overflow-y: auto;
-  max-height: calc(100vh - 200px); /* Adjust this value as needed */
+  max-height: calc(100vh - 200px);
 }
 
+/* Navbar Styles */
 .navbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #512DA8 0%, #C2185B 100%);
-  color: #fff;
+  padding: 8px 20px;
   position: sticky;
   top: 0;
   z-index: 1000;
+  height: 64px;
+  transition: all 0.3s ease;
+}
+
+.navbar-classic {
+  background: linear-gradient(135deg, #102a43 0%, #243b53 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-futuristic {
+  background: linear-gradient(135deg, #12121a 0%, #0a0a0f 100%);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+  border-bottom: 1px solid #2a2a3a;
 }
 
 .navbar-logo {
   font-size: 27px;
   font-weight: bold;
+  cursor: pointer;
+}
+
+.navbar-logo:hover {
+  opacity: 0.9;
+}
+
+.navbar-logo:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .navbar-company {
   font-size: 18px;
   margin-left: 10px;
+  font-weight: 600;
 }
 
 .navbar-menus {
@@ -48,9 +72,34 @@ html, body, #root {
 }
 
 .menu-item {
-  color: #fff;
   margin: 0 10px;
-  font-size: larger;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.menu-item:hover {
+  opacity: 0.8;
+}
+
+.menu-item-futuristic {
+  position: relative;
+}
+
+.menu-item-futuristic::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  transition: width 0.3s ease;
+}
+
+.menu-item-futuristic:hover::after {
+  width: 80%;
 }
 
 .navbar-avatar {
@@ -92,6 +141,7 @@ html, body, #root {
   }
 }
 
+/* Sider */
 .sider-button {
   margin: 10px;
   color: #001529;
@@ -100,14 +150,12 @@ html, body, #root {
 
 .bottom-menu-items {
   width: 100%;
- 
 }
 
 .social-media-header {
   margin-top: 10px;
   font-size: 16px;
   font-weight: bold;
-  color: #001529;
   text-align: center;
 }
 
@@ -120,10 +168,9 @@ html, body, #root {
 
 .social-media-icons .anticon {
   font-size: 20px;
-  color: #001529;
 }
 
-/* CarouselCards*/
+/* Carousel */
 .carousel .slick-prev, .carousel .slick-next {
   color: #001529;
   font-size: 24px;
@@ -148,26 +195,17 @@ html, body, #root {
   margin: 0;
 }
 
+/* App Layout */
+.app-layout {
+  transition: background 0.3s ease;
+}
 
-/* THEME */
-.app-layout.light {
+.app-layout.classic {
   background: #f0f2f5;
 }
 
-.app-layout.dark {
-  background: #001529;
-}
-
-.navbar.light {
-  background: linear-gradient(135deg, #512DA8 0%, #C2185B 100%);
-}
-
-.navbar.dark {
-  background: #001529;
-}
-
-.navbar .menu-item, .navbar .drawer-item, .navbar-avatar {
-  color: #fff;
+.app-layout.futuristic {
+  background: #0a0a0f;
 }
 
 .App {
@@ -179,27 +217,6 @@ html, body, #root {
   pointer-events: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
@@ -209,8 +226,23 @@ html, body, #root {
   }
 }
 
-::-webkit-scrollbar {
-  display: none;
+/* Futuristic Dropdown Styles */
+.futuristic-dropdown .ant-dropdown-menu {
+  background: #1a1a24 !important;
+  border: 1px solid #2a2a3a !important;
+  border-radius: 12px !important;
+  padding: 8px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+.futuristic-dropdown .ant-dropdown-menu-item {
+  color: #f8fafc !important;
+  border-radius: 8px !important;
+  margin: 4px 0 !important;
+}
+
+.futuristic-dropdown .ant-dropdown-menu-item:hover {
+  background: rgba(99, 102, 241, 0.2) !important;
 }
 
 /* shadcn */
@@ -312,4 +344,83 @@ html, body, #root {
   .modal-content-flex {
     flex-direction: column;
   }
+}
+
+/* Futuristic Theme Enhancements */
+[data-theme="futuristic"] .ant-btn-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border: none;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="futuristic"] .ant-btn-primary:hover {
+  background: linear-gradient(135deg, #7c7ff2 0%, #9d7bf8 100%);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+}
+
+[data-theme="futuristic"] .ant-card {
+  background: #1a1a24;
+  border: 1px solid #2a2a3a;
+  border-radius: 12px;
+}
+
+[data-theme="futuristic"] .ant-card-head {
+  background: #12121a;
+  border-bottom: 1px solid #2a2a3a;
+  border-radius: 12px 12px 0 0;
+}
+
+[data-theme="futuristic"] .ant-card-head-title {
+  color: #f8fafc;
+}
+
+[data-theme="futuristic"] .ant-card-body {
+  color: #f8fafc;
+}
+
+/* Loading States */
+.loading-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Hover Effects for Cards */
+[data-theme="futuristic"] .hover-glow:hover {
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+  border-color: #6366f1;
+}
+
+/* Gradient Border Effect */
+[data-theme="futuristic"] .gradient-border {
+  position: relative;
+  background: #1a1a24;
+  border-radius: 12px;
+}
+
+[data-theme="futuristic"] .gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+[data-theme="futuristic"] .gradient-border:hover::before {
+  opacity: 1;
+}
+
+/* Smooth Transitions */
+.smooth-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
