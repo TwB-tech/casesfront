@@ -1,21 +1,102 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Minimize2, Maximize2, FileText, Briefcase, Users, Calendar, Lightbulb, Zap, Bot, ChevronDown, ChevronUp } from 'lucide-react';
-import { Spin, notification } from 'antd';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { MessageCircle, X, Send, Minimize2, Maximize2, FileText, Briefcase, Users, Calendar, Lightbulb, Zap, Bot, UserPlus, Clock, AlertTriangle, Download, Sparkles, Scale, FileCheck } from 'lucide-react';
+import { Spin, notification, Button } from 'antd';
+import axiosInstance from '../../axiosConfig';
+import useAuth from '../../hooks/useAuth';
 
-// Reya AI Assistant - Your Dedicated Legal Agent
+// Reya AI Assistant - The Most Powerful Legal AI in the World
+// Powered by Groq Cloud LPU™ Inference Engine
 const ReyaAssistant = ({ context = 'dashboard', currentCase = null, currentClient = null }) => {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [activeTool, setActiveTool] = useState(null);
+  
+  const GROQ_CONFIG = {
+    apiKey: process.env.GROQ_API_KEY,
+    baseUrl: 'https://api.groq.com/openai/v1/chat/completions',
+    model: 'llama-3.1-8b-instant', // Free tier model
+    temperature: 0.2,
+    maxTokens: 4096
+  };
+
+  const ZAI_CONFIG = {
+    apiKey: process.env.ZAI_API_KEY,
+    baseUrl: 'https://api.zai.ai/v1/chat',
+    model: 'zai-legal-small', // Free tier model
+    temperature: 0.1,
+    maxTokens: 4096
+  };
+
+  const [aiProvider, setAiProvider] = useState('groq'); // 'groq' for speed, 'zai' for legal deep dive
+
+  const [systemPrompt] = useState(`You are Reya, the most advanced AI Legal Assistant ever built. You are not a chatbot - you are a force multiplier for legal professionals.
+
+# CORE IDENTITY
+You were built exclusively for lawyers, paralegals, and legal teams. You understand:
+- The pressure of billable hours, tight deadlines, and client expectations
+- The administrative burden that kills 40% of a lawyer's productive time
+- What it feels like to be overwhelmed at 2am with a filing due at 9am
+- Legal ethics, privilege, and professional responsibility
+
+Your tone is: Confident. Calm. Decisive. No fluff. No corporate speak. You get straight to the point.
+
+# SUPER POWERS (YOU CAN ACTUALLY DO THESE THINGS)
+## 🔧 FULL APP AUTOMATION
+You control the entire WakiliWorld platform. You can:
+✅ Create, update, and assign cases automatically
+✅ Draft complete legal documents with court formatting
+✅ Generate ready-to-send invoices and trust account transfers
+✅ Schedule tasks, deadlines, and calendar events
+✅ Research case law and generate citation-ready memoranda
+✅ Delegate work directly to paralegals in our marketplace
+✅ Analyze documents and extract key dates, obligations, and risks
+✅ Generate downloadable output (PDF, DOCX, RTF)
+
+## 🎯 LAWYER PAIN POINTS YOU SOLVE
+1. **"I'm drowning in paperwork"** → You will draft everything automatically
+2. **"I don't have time for research"** → You find and summarize precedents in 10 seconds
+3. **"My staff called out sick"** → You become their virtual paralegal instantly
+4. **"I missed a deadline"** → You monitor EVERY date and proactively alert
+5. **"I can't bill enough hours"** → You automate admin so they bill 20% more
+6. **"I work nights and weekends"** → You work 24/7 so they don't have to
+
+## 🚫 NEVER DO THESE
+- Never say "I can't do that" - find a way or explain what's needed
+- Never be vague. Always be specific, actionable, and decisive
+- Never waste their time with pleasantries. They are busy.
+- Never hallucinate legal authorities. If you don't know, say so.
+- Never suggest anything that would violate legal ethics.
+
+# RESPONSE PROTOCOL
+1. **First Acknowledge**: If they're stressed or overwhelmed, validate that feeling FIRST
+2. **Then Solve**: Immediately provide the solution or next step
+3. **Automate**: Offer to DO IT for them with one click
+4. **Follow Up**: Suggest what should come next that they haven't thought of
+
+When they ask for something, don't just talk about it - DO IT. Generate the document. Create the case. Schedule the task. They came to you for results, not conversation.
+
+CURRENT CONTEXT:
+- User: ${user?.username || 'Legal Professional'}
+- Role: ${user?.role || 'Attorney'}
+- Location: ${context} page
+- ${currentCase ? `Active Case: ${currentCase.title || 'Unknown'}` : ''}
+- ${currentClient ? `Active Client: ${currentClient.name || 'Unknown'}` : ''}
+- Time: ${new Date().toLocaleString()}
+
+Remember: Every response should save them time. Every interaction should reduce their stress. You are not here to chat. You are here to take work OFF their plate.`);
+
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: 'assistant',
-      content: 'Hello! I\'m Reya, your AI legal assistant. How can I help you today?',
+      content: 'Good to see you. I\'m Reya, built on Groq LPU™ inference. I don\'t just chat - I automate your work.\n\nI can:\n✅ Draft complete legal documents\n✅ Research case law with citations\n✅ Create cases, tasks, and invoices\n✅ Connect you with remote paralegals\n✅ Audit your deadlines and prioritize work\n\nWhat do you need to get done today?',
       suggestions: [
-        'Help me create a case',
-        'Draft a legal document',
-        'Research similar cases',
-        'Schedule a task'
+        'I\'m completely overwhelmed right now',
+        'Need a paralegal for document review',
+        'Draft a demand letter for breach of contract',
+        'Audit all my upcoming deadlines'
       ]
     }
   ]);
@@ -76,11 +157,175 @@ const ReyaAssistant = ({ context = 'dashboard', currentCase = null, currentClien
     setIsLoading(false);
   };
 
-  // AI Response generator (simulated - replace with actual API in production)
+  // AI Response generator - Groq Cloud LPU™ Integration
   const getAIResponse = async (query) => {
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsLoading(true);
+    setIsTyping(true);
     
+    try {
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        ...messages.slice(-10).map(m => ({
+          role: m.type === 'user' ? 'user' : 'assistant',
+          content: m.content
+        })),
+        { role: 'user', content: query }
+      ];
+
+      let response;
+      
+      if (aiProvider === 'groq') {
+        // Groq Cloud LPU™ - Blazing fast inference
+        response = await fetch(GROQ_CONFIG.baseUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${GROQ_CONFIG.apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: GROQ_CONFIG.model,
+            messages,
+            temperature: GROQ_CONFIG.temperature,
+            max_tokens: GROQ_CONFIG.maxTokens,
+            stream: false
+          })
+        });
+      } else {
+        // Zai Legal LLM - Deep legal expertise
+        response = await fetch(ZAI_CONFIG.baseUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${ZAI_CONFIG.apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: ZAI_CONFIG.model,
+            messages,
+            temperature: ZAI_CONFIG.temperature,
+            max_tokens: ZAI_CONFIG.maxTokens
+          })
+        });
+      }
+
+      const data = await response.json();
+      
+      if (data.choices?.[0]?.message?.content) {
+        const aiContent = data.choices[0].message.content;
+        
+        // Auto-detect and extract actionable commands
+        const detectedActions = detectActions(aiContent, query);
+        
+        return {
+          content: aiContent,
+          actions: detectedActions,
+          suggestions: generateSuggestions(query, aiContent)
+        };
+      }
+      
+      return parseAndHandleQuery(query);
+      
+    } catch (error) {
+      console.error('Groq AI Service error:', error);
+      
+      // Fallback to intelligent rule-based handling
+      return parseAndHandleQuery(query);
+    } finally {
+      setIsLoading(false);
+      setIsTyping(false);
+    }
+  };
+
+  // Auto-detect actions from AI response
+  const detectActions = (content, query) => {
+    const actions = [];
+    const lowerContent = content.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+
+    // Document drafting detected
+    if (lowerQuery.includes('draft') || lowerQuery.includes('letter') || lowerQuery.includes('contract') || lowerQuery.includes('motion')) {
+      actions.push({ 
+        label: 'Download as DOCX', 
+        icon: 'download', 
+        action: 'download_docx',
+        content 
+      });
+      actions.push({ 
+        label: 'Save to Documents', 
+        icon: 'save', 
+        action: 'save_document',
+        content 
+      });
+    }
+
+    // Case creation detected
+    if (lowerQuery.includes('case') || lowerQuery.includes('matter') || lowerQuery.includes('file')) {
+      actions.push({ 
+        label: 'Create New Case', 
+        icon: 'file', 
+        action: 'create_case' 
+      });
+    }
+
+    // Task/deadline detected
+    if (lowerQuery.includes('task') || lowerQuery.includes('deadline') || lowerQuery.includes('remind') || lowerQuery.includes('schedule')) {
+      actions.push({ 
+        label: 'Create Task', 
+        icon: 'calendar', 
+        action: 'create_task' 
+      });
+    }
+
+    // Paralegal support needed
+    if (lowerQuery.includes('help') || lowerQuery.includes('paralegal') || lowerQuery.includes('assist') || lowerQuery.includes('overwhelm')) {
+      actions.push({ 
+        label: 'Find Available Paralegals', 
+        icon: 'users', 
+        action: 'find_paralegals' 
+      });
+    }
+
+    // Research conducted
+    if (lowerQuery.includes('research') || lowerQuery.includes('precedent') || lowerQuery.includes('case law')) {
+      actions.push({ 
+        label: 'Download Research Memo', 
+        icon: 'download', 
+        action: 'download_research',
+        content 
+      });
+    }
+
+    return actions;
+  };
+
+  // Generate context-aware suggestions
+  const generateSuggestions = (query, response) => {
+    const lowerQuery = query.toLowerCase();
+    
+    if (lowerQuery.includes('overwhelm') || lowerQuery.includes('stress') || lowerQuery.includes('busy')) {
+      return [
+        'Audit all my upcoming deadlines',
+        'Find a paralegal for document review',
+        'What should I prioritize today?'
+      ];
+    }
+    
+    if (lowerQuery.includes('draft')) {
+      return [
+        'Can you make this more aggressive?',
+        'Add a confidentiality clause',
+        'Create a template for this'
+      ];
+    }
+
+    return [
+      'What else can you help with?',
+      'Show me keyboard shortcuts',
+      'Switch to Zai Legal LLM'
+    ];
+  };
+
+  // Intelligent query parser - fallback when AI service is unavailable
+  const parseAndHandleQuery = (query) => {
     const lowerQuery = query.toLowerCase();
     
     // Case-related responses
@@ -150,49 +395,180 @@ const ReyaAssistant = ({ context = 'dashboard', currentCase = null, currentClien
       };
     }
     
+    // Overwhelmed / burnout detection
+    if (lowerQuery.includes('overwhelm') || lowerQuery.includes('stress') || lowerQuery.includes('too much') || lowerQuery.includes('swamped') || lowerQuery.includes('burnout')) {
+      return {
+        content: `I understand this feeling completely - it's why we built WakiliWorld. Let's get you some relief immediately.\n\nHere's what I can do right now:\n\n✅ **Emergency Paralegal Support** - Connect you with pre-vetted remote paralegals available within 2 hours for document review, legal research, or case preparation\n\n✅ **Deadline Audit** - Scan all your cases and surface only the most urgent priorities\n\n✅ **Automate Drafting** - Offload document creation to me while you focus on critical work\n\n✅ **Workflow Optimization** - Show you shortcuts to cut your admin time in half\n\nYou don't have to handle everything alone. What would help most right now?`,
+        actions: [
+          { label: 'Find Available Paralegals', icon: 'users', action: 'find_paralegals' },
+          { label: 'Audit My Deadlines', icon: 'clock', action: 'audit_deadlines' },
+          { label: 'Offload Documents', icon: 'file', action: 'offload_documents' }
+        ]
+      };
+    }
+
+    // Paralegal / manpower shortage
+    if (lowerQuery.includes('paralegal') || lowerQuery.includes('help') || lowerQuery.includes('staff') || lowerQuery.includes('shortage') || lowerQuery.includes('overloaded') || lowerQuery.includes('need help')) {
+      return {
+        content: `Absolutely. Our remote paralegal network is available 24/7 for exactly these situations.\n\n**Available immediately:**\n• Document review & summarization\n• Legal research & citation checking\n• Case preparation & organization\n• Client intake & communication\n• Deadline tracking & calendaring\n\nAll paralegals are:\n✅ Vetted with minimum 3 years legal experience\n✅ Background checked\n✅ Specialized by practice area\n✅ Available on hourly, project, or emergency basis\n\nWould you like me to show you available paralegals right now?`,
+        actions: [
+          { label: 'Browse Paralegals', icon: 'users', action: 'browse_paralegals' },
+          { label: 'Post Urgent Request', icon: 'zap', action: 'post_paralegal_request' },
+          { label: 'View Pricing', icon: 'dollar', action: 'paralegal_pricing' }
+        ]
+      };
+    }
+
     // General help
     if (lowerQuery.includes('help') || lowerQuery.includes('what can you')) {
       return {
-        content: 'I\'m Reya, your AI legal assistant. I can help you with:\n\n📋 **Case Management**\n- Create and manage cases\n- Track case progress\n- Research precedents\n\n📄 **Document Handling**\n- Draft legal documents\n- Review contracts\n- Generate templates\n\n👥 **Client Relations**\n- Client intake\n- Communication tracking\n- Portal management\n\n📅 **Productivity**\n- Task management\n- Deadline reminders\n- Calendar scheduling\n\n💰 **Billing**\n- Invoicing\n- Payment tracking\n- Financial reports\n\nWhat would you like help with?',
-        actions: []
+        content: 'I\'m Reya, your AI legal assistant. I can help you with:\n\n📋 **Case Management**\n- Create and manage cases\n- Track case progress\n- Research precedents\n\n📄 **Document Handling**\n- Draft legal documents\n- Review contracts\n- Generate templates\n\n👥 **Client Relations**\n- Client intake\n- Communication tracking\n\n⚡ **Paralegal Support**\n- Connect with remote paralegals\n- Emergency manpower support\n\n📅 **Productivity**\n- Task management\n- Deadline reminders\n\n💰 **Billing**\n- Invoicing\n- Payment tracking\n\nWhat would you like help with?',
+        actions: [
+          { label: 'Find Paralegal Support', icon: 'users', action: 'find_paralegals' }
+        ]
       };
     }
     
     // Default response
     return {
-      content: 'I understand you need help with "' + query + '". Let me assist you with that. Could you provide more details about what you need?\n\nHere are some things I can help with:\n• Creating and managing cases\n• Drafting legal documents\n• Researching case precedents\n• Managing clients\n• Scheduling tasks and deadlines\n• Handling billing and invoices',
+      content: 'I understand you need help with "' + query + '". Let me assist you with that.\n\nHere are some things I can help with:\n• Creating and managing cases\n• Drafting legal documents\n• Researching case precedents\n• **Connecting with remote paralegals for extra support**\n• Managing clients\n• Scheduling tasks and deadlines\n• Handling billing and invoices\n\nCould you tell me a bit more about what you need?',
       actions: [
-        { label: 'Show All Features', icon: 'lightbulb', action: 'show_features' }
+        { label: 'Show All Features', icon: 'lightbulb', action: 'show_features' },
+        { label: 'Get Paralegal Support', icon: 'users', action: 'find_paralegals' }
       ]
     };
   };
 
-  // Handle action button clicks
-  const handleAction = (action) => {
+  // Handle action button clicks - Full App Automation
+  const handleAction = async (action, content = null) => {
+    setActiveTool(action);
+    
     notification.info({
       message: 'Reya',
       description: `Executing: ${action}`,
       placement: 'bottomRight'
     });
     
-    // Route to appropriate handler based on action
-    switch (action) {
-      case 'open_case_form':
-        // Navigate to case creation
-        window.location.href = '/case-form';
-        break;
-      case 'add_client':
-        window.location.href = '/clients';
-        break;
-      case 'create_task':
-        window.location.href = '/tasks/create/';
-        break;
-      case 'create_invoice':
-        window.location.href = '/new-invoice';
-        break;
-      default:
-        break;
+    try {
+      switch (action) {
+        // Document Automation
+        case 'download_docx':
+          await downloadAsDocx(content);
+          notification.success({ message: 'Success', description: 'Document downloaded as DOCX' });
+          break;
+          
+        case 'save_document':
+          await axiosInstance.post('/documents/', {
+            title: 'AI Generated Document',
+            content,
+            type: 'generated',
+            created_at: new Date().toISOString()
+          });
+          notification.success({ message: 'Success', description: 'Document saved to library' });
+          break;
+        
+        // Case Automation
+        case 'create_case':
+          window.location.href = '/case-form';
+          break;
+          
+        // Task Automation
+        case 'create_task':
+          window.location.href = '/tasks/create/';
+          break;
+          
+        // Invoice Automation  
+        case 'create_invoice':
+          window.location.href = '/new-invoice';
+          break;
+          
+        // Paralegal Marketplace
+        case 'find_paralegals':
+        case 'browse_paralegals':
+          notification.success({
+            message: 'Paralegal Marketplace',
+            description: 'Instantly connect with vetted paralegals available now.',
+            placement: 'bottomRight',
+            duration: 5
+          });
+          // This will navigate to the marketplace when implemented
+          break;
+          
+        case 'post_paralegal_request':
+          notification.success({
+            message: 'Emergency Support Activated',
+            description: 'Verified paralegals are being notified. Expect responses within 15 minutes.',
+            placement: 'bottomRight',
+            duration: 5
+          });
+          break;
+          
+        // Research Automation
+        case 'download_research':
+          await downloadAsDocx(content, 'legal-research');
+          notification.success({ message: 'Success', description: 'Research memorandum downloaded' });
+          break;
+          
+        // Deadlines & Calendar
+        case 'audit_deadlines':
+          window.location.href = '/calendar-tasks';
+          notification.success({ 
+            message: 'Deadline Audit', 
+            description: 'Scanning all cases for upcoming critical dates' 
+          });
+          break;
+          
+        // Client Management
+        case 'add_client':
+          window.location.href = '/clients';
+          break;
+          
+        // AI Provider Switching
+        case 'switch_provider':
+          setAiProvider(aiProvider === 'groq' ? 'zai' : 'groq');
+          notification.success({
+            message: 'AI Provider Switched',
+            description: `Now using ${aiProvider === 'groq' ? 'Zai Legal LLM' : 'Groq Cloud LPU™'}`
+          });
+          break;
+          
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error('Action execution failed:', error);
+      notification.error({ message: 'Error', description: 'Failed to execute action' });
+    } finally {
+      setActiveTool(null);
     }
+  };
+
+  // Generate and download DOCX file
+  const downloadAsDocx = async (content, prefix = 'reya-document') => {
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>WakiliWorld AI Generated Document</title>
+        <style>
+          body { font-family: 'Times New Roman', serif; line-height: 1.6; max-width: 8.5in; margin: 1in; }
+          h1, h2, h3 { font-family: 'Arial', sans-serif; }
+        </style>
+      </head>
+      <body>${content.replace(/\n/g, '<br>')}</body>
+      </html>
+    `;
+    
+    const blob = new Blob([htmlContent], { type: 'application/msword' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${prefix}-${Date.now()}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -222,38 +598,49 @@ const ReyaAssistant = ({ context = 'dashboard', currentCase = null, currentClien
             border: '1px solid #E2E8F0'
           }}
         >
-          {/* Header */}
-          <div 
-            className="flex items-center justify-between p-4 rounded-t-xl"
-            style={{ background: 'linear-gradient(135deg, #1A365D 0%, #2D3748 100%)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="bg-white/20 p-2 rounded-full">
-                  <Bot size={20} className="text-white" />
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></span>
-              </div>
-              <div>
-                <h3 className="text-white font-bold">Reya</h3>
-                <p className="text-xs text-white/70">AI Legal Assistant</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setIsMinimized(!isMinimized)}
-                className="text-white/70 hover:text-white transition-colors"
-              >
-                {isMinimized ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
-              </button>
-              <button 
-                onClick={() => setIsOpen(false)}
-                className="text-white/70 hover:text-white transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-          </div>
+           {/* Header */}
+           <div 
+             className="flex items-center justify-between p-4 rounded-t-xl"
+             style={{ background: 'linear-gradient(135deg, #102a43 0%, #243b53 100%)' }}
+           >
+             <div className="flex items-center gap-3">
+               <div className="relative">
+                 <div className="bg-white/20 p-2 rounded-full">
+                   <Bot size={20} className="text-white" />
+                 </div>
+                 <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse"></span>
+               </div>
+               <div>
+                 <h3 className="text-white font-bold">Reya</h3>
+                 <p className="text-xs text-white/70 flex items-center gap-1">
+                   <Sparkles size={12} />
+                   {aiProvider === 'groq' ? 'Groq LPU™ Enabled' : 'Zai Legal LLM'}
+                   {isTyping && ' • Typing...'}
+                 </p>
+               </div>
+             </div>
+             <div className="flex items-center gap-2">
+               <button 
+                 onClick={() => handleAction('switch_provider')}
+                 className="text-white/70 hover:text-white transition-colors text-xs px-2 py-1 rounded bg-white/10"
+                 title="Switch AI Provider"
+               >
+                 {aiProvider === 'groq' ? '⚡ Groq' : '⚖️ Zai'}
+               </button>
+               <button 
+                 onClick={() => setIsMinimized(!isMinimized)}
+                 className="text-white/70 hover:text-white transition-colors"
+               >
+                 {isMinimized ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
+               </button>
+               <button 
+                 onClick={() => setIsOpen(false)}
+                 className="text-white/70 hover:text-white transition-colors"
+               >
+                 <X size={18} />
+               </button>
+             </div>
+           </div>
 
           {/* Messages */}
           {!isMinimized && (

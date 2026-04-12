@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Row, Col, Statistic, Table, Avatar, Button, Modal, Calendar, List, Skeleton, Pagination, Tag } from 'antd';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer, Label } from 'recharts';
-import { UserOutlined, CalendarOutlined } from '@ant-design/icons';
+import { UserOutlined, CalendarOutlined, FileOutlined, FilePdfOutlined, CheckSquareOutlined, DollarOutlined, UserAddOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import useAuth from '../hooks/useAuth';
 import axiosInstance from '../axiosConfig';
@@ -160,96 +160,249 @@ function Home() {
   return (
     <div style={{ padding: '20px', zIndex:1 }}>
 
-        {/* Welcome Card */}
+        {/* Welcome & Insight Card */}
         <Card style={{
-          backgroundColor: '#f0f2f5',
-          borderRadius: '12px',
-          padding: '20px',
-          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-          marginBottom: '20px',
+          background: 'linear-gradient(135deg, #102a43 0%, #243b53 100%)',
+          borderRadius: '16px',
+          padding: '24px',
+          boxShadow: '0 8px 32px rgba(16, 42, 67, 0.2)',
+          marginBottom: '24px',
+          border: 'none'
         }}>
 
-        <Row align="middle" justify="space-between">
-          <Col>
+        <Row align="middle" justify="space-between" gutter={24}>
+          <Col xs={24} md={12}>
             <div>
-              <h2 style={{ marginBottom:"10px" }}>Welcome, <span style={{textTransform:"uppercase"}}>{user && user.username}</span></h2>
-              <p style={{ color: '#888', marginBottom: '10px' }}>Role: {user && user.role}</p>
-              <p style={ {  fontWeight: 'bold'}}>Today is {moment().format('dddd, MMMM Do YYYY')}.</p>
+              <h2 style={{ marginBottom:"8px", color: 'white', fontSize: '28px', fontWeight: 600 }}>Welcome back, {user && user.username}</h2>
+              <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '8px', fontSize: '16px' }}>Role: {user && user.role}</p>
+              <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '14px' }}>
+                {moment().format('dddd, MMMM Do YYYY')} • You have <strong style={{ color: '#38c172' }}>{tasks.filter(t => !t.status).length} pending tasks</strong> today
+              </p>
             </div>
           </Col>
-          <Col>
-            <Avatar size={64} icon={<UserOutlined />} />
+          <Col xs={24} md={6}>
+            <div style={{ textAlign: 'center' }}>
+              <Avatar size={72} icon={<UserOutlined style={{ fontSize: '32px' }} />} style={{ border: '3px solid rgba(255,255,255,0.3)' }} />
+            </div>
           </Col>
-          <Col>
-            <Button icon={<CalendarOutlined />} onClick={showModal}>
-              Open Calendar
-            </Button>
+          <Col xs={24} md={6} style={{ textAlign: 'right' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <Button 
+                type="primary" 
+                size="large" 
+                icon={<CalendarOutlined />} 
+                onClick={showModal}
+                style={{ 
+                  background: 'rgba(255,255,255,0.15)', 
+                  borderColor: 'rgba(255,255,255,0.3)', 
+                  color: 'white',
+                  borderRadius: '10px'
+                }}
+              >
+                View Calendar
+              </Button>
+              <Button 
+                type="primary" 
+                size="large"
+                style={{ 
+                  background: '#38c172', 
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: 500
+                }}
+              >
+                Need Paralegal Support?
+              </Button>
+            </div>
           </Col>
         </Row>
       </Card>
 
-      <Row gutter={[16, 16]} justify="start">
-        {/* First Two Cards in the First Column */}
-        <Col xs={24} sm={12} md={6}>
-          <Row gutter={[16, 16]}>
-            <Col span={24}>
-            <Card style={{borderRadius: "20px"}}  hoverable>
+      {/* Quick Action Bar */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Col xs={12} sm={6} md={4}>
+          <Card 
+            hoverable 
+            style={{ 
+              borderRadius: '12px', 
+              textAlign: 'center',
+              cursor: 'pointer',
+              border: '1px solid #e2e8f0'
+            }}
+            onClick={() => window.location.href = '/case-form'}
+          >
+            <FileOutlined style={{ fontSize: '24px', color: '#1890ff', marginBottom: '8px' }} />
+            <p style={{ margin: 0, fontWeight: 500 }}>New Case</p>
+          </Card>
+        </Col>
+        <Col xs={12} sm={6} md={4}>
+          <Card 
+            hoverable 
+            style={{ 
+              borderRadius: '12px', 
+              textAlign: 'center',
+              cursor: 'pointer',
+              border: '1px solid #e2e8f0'
+            }}
+            onClick={() => window.location.href = '/new-document'}
+          >
+            <FilePdfOutlined style={{ fontSize: '24px', color: '#1890ff', marginBottom: '8px' }} />
+            <p style={{ margin: 0, fontWeight: 500 }}>New Document</p>
+          </Card>
+        </Col>
+        <Col xs={12} sm={6} md={4}>
+          <Card 
+            hoverable 
+            style={{ 
+              borderRadius: '12px', 
+              textAlign: 'center',
+              cursor: 'pointer',
+              border: '1px solid #e2e8f0'
+            }}
+            onClick={() => window.location.href = '/tasks/create/'}
+          >
+            <CheckSquareOutlined style={{ fontSize: '24px', color: '#52c41a', marginBottom: '8px' }} />
+            <p style={{ margin: 0, fontWeight: 500 }}>Create Task</p>
+          </Card>
+        </Col>
+        <Col xs={12} sm={6} md={4}>
+          <Card 
+            hoverable 
+            style={{ 
+              borderRadius: '12px', 
+              textAlign: 'center',
+              cursor: 'pointer',
+              border: '1px solid #e2e8f0'
+            }}
+            onClick={() => window.location.href = '/clients'}
+          >
+            <UserOutlined style={{ fontSize: '24px', color: '#722ed1', marginBottom: '8px' }} />
+            <p style={{ margin: 0, fontWeight: 500 }}>New Client</p>
+          </Card>
+        </Col>
+        <Col xs={12} sm={6} md={4}>
+          <Card 
+            hoverable 
+            style={{ 
+              borderRadius: '12px', 
+              textAlign: 'center',
+              cursor: 'pointer',
+              border: '1px solid #e2e8f0'
+            }}
+            onClick={() => window.location.href = '/new-invoice'}
+          >
+            <DollarOutlined style={{ fontSize: '24px', color: '#faad14', marginBottom: '8px' }} />
+            <p style={{ margin: 0, fontWeight: 500 }}>New Invoice</p>
+          </Card>
+        </Col>
+        <Col xs={12} sm={6} md={4}>
+          <Card 
+            hoverable 
+            style={{ 
+              borderRadius: '12px', 
+              textAlign: 'center',
+              cursor: 'pointer',
+              border: '2px dashed #38c172',
+              background: 'linear-gradient(135deg, #e6f4ea 0%, #f7fff9 100%)'
+            }}
+          >
+            <UserAddOutlined style={{ fontSize: '24px', color: '#38c172', marginBottom: '8px' }} />
+            <p style={{ margin: 0, fontWeight: 600, color: '#22a85a' }}>Hire Paralegal</p>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]}>
+        {/* Stats Cards - Optimized layout */}
+        <Col xs={24} sm={12} md={6} lg={3}>
+          <Card style={{ borderRadius: "16px", boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }} hoverable>
             {loadingCases ? (
               <Skeleton active />
             ) : (
               <>
-                <Statistic title="Cases" value={cases.cases_count || 0} />
-                <span style={{ color: 'green' }}>▲ 8.2% since last month</span>
+                <Statistic 
+                  title="Active Cases" 
+                  value={cases.cases_count || 0} 
+                  valueStyle={{ color: '#102a43', fontWeight: 600, fontSize: '32px' }}
+                  prefix={<FileOutlined style={{ color: '#1890ff', marginRight: '8px' }} />}
+                />
+                <div style={{ marginTop: '8px' }}>
+                  <span style={{ color: '#38c172', fontWeight: 500 }}>▲ 8.2% </span>
+                  <span style={{ color: '#627d98', fontSize: '12px' }}>since last month</span>
+                </div>
               </>
             )}
           </Card>
-            </Col>
-            <Col span={24}>
-            <Card style={{borderRadius: "20px"}}  hoverable>
+        </Col>
+         
+        <Col xs={24} sm={12} md={6} lg={3}>
+          <Card style={{ borderRadius: "16px", boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }} hoverable>
             {loadingClients ? (
               <Skeleton active />
             ) : (
               <>
-                <Statistic title="Clients" value={clients.clients_count || 0} />
-                <span style={{ color: 'green' }}>▲ 3.4% since last month</span>
+                <Statistic 
+                  title="Total Clients" 
+                  value={clients.clients_count || 0} 
+                  valueStyle={{ color: '#102a43', fontWeight: 600, fontSize: '32px' }}
+                  prefix={<UserOutlined style={{ color: '#722ed1', marginRight: '8px' }} />}
+                />
+                <div style={{ marginTop: '8px' }}>
+                  <span style={{ color: '#38c172', fontWeight: 500 }}>▲ 3.4% </span>
+                  <span style={{ color: '#627d98', fontSize: '12px' }}>since last month</span>
+                </div>
               </>
             )}
           </Card>
-            </Col>
-          </Row>
-        </Col>
-         
-        {/* Second Two Cards in the Second Column */}
-        <Col xs={24} sm={12} md={6}>
-          <Row gutter={[16, 16]}>
-            <Col span={24}>
-              <Card style={{borderRadius: "20px"}} hoverable>
-                <Statistic title="Month total" value={25410} prefix="$" />
-                <span style={{ color: 'red' }}>▼ 0.4% since last month</span>
-              </Card>
-            </Col>
-            <Col span={24}>
-              <Card style={{borderRadius: "20px"}} hoverable>
-                <Statistic title="Revenue" value={1352} prefix="$" />
-                <span style={{ color: 'red' }}>▼ 1.2% since last month</span>
-              </Card>
-            </Col>
-          </Row>
         </Col>
 
-        {/* Pie Chart for Users in the Third Column, spans the height of two cards */}
-        <Col xs={24} sm={12} md={6}>
-          <Card style={{ height: '100%', textAlign: 'center', borderRadius: "20px" }} hoverable>
-            <h1 style={{ textAlign: 'center' }}>My Clients</h1>
+        <Col xs={24} sm={12} md={6} lg={3}>
+          <Card style={{ borderRadius: "16px", boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }} hoverable>
+            <Statistic 
+              title="Monthly Revenue" 
+              value={25410} 
+              prefix="$" 
+              valueStyle={{ color: '#102a43', fontWeight: 600, fontSize: '32px' }}
+            />
+            <div style={{ marginTop: '8px' }}>
+              <span style={{ color: '#f5222d', fontWeight: 500 }}>▼ 0.4% </span>
+              <span style={{ color: '#627d98', fontSize: '12px' }}>since last month</span>
+            </div>
+          </Card>
+        </Col>
+
+        <Col xs={24} sm={12} md={6} lg={3}>
+          <Card style={{ borderRadius: "16px", boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }} hoverable>
+            <Statistic 
+              title="Pending Revenue" 
+              value={1352} 
+              prefix="$" 
+              valueStyle={{ color: '#faad14', fontWeight: 600, fontSize: '32px' }}
+            />
+            <div style={{ marginTop: '8px' }}>
+              <span style={{ color: '#faad14', fontWeight: 500 }}>⚡ Action Required</span>
+              <span style={{ color: '#627d98', fontSize: '12px' }}> - {Math.round((1352/25410)*100)}% outstanding</span>
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
+        {/* Analytics Section */}
+        <Col xs={24} md={8}>
+          <Card style={{ borderRadius: "16px", height: '100%' }} hoverable>
+            <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, color: '#102a43' }}>Client Distribution</h3>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
                   data={dataPie1}
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
+                  outerRadius={75}
+                  innerRadius={40}
                   fill="#8884d8"
                   dataKey="value"
+                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                 >
                   {dataPie1.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS1[index % COLORS1.length]} />
@@ -257,27 +410,28 @@ function Home() {
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
-            <div style={{ textAlign: 'center' }}>
-              <span style={{ color: COLORS1[0] }}>● 62% New</span> &nbsp;
-              <span style={{ color: COLORS1[1] }}>● 26% Returning</span> &nbsp;
-              <span style={{ color: COLORS1[2] }}>● 12% Inactive</span>
+            <div style={{ textAlign: 'center', marginTop: '12px' }}>
+              <span style={{ color: COLORS1[0], fontWeight: 500 }}>● New</span> &nbsp;
+              <span style={{ color: COLORS1[1], fontWeight: 500 }}>● Returning</span> &nbsp;
+              <span style={{ color: COLORS1[2], fontWeight: 500 }}>● Inactive</span>
             </div>
           </Card>
         </Col>
 
-        {/* Pie Chart for Subscriptions in the Fourth Column, spans the height of two cards */}
-        <Col xs={24} sm={12} md={6}>
-          <Card style={{ height: '100%', borderRadius:"20px" }} hoverable>
-            <h1 style={{ textAlign: 'center' }}>Case Bills</h1>
+        <Col xs={24} md={8}>
+          <Card style={{ borderRadius: "16px", height: '100%' }} hoverable>
+            <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, color: '#102a43' }}>Billing Status</h3>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
                   data={dataPie2}
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
+                  outerRadius={75}
+                  innerRadius={40}
                   fill="#8884d8"
                   dataKey="value"
+                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                 >
                   {dataPie2.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS2[index % COLORS2.length]} />
@@ -285,84 +439,139 @@ function Home() {
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
-            <div style={{ textAlign: 'center' }}>
-              <span style={{ color: COLORS2[0] }}>● 70% Paid</span> &nbsp;
-              <span style={{ color: COLORS2[1] }}>● 30% Trial</span>
+            <div style={{ textAlign: 'center', marginTop: '12px' }}>
+              <span style={{ color: COLORS2[0], fontWeight: 500 }}>● Paid</span> &nbsp;
+              <span style={{ color: COLORS2[1], fontWeight: 500 }}>● Outstanding</span>
+            </div>
+          </Card>
+        </Col>
+
+        <Col xs={24} md={8}>
+          <Card style={{ borderRadius: "16px", height: '100%', background: 'linear-gradient(135deg, #102a43 0%, #243b53 100%)', color: 'white' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, color: 'white' }}>Need Extra Support?</h3>
+            <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '16px' }}>
+              Access vetted remote paralegals on-demand. No recruitment fees. No long-term commitments.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <Button 
+                type="primary" 
+                style={{ 
+                  background: '#38c172', 
+                  border: 'none', 
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  width: '100%'
+                }}
+              >
+                Browse Available Paralegals
+              </Button>
+              <Button 
+                style={{ 
+                  background: 'rgba(255,255,255,0.1)', 
+                  borderColor: 'rgba(255,255,255,0.3)', 
+                  color: 'white',
+                  borderRadius: '8px',
+                  width: '100%'
+                }}
+              >
+                Post Urgent Request
+              </Button>
             </div>
           </Card>
         </Col>
       </Row>
 
 
-      <Row gutter={[16, 16]} style={{ marginTop: '20px' }}>
+      <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
         {/* Cases Dynamics Bar Chart */}
-        <Col xs={24} md={12}>
-          <Card style={{borderRadius: "20px"}} hoverable title="Cases Dynamics" extra={<span>2021</span>}>
-          <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={dataBar}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name">
-                  <Label value="Months" offset={-5} position="insideBottom" />
-                </XAxis>
-                <YAxis>
-                  <Label value="Cases" angle={-90} position="insideLeft" />
-                </YAxis>
-                <Tooltip />
+        <Col xs={24} lg={16}>
+          <Card style={{ borderRadius: "16px" }} hoverable>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontWeight: 600, color: '#102a43' }}>Case Volume Trend</h3>
+              <Tag color="blue">2024</Tag>
+            </div>
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={dataBar} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                <YAxis axisLine={false} tickLine={false} />
+                <Tooltip 
+                  contentStyle={{ 
+                    borderRadius: '8px', 
+                    border: 'none', 
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)' 
+                  }} 
+                />
                 <Bar
                   dataKey="cases"
-                  fill="#8884d8"
-                  radius={[10, 10, 0, 0]} // Add top border radius here
-                  barSize={10} // Make the bars thin as per the image example
+                  fill="linear-gradient(180deg, #1890ff 0%, #096dd9 100%)"
+                  radius={[6, 6, 0, 0]}
+                  barSize={24}
                 />
               </BarChart>
             </ResponsiveContainer>
           </Card>
         </Col>
 
-        {/* Paid Invoices and Funds Received Cards */}
-        <Col xs={24} md={12}>
+        {/* Key Metrics & Tasks */}
+        <Col xs={24} lg={8}>
           <Row gutter={[16, 16]}>
-            <Col span={12}>
-              <Card style={{borderRadius: "20px"}} hoverable>
-                <Statistic title="Paid Invoices" value={30256.23} prefix="$" />
-                <span style={{ color: 'green' }}>▲ 15%</span>
-              </Card>
-            </Col>
-            <Col span={12}>
-              <Card style={{borderRadius: "20px"}} hoverable>
-                <Statistic title="Funds Received" value={150256.23} prefix="$" />
-                <span style={{ color: 'green' }}>▲ 59%</span>
-              </Card>
-            </Col>
-          </Row>
-
-          {/* Task Table below the Cards */}
-          <Row gutter={[16, 16]} style={{ marginTop: '16px' }}>
             <Col span={24}>
-              <Card style={{ borderRadius: "20px" , maxHeight:"350px"}}>
-              {loadingTasks ? (
-              <Skeleton active paragraph={{ rows: 3 }} />
-            ) : (
-              <>
-                <h2 style={{ textAlign: 'center' }}>Tasks</h2>
-                <Table dataSource={tasks} columns={columns} pagination={false}  style={{overflowY:"auto"}}  scroll={{ x: 'max-content' }}/>
-              </>
-            )}
-             <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  marginTop: '10px',
-                  position: 'relative',
-                }}
-              >
-                <Pagination
-                  current={currentPage}
-                  pageSize={3}
-                  total={tasks.length}
-                  onChange={(page) => setCurrentPage(page)}
-                />
-              </div>
+              <Card style={{ borderRadius: "16px" }} hoverable>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Statistic 
+                      title="Paid Invoices" 
+                      value={30256.23} 
+                      prefix="$"
+                      valueStyle={{ color: '#38c172', fontWeight: 600, fontSize: '20px' }}
+                    />
+                    <span style={{ color: '#38c172', fontWeight: 500 }}>▲ 15%</span>
+                  </Col>
+                  <Col span={12}>
+                    <Statistic 
+                      title="Total Revenue" 
+                      value={150256.23} 
+                      prefix="$"
+                      valueStyle={{ color: '#102a43', fontWeight: 600, fontSize: '20px' }}
+                    />
+                    <span style={{ color: '#38c172', fontWeight: 500 }}>▲ 59%</span>
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
+            
+            <Col span={24}>
+              <Card style={{ borderRadius: "16px" }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ margin: 0, fontWeight: 600, color: '#102a43' }}>Priority Tasks</h3>
+                  <Tag color={tasks.filter(t => !t.status).length > 5 ? 'red' : 'green'}>
+                    {tasks.filter(t => !t.status).length} pending
+                  </Tag>
+                </div>
+                {loadingTasks ? (
+                  <Skeleton active paragraph={{ rows: 3 }} />
+                ) : (
+                  <>
+                    <Table 
+                      dataSource={tasks.slice((currentPage - 1) * 3, currentPage * 3)} 
+                      columns={columns} 
+                      pagination={false}  
+                      size="small"
+                      showHeader={false}
+                      bordered={false}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+                      <Pagination
+                        current={currentPage}
+                        pageSize={3}
+                        total={tasks.length}
+                        onChange={(page) => setCurrentPage(page)}
+                        size="small"
+                      />
+                    </div>
+                  </>
+                )}
               </Card>
             </Col>
           </Row>

@@ -44,16 +44,15 @@ const Process = () => {
         />
       </div>
 
-      {/* Content Section */}
-      <div className="py-12 px-6 lg:py-32 text-white flex flex-col items-center text-center z-20">
-        <h2 className="opacity-50 mb-2 text-sm lg:text-base">HOW IT WORKS</h2>
-        <h1 className="text-2xl sm:text-3xl lg:text-5xl font-medium mb-4">
-          Our Process
-        </h1>
-        <p className="leading-normal sm:leading-relaxed mb-6 max-w-xl">
-          Your All-in-One Legal Management Solution that manages Cases, Clients, and Documents
-          <br /> with Ease
-        </p>
+       {/* Content Section */}
+       <div className="py-12 px-6 lg:py-32 text-white flex flex-col items-center text-center z-20">
+         <h2 className="opacity-70 mb-2 text-sm lg:text-base font-semibold tracking-wider">HOW WE ELIMINATE YOUR BOTTLENECKS</h2>
+         <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-6">
+           Legal Support When You Need It Most
+         </h1>
+         <p className="leading-normal sm:leading-relaxed mb-8 max-w-2xl text-lg opacity-90">
+           Whether you're drowning in paperwork during trial season, facing unexpected staff shortages, or simply need to scale without hiring full-time employees — WakiliWorld adapts to your needs in real-time.
+         </p>
 
         {/* Process Cards Section */}
         <div className="relative z-20 w-full px-4">

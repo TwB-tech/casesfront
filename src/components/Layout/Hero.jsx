@@ -10,12 +10,38 @@ const Hero = () => {
       <div className="max-w-screen-xl mx-auto flex flex-col-reverse md:flex-row items-center gap-8 md:gap-16">
         {/* Text Section */}
         <div className="flex-1 text-center md:text-left space-y-4 md:space-y-6">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 leading-snug">
-            Manage Cases, Clients, and Documents with Ease
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary-900 leading-snug">
+            Overwhelmed by paperwork, tight deadlines, and resource shortages?
           </h2>
-          <p className="text-base sm:text-lg text-gray-600">
-            Simplify Case Handling and Boost Productivity with your Legal Practice using Cutting-Edge Technology.
+          <p className="text-base sm:text-lg text-neutral-600 leading-relaxed">
+            You shouldn't have to choose between growing your practice and maintaining work-life balance. WakiliWorld eliminates the bottlenecks that hold legal professionals back:
           </p>
+          <div className="space-y-3 text-left">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-success-100 flex items-center justify-center flex-shrink-0 mt-1">
+                <svg className="w-4 h-4 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-neutral-700"><strong className="text-primary-800">End burnout cycles</strong> - Get instant access to vetted remote paralegals when caseloads spike</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-success-100 flex items-center justify-center flex-shrink-0 mt-1">
+                <svg className="w-4 h-4 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-neutral-700"><strong className="text-primary-800">Cut admin time by 60%</strong> - AI-powered case management that handles documentation automatically</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-success-100 flex items-center justify-center flex-shrink-0 mt-1">
+                <svg className="w-4 h-4 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-neutral-700"><strong className="text-primary-800">Never miss a deadline</strong> - Your AI assistant Reya monitors cases 24/7 and proactively alerts you</p>
+            </div>
+          </div>
           {user && user ? (<div> <a
               href="/home"
               className="w-full sm:w-auto flex items-center justify-center gap-2 py-3 px-6 text-gray-700 hover:text-gray-500 font-medium border rounded-lg transition-all active:bg-gray-100"
@@ -34,18 +60,18 @@ const Hero = () => {
                 />
               </svg>
             </a></div>) : (
-          <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4 mt-6">
+           <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4 mt-8">
             <a
               href="/login"
-              className="w-full sm:w-auto py-3 px-6 text-center text-white font-medium bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 rounded-lg shadow-md transition-all"
+              className="w-full sm:w-auto py-4 px-8 text-center text-white font-semibold bg-primary-800 hover:bg-primary-700 active:bg-primary-900 rounded-xl shadow-lg transition-all transform hover:scale-105"
             >
-              Let's get started
+              Free 14-Day Trial - No Credit Card
             </a>
             <a
-              href="/home"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 py-3 px-6 text-gray-700 hover:text-gray-500 font-medium border rounded-lg transition-all active:bg-gray-100"
+              href="#paralegals"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 py-4 px-8 text-primary-800 hover:text-primary-700 font-semibold border-2 border-primary-200 hover:border-primary-300 rounded-xl transition-all bg-white"
             >
-              Go to Dashboard
+              Hire a Paralegal Today
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"

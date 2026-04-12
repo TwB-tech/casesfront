@@ -109,16 +109,18 @@ function App() {
       <Navbar theme={theme} toggleTheme={toggleTheme} />
         <Layout>
           {!shouldHideSidebar && <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} theme={theme} />}
-          <Layout
-            style={{
-              marginLeft: !shouldHideSidebar && (collapsed ? (isMobile ? 0 : 80) : 200),
-              marginTop: 0,
-              padding: '24px',
-              flexGrow: 1,
-              transition: 'margin-left 0.2s',
-              background: 'linear-gradient(106.5deg, rgba(255, 215, 185, 0.91) 23%, rgba(223, 159, 247, 0.8) 93%)',
-            }}
-          >
+           <Layout
+             style={{
+               marginLeft: !shouldHideSidebar && (collapsed ? (isMobile ? 0 : 80) : 200),
+               marginTop: 0,
+               padding: '24px',
+               flexGrow: 1,
+               transition: 'margin-left 0.2s',
+               background: theme === 'light' 
+                 ? 'linear-gradient(106.5deg, #f8fafc 0%, #f1f5f9 100%)' 
+                 : 'linear-gradient(106.5deg, #0f172a 0%, #1e293b 100%)',
+             }}
+           >
             <Content>
               <Suspense fallback={<div><Skeleton active avatar paragraph={{ rows: 4 }} /></div>}>
                 <Routes>
