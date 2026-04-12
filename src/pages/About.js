@@ -36,42 +36,132 @@ const carouselSettings = {
 
 const About = () => {
   return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: '40px 20px', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Hero Section */}
+      <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+        <h1 style={{ 
+          fontSize: '48px', 
+          fontWeight: 700, 
+          color: '#102a43',
+          marginBottom: '16px'
+        }}>About WakiliWorld</h1>
+        <p style={{ 
+          fontSize: '20px', 
+          color: '#486581',
+          maxWidth: '700px',
+          margin: '0 auto',
+          lineHeight: '1.6'
+        }}>
+          We build tools that give legal professionals their time back. Because the best lawyers should be practicing law, not doing paperwork.
+        </p>
+      </div>
+
       {/* Introduction Section */}
-      <Row gutter={16} style={{ marginBottom: '40px' }}>
-        <Col xs={24} sm={24} md={14}>
-          <div style={{ padding: '20px' }}>
-            <h1 style={{ fontSize: '30px', marginBottom: '20px', textAlign: 'center' }}>About Wakilihub</h1>
-            <p style={{fontSize:"32px"}}>Wakilihub is a comprehensive solution designed to help lawyers manage their caseloads efficiently. Our platform provides all the necessary tools for case management, client interaction, document handling, and more.</p>
+      <Row gutter={[32, 32]} style={{ marginBottom: '80px' }} align="middle">
+        <Col xs={24} md={12}>
+          <div>
+            <h2 style={{ 
+              fontSize: '32px', 
+              fontWeight: 600, 
+              color: '#102a43',
+              marginBottom: '24px'
+            }}>Built for the way you actually work</h2>
+            <p style={{ 
+              fontSize: '18px', 
+              color: '#486581',
+              lineHeight: '1.8',
+              marginBottom: '16px'
+            }}>
+              WakiliWorld was created by lawyers who understood a fundamental truth: the administrative burden of modern practice is killing what made us go into law in the first place.
+            </p>
+            <p style={{ 
+              fontSize: '18px', 
+              color: '#486581',
+              lineHeight: '1.8'
+            }}>
+              Our platform doesn't just organize your work—it eliminates it. With intelligent automation, on-demand paralegal support, and tools built exclusively for legal professionals.
+            </p>
           </div>
         </Col>
-        <Col xs={24} sm={24} md={10}>
-          <img
-            src="https://images.moneycontrol.com/static-mcnews/2022/05/Court.png?impolicy=website&width=770&height=431"
-            alt="About Wakilihub"
-            style={{ width: '100%', borderRadius: '8px' }}
-          />
+        <Col xs={24} md={12}>
+          <div style={{ 
+            background: 'linear-gradient(135deg, #102a43 0%, #243b53 100%)',
+            borderRadius: '16px',
+            padding: '60px 40px',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ color: 'white', fontSize: '64px', fontWeight: 700, marginBottom: '8px' }}>10,000+</h3>
+            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '18px' }}>Hours saved by legal professionals</p>
+          </div>
         </Col>
       </Row>
 
-      {/* Mission, Vision, etc. Carousel */}
-      <Carousel {...carouselSettings}>
-        <Card style={{ margin: '20px', minHeight:"300px", marginBottom:"30px" }}>
-          <AimOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
-          <h2>Our Mission</h2>
-          <p>To empower lawyers with the tools they need to deliver excellent legal services and manage their practices effectively.</p>
-        </Card>
-        <Card style={{ margin: '20px', minHeight:"300px", marginBottom:"30px" }}>
-          <EyeOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
-          <h2>Our Vision</h2>
-          <p>To be the leading provider of legal management solutions, helping law firms around the world streamline their operations.</p>
-        </Card>
-        <Card style={{ margin: '20px', minHeight:"300px", marginBottom:"30px" }}>
-          <TeamOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
-          <h2>Our Values</h2>
-          <p>Integrity, innovation, and a commitment to client success are at the core of everything we do.</p>
-        </Card>
-      </Carousel>
+      {/* Values Section */}
+      <div style={{ marginBottom: '80px' }}>
+        <h2 style={{ 
+          textAlign: 'center',
+          fontSize: '36px', 
+          fontWeight: 600, 
+          color: '#102a43',
+          marginBottom: '48px'
+        }}>What We Stand For</h2>
+        
+        <Row gutter={[24, 24]}>
+          <Col xs={24} md={8}>
+            <Card style={{ 
+              minHeight: '280px', 
+              textAlign: 'center',
+              borderRadius: '12px',
+              border: 'none',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+            }}>
+              <div style={{ marginBottom: '20px' }}>
+                <AimOutlined style={{ fontSize: '48px', color: '#102a43' }} />
+              </div>
+              <h3 style={{ fontSize: '24px', fontWeight: 600, color: '#102a43', marginBottom: '16px' }}>Our Mission</h3>
+              <p style={{ color: '#486581', lineHeight: '1.6' }}>
+                To eliminate the administrative burden that stops lawyers from doing their best work.
+              </p>
+            </Card>
+          </Col>
+          
+          <Col xs={24} md={8}>
+            <Card style={{ 
+              minHeight: '280px', 
+              textAlign: 'center',
+              borderRadius: '12px',
+              border: 'none',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+            }}>
+              <div style={{ marginBottom: '20px' }}>
+                <EyeOutlined style={{ fontSize: '48px', color: '#102a43' }} />
+              </div>
+              <h3 style={{ fontSize: '24px', fontWeight: 600, color: '#102a43', marginBottom: '16px' }}>Our Vision</h3>
+              <p style={{ color: '#486581', lineHeight: '1.6' }}>
+                A world where legal professionals spend their time practicing law, not managing it.
+              </p>
+            </Card>
+          </Col>
+          
+          <Col xs={24} md={8}>
+            <Card style={{ 
+              minHeight: '280px', 
+              textAlign: 'center',
+              borderRadius: '12px',
+              border: 'none',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+            }}>
+              <div style={{ marginBottom: '20px' }}>
+                <TeamOutlined style={{ fontSize: '48px', color: '#102a43' }} />
+              </div>
+              <h3 style={{ fontSize: '24px', fontWeight: 600, color: '#102a43', marginBottom: '16px' }}>Our Values</h3>
+              <p style={{ color: '#486581', lineHeight: '1.6' }}>
+                Integrity first. Practical solutions. Respect for the profession.
+              </p>
+            </Card>
+          </Col>
+        </Row>
+      </div>
 
       {/* Team Members Section */}
       <div style={{ marginTop: '40px' }}>

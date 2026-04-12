@@ -227,12 +227,12 @@ function Home() {
               borderRadius: '12px', 
               textAlign: 'center',
               cursor: 'pointer',
-              border: '1px solid #e2e8f0'
+              border: '1px solid #e2e8f0',
+              padding: '16px 8px'
             }}
             onClick={() => window.location.href = '/case-form'}
           >
-            <FileOutlined style={{ fontSize: '24px', color: '#1890ff', marginBottom: '8px' }} />
-            <p style={{ margin: 0, fontWeight: 500 }}>New Case</p>
+            <p style={{ margin: 0, fontWeight: 500, color: '#102a43' }}>New Case</p>
           </Card>
         </Col>
         <Col xs={12} sm={6} md={4}>
@@ -242,12 +242,12 @@ function Home() {
               borderRadius: '12px', 
               textAlign: 'center',
               cursor: 'pointer',
-              border: '1px solid #e2e8f0'
+              border: '1px solid #e2e8f0',
+              padding: '16px 8px'
             }}
             onClick={() => window.location.href = '/new-document'}
           >
-            <FilePdfOutlined style={{ fontSize: '24px', color: '#1890ff', marginBottom: '8px' }} />
-            <p style={{ margin: 0, fontWeight: 500 }}>New Document</p>
+            <p style={{ margin: 0, fontWeight: 500, color: '#102a43' }}>New Document</p>
           </Card>
         </Col>
         <Col xs={12} sm={6} md={4}>
@@ -257,12 +257,12 @@ function Home() {
               borderRadius: '12px', 
               textAlign: 'center',
               cursor: 'pointer',
-              border: '1px solid #e2e8f0'
+              border: '1px solid #e2e8f0',
+              padding: '16px 8px'
             }}
             onClick={() => window.location.href = '/tasks/create/'}
           >
-            <CheckSquareOutlined style={{ fontSize: '24px', color: '#52c41a', marginBottom: '8px' }} />
-            <p style={{ margin: 0, fontWeight: 500 }}>Create Task</p>
+            <p style={{ margin: 0, fontWeight: 500, color: '#102a43' }}>Create Task</p>
           </Card>
         </Col>
         <Col xs={12} sm={6} md={4}>
@@ -272,12 +272,12 @@ function Home() {
               borderRadius: '12px', 
               textAlign: 'center',
               cursor: 'pointer',
-              border: '1px solid #e2e8f0'
+              border: '1px solid #e2e8f0',
+              padding: '16px 8px'
             }}
             onClick={() => window.location.href = '/clients'}
           >
-            <UserOutlined style={{ fontSize: '24px', color: '#722ed1', marginBottom: '8px' }} />
-            <p style={{ margin: 0, fontWeight: 500 }}>New Client</p>
+            <p style={{ margin: 0, fontWeight: 500, color: '#102a43' }}>New Client</p>
           </Card>
         </Col>
         <Col xs={12} sm={6} md={4}>
@@ -287,12 +287,12 @@ function Home() {
               borderRadius: '12px', 
               textAlign: 'center',
               cursor: 'pointer',
-              border: '1px solid #e2e8f0'
+              border: '1px solid #e2e8f0',
+              padding: '16px 8px'
             }}
             onClick={() => window.location.href = '/new-invoice'}
           >
-            <DollarOutlined style={{ fontSize: '24px', color: '#faad14', marginBottom: '8px' }} />
-            <p style={{ margin: 0, fontWeight: 500 }}>New Invoice</p>
+            <p style={{ margin: 0, fontWeight: 500, color: '#102a43' }}>New Invoice</p>
           </Card>
         </Col>
         <Col xs={12} sm={6} md={4}>
@@ -302,12 +302,12 @@ function Home() {
               borderRadius: '12px', 
               textAlign: 'center',
               cursor: 'pointer',
-              border: '2px dashed #38c172',
-              background: 'linear-gradient(135deg, #e6f4ea 0%, #f7fff9 100%)'
+              border: '1px solid #e2e8f0',
+              background: '#f8fafc',
+              padding: '16px 8px'
             }}
           >
-            <UserAddOutlined style={{ fontSize: '24px', color: '#38c172', marginBottom: '8px' }} />
-            <p style={{ margin: 0, fontWeight: 600, color: '#22a85a' }}>Hire Paralegal</p>
+            <p style={{ margin: 0, fontWeight: 500, color: '#102a43' }}>Hire Paralegal</p>
           </Card>
         </Col>
       </Row>

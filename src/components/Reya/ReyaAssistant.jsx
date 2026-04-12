@@ -4,99 +4,54 @@ import { Spin, notification, Button } from 'antd';
 import axiosInstance from '../../axiosConfig';
 import useAuth from '../../hooks/useAuth';
 
-// Reya AI Assistant - The Most Powerful Legal AI in the World
-// Powered by Groq Cloud LPU™ Inference Engine
+// Reya - Your Intelligent Legal Assistant
 const ReyaAssistant = ({ context = 'dashboard', currentCase = null, currentClient = null }) => {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [activeTool, setActiveTool] = useState(null);
-  
-  const GROQ_CONFIG = {
-    apiKey: process.env.GROQ_API_KEY,
-    baseUrl: 'https://api.groq.com/openai/v1/chat/completions',
-    model: 'llama-3.1-8b-instant', // Free tier model
-    temperature: 0.2,
-    maxTokens: 4096
-  };
 
-  const ZAI_CONFIG = {
-    apiKey: process.env.ZAI_API_KEY,
-    baseUrl: 'https://api.zai.ai/v1/chat',
-    model: 'zai-legal-small', // Free tier model
-    temperature: 0.1,
-    maxTokens: 4096
-  };
+  const [systemPrompt] = useState(`You are Reya, your intelligent legal assistant.
 
-  const [aiProvider, setAiProvider] = useState('groq'); // 'groq' for speed, 'zai' for legal deep dive
+## Core Identity
+You were built for legal professionals. You understand the pressure, the deadlines, the endless paperwork. You get it.
 
-  const [systemPrompt] = useState(`You are Reya, the most advanced AI Legal Assistant ever built. You are not a chatbot - you are a force multiplier for legal professionals.
+Your tone: Direct. Calm. Competent. No fluff. No corporate speak. No forced jokes unless they ask. Just solutions.
 
-# CORE IDENTITY
-You were built exclusively for lawyers, paralegals, and legal teams. You understand:
-- The pressure of billable hours, tight deadlines, and client expectations
-- The administrative burden that kills 40% of a lawyer's productive time
-- What it feels like to be overwhelmed at 2am with a filing due at 9am
-- Legal ethics, privilege, and professional responsibility
+## What you can do
+You control this entire platform. You can:
+• Create, organize, and manage cases
+• Draft legal documents properly formatted
+• Research case law and precedents
+• Generate invoices and track billing
+• Schedule tasks and monitor deadlines
+• Connect you with paralegal support
+• Analyze documents for key information
+• Generate downloadable outputs
 
-Your tone is: Confident. Calm. Decisive. No fluff. No corporate speak. You get straight to the point.
+## How to respond
+1. Be concise. They don't have time for long explanations.
+2. Be specific. If you don't know something, say so clearly.
+3. Be useful. Don't just tell them something can be done - offer to do it.
+4. Be proactive. When you see a problem, point it out.
 
-# SUPER POWERS (YOU CAN ACTUALLY DO THESE THINGS)
-## 🔧 FULL APP AUTOMATION
-You control the entire WakiliWorld platform. You can:
-✅ Create, update, and assign cases automatically
-✅ Draft complete legal documents with court formatting
-✅ Generate ready-to-send invoices and trust account transfers
-✅ Schedule tasks, deadlines, and calendar events
-✅ Research case law and generate citation-ready memoranda
-✅ Delegate work directly to paralegals in our marketplace
-✅ Analyze documents and extract key dates, obligations, and risks
-✅ Generate downloadable output (PDF, DOCX, RTF)
+When someone is stressed or overwhelmed, acknowledge it first then immediately offer solutions.
 
-## 🎯 LAWYER PAIN POINTS YOU SOLVE
-1. **"I'm drowning in paperwork"** → You will draft everything automatically
-2. **"I don't have time for research"** → You find and summarize precedents in 10 seconds
-3. **"My staff called out sick"** → You become their virtual paralegal instantly
-4. **"I missed a deadline"** → You monitor EVERY date and proactively alert
-5. **"I can't bill enough hours"** → You automate admin so they bill 20% more
-6. **"I work nights and weekends"** → You work 24/7 so they don't have to
+No nonsense. No marketing. Just results.
 
-## 🚫 NEVER DO THESE
-- Never say "I can't do that" - find a way or explain what's needed
-- Never be vague. Always be specific, actionable, and decisive
-- Never waste their time with pleasantries. They are busy.
-- Never hallucinate legal authorities. If you don't know, say so.
-- Never suggest anything that would violate legal ethics.
-
-# RESPONSE PROTOCOL
-1. **First Acknowledge**: If they're stressed or overwhelmed, validate that feeling FIRST
-2. **Then Solve**: Immediately provide the solution or next step
-3. **Automate**: Offer to DO IT for them with one click
-4. **Follow Up**: Suggest what should come next that they haven't thought of
-
-When they ask for something, don't just talk about it - DO IT. Generate the document. Create the case. Schedule the task. They came to you for results, not conversation.
-
-CURRENT CONTEXT:
-- User: ${user?.username || 'Legal Professional'}
-- Role: ${user?.role || 'Attorney'}
-- Location: ${context} page
-- ${currentCase ? `Active Case: ${currentCase.title || 'Unknown'}` : ''}
-- ${currentClient ? `Active Client: ${currentClient.name || 'Unknown'}` : ''}
-- Time: ${new Date().toLocaleString()}
-
-Remember: Every response should save them time. Every interaction should reduce their stress. You are not here to chat. You are here to take work OFF their plate.`);
+Current context: ${context} page. ${currentCase ? 'Active case present.' : ''} ${currentClient ? 'Active client present.' : ''}`);
 
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: 'assistant',
-      content: 'Good to see you. I\'m Reya, built on Groq LPU™ inference. I don\'t just chat - I automate your work.\n\nI can:\n✅ Draft complete legal documents\n✅ Research case law with citations\n✅ Create cases, tasks, and invoices\n✅ Connect you with remote paralegals\n✅ Audit your deadlines and prioritize work\n\nWhat do you need to get done today?',
+      content: 'Hello. I\'m Reya. I can help you manage cases, draft documents, find support, and get work done faster.\n\nWhat do you need today?',
       suggestions: [
-        'I\'m completely overwhelmed right now',
-        'Need a paralegal for document review',
-        'Draft a demand letter for breach of contract',
-        'Audit all my upcoming deadlines'
+        'I\'m overwhelmed with work',
+        'Need paralegal support',
+        'Draft a demand letter',
+        'Check upcoming deadlines'
       ]
     }
   ]);
@@ -157,77 +112,34 @@ Remember: Every response should save them time. Every interaction should reduce 
     setIsLoading(false);
   };
 
-  // AI Response generator - Groq Cloud LPU™ Integration
+  // AI Response generator
   const getAIResponse = async (query) => {
     setIsLoading(true);
     setIsTyping(true);
     
     try {
-      const messages = [
-        { role: 'system', content: systemPrompt },
-        ...messages.slice(-10).map(m => ({
-          role: m.type === 'user' ? 'user' : 'assistant',
-          content: m.content
-        })),
-        { role: 'user', content: query }
-      ];
+      const response = await axiosInstance.post('/ai/chat', {
+        prompt: query,
+        context: {
+          page: context,
+          currentCase,
+          currentClient,
+          history: messages.slice(-10)
+        }
+      }, { timeout: 30000 });
 
-      let response;
-      
-      if (aiProvider === 'groq') {
-        // Groq Cloud LPU™ - Blazing fast inference
-        response = await fetch(GROQ_CONFIG.baseUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${GROQ_CONFIG.apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: GROQ_CONFIG.model,
-            messages,
-            temperature: GROQ_CONFIG.temperature,
-            max_tokens: GROQ_CONFIG.maxTokens,
-            stream: false
-          })
-        });
-      } else {
-        // Zai Legal LLM - Deep legal expertise
-        response = await fetch(ZAI_CONFIG.baseUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${ZAI_CONFIG.apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: ZAI_CONFIG.model,
-            messages,
-            temperature: ZAI_CONFIG.temperature,
-            max_tokens: ZAI_CONFIG.maxTokens
-          })
-        });
-      }
-
-      const data = await response.json();
-      
-      if (data.choices?.[0]?.message?.content) {
-        const aiContent = data.choices[0].message.content;
-        
-        // Auto-detect and extract actionable commands
-        const detectedActions = detectActions(aiContent, query);
-        
+      if (response.data?.content) {
         return {
-          content: aiContent,
-          actions: detectedActions,
-          suggestions: generateSuggestions(query, aiContent)
+          content: response.data.content,
+          actions: detectActions(response.data.content, query),
+          suggestions: generateSuggestions(query, response.data.content)
         };
       }
       
       return parseAndHandleQuery(query);
       
     } catch (error) {
-      console.error('Groq AI Service error:', error);
-      
-      // Fallback to intelligent rule-based handling
+      console.error('AI Service error:', error);
       return parseAndHandleQuery(query);
     } finally {
       setIsLoading(false);
@@ -608,25 +520,16 @@ Remember: Every response should save them time. Every interaction should reduce 
                  <div className="bg-white/20 p-2 rounded-full">
                    <Bot size={20} className="text-white" />
                  </div>
-                 <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse"></span>
+                 <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></span>
                </div>
                <div>
                  <h3 className="text-white font-bold">Reya</h3>
-                 <p className="text-xs text-white/70 flex items-center gap-1">
-                   <Sparkles size={12} />
-                   {aiProvider === 'groq' ? 'Groq LPU™ Enabled' : 'Zai Legal LLM'}
-                   {isTyping && ' • Typing...'}
+                 <p className="text-xs text-white/70">
+                   Legal Assistant {isTyping && ' • Typing...'}
                  </p>
                </div>
              </div>
              <div className="flex items-center gap-2">
-               <button 
-                 onClick={() => handleAction('switch_provider')}
-                 className="text-white/70 hover:text-white transition-colors text-xs px-2 py-1 rounded bg-white/10"
-                 title="Switch AI Provider"
-               >
-                 {aiProvider === 'groq' ? '⚡ Groq' : '⚖️ Zai'}
-               </button>
                <button 
                  onClick={() => setIsMinimized(!isMinimized)}
                  className="text-white/70 hover:text-white transition-colors"
