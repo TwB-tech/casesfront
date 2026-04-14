@@ -153,10 +153,16 @@ const AuthProvider = ({ children }) => {
     });
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await axiosInstance.post('/auth/logout/');
+    } catch (error) {
+      console.warn('Logout cleanup failed:', error);
+    }
     localStorage.removeItem('userInfo');
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('organization_id');
     setUser(null);
   };
 
