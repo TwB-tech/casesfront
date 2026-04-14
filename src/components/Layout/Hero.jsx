@@ -57,7 +57,7 @@ const Hero = () => {
           
           <div className="space-y-4">
             {[
-              { title: "End burnout cycles", desc: "Get instant access to vetted remote paralegals when caseloads spike" },
+               { title: "End burnout cycles", desc: "Get instant access to verified law firms and advocates when caseloads spike" },
               { title: "Cut admin time by 60%", desc: "AI-powered case management that handles documentation automatically" },
               { title: "Never miss a deadline", desc: "Your AI assistant Reya monitors cases 24/7 and proactively alerts you" }
             ].map((item, index) => (
@@ -107,19 +107,19 @@ const Hero = () => {
               >
                 Free 14-Day Trial - No Credit Card Required
               </a>
-              <a
-                href="#paralegals"
-                className={`w-full sm:w-auto flex items-center justify-center gap-2 py-4 px-8 font-semibold rounded-xl transition-all ${
-                  isFuturistic
-                    ? 'border border-cyber-border text-aurora-text hover:bg-cyber-hover'
-                    : 'border-2 border-primary-200 text-primary-800 hover:border-primary-300 hover:bg-primary-50'
-                }`}
-              >
-                Hire a Paralegal Today
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z" clipRule="evenodd" />
-                </svg>
-              </a>
+               <a
+                 href="/firms"
+                 className={`w-full sm:w-auto flex items-center justify-center gap-2 py-4 px-8 font-semibold rounded-xl transition-all ${
+                   isFuturistic
+                     ? 'border border-cyber-border text-aurora-text hover:bg-cyber-hover'
+                     : 'border-2 border-primary-200 text-primary-800 hover:border-primary-300 hover:bg-primary-50'
+                 }`}
+               >
+                 Find a Law Firm
+                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                   <path fillRule="evenodd" d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z" clipRule="evenodd" />
+                 </svg>
+               </a>
             </div>
           )}
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Layout, Menu } from 'antd';
+import { Layout, Menu, Drawer } from 'antd';
 import { 
   DashboardOutlined, 
   FileOutlined, 
@@ -7,16 +7,18 @@ import {
   BarChartOutlined, 
   SettingOutlined, 
   BarsOutlined,
-  TwitterOutlined, 
-  FacebookOutlined, 
-  InstagramOutlined, 
-  LinkedinOutlined, 
   UserOutlined, 
   FilePdfOutlined,
   CheckSquareOutlined,
   WechatWorkOutlined,
   MailOutlined,
-  CloseOutlined
+  CloseOutlined,
+  DollarOutlined,
+  TeamOutlined,
+  FileSearchOutlined,
+  ProfileOutlined,
+  SolutionOutlined,
+  ShopOutlined
 } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
 import { useMediaQuery } from 'react-responsive';
@@ -28,99 +30,124 @@ const { Sider } = Layout;
 
 const ROUTE_CONFIG = [
   {
-    key: '1',
+    key: 'dashboard',
     path: '/home',
     label: 'Dashboard',
     icon: DashboardOutlined,
     routes: ['/home'],
   },
   {
-    key: '2',
+    key: 'cases',
     path: '/case-list',
     label: 'Cases',
     icon: FileOutlined,
     routes: ['/case-list', '/case-details', '/case-form'],
   },
   {
-    key: '3',
+    key: 'clients',
     path: '/clients',
     label: 'Clients',
     icon: UserOutlined,
     routes: ['/clients', '/client-details', '/new-client'],
   },
   {
-    key: '4',
+    key: 'documents',
     path: '/documents',
     label: 'Documents',
     icon: FilePdfOutlined,
     routes: ['/documents', '/document-details', '/new-document'],
   },
   {
-    key: '5',
-    path: '/invoices',
-    label: 'Billings',
-    icon: FileOutlined,
-    routes: ['/invoices', '/invoice-details', '/new-invoice'],
-  },
-  {
-    key: '6',
+    key: 'calendar',
     path: '/calendar-tasks',
     label: 'Calendar',
     icon: CalendarOutlined,
     routes: ['/calendar-tasks', '/calendar-tasks-details', '/new-appointment'],
   },
   {
-    key: '9',
+    key: 'tasks',
     path: '/tasks',
     label: 'Tasks',
     icon: CheckSquareOutlined,
     routes: ['/tasks', '/task-details', '/new-task'],
   },
   {
-    key: '10',
+    key: 'firms',
+    path: '/firms',
+    label: 'Law Firms',
+    icon: ShopOutlined,
+    routes: ['/firms'],
+    dividerAfter: true,
+  },
+  {
+    key: 'accounting',
+    path: '/accounting',
+    label: 'Accounting',
+    icon: DollarOutlined,
+    routes: ['/accounting', '/invoices', '/expenses'],
+  },
+  {
+    key: 'billing',
+    path: '/invoices',
+    label: 'Invoices',
+    icon: FileSearchOutlined,
+    routes: ['/invoices', '/invoice-details', '/new-invoice'],
+  },
+  {
+    key: 'hr',
+    path: '/hr',
+    label: 'HR & Payroll',
+    icon: TeamOutlined,
+    routes: ['/hr', '/payroll'],
+    dividerAfter: true,
+  },
+  {
+    key: 'mailing',
     path: '/mailing',
     label: 'Mailing',
     icon: MailOutlined,
     routes: ['/mailing', '/mail-details', '/new-mail'],
   },
   {
-    key: '11',
+    key: 'chats',
     path: '/chat-users',
     label: 'Chats',
     icon: WechatWorkOutlined,
     routes: ['/chat', '/chats', '/new-chat', '/chat-users'],
+    dividerAfter: true,
   },
   {
-    key: '12',
-    path: '/paralegals',
-    label: 'Paralegals',
-    icon: UserOutlined,
-    routes: ['/paralegals'],
-  },
-  {
-    key: '7',
-    path: '/reports',
-    label: 'Reports',
+    key: 'financial_reports',
+    path: '/reports/financial',
+    label: 'Financial Reports',
     icon: BarChartOutlined,
-    routes: ['/reports', '/report-details', '/new-report'],
-    marginBottom: true,
+    routes: ['/reports/financial'],
   },
   {
-    key: '8',
+    key: 'case_reports',
+    path: '/reports',
+    label: 'Case Reports',
+    icon: SolutionOutlined,
+    routes: ['/reports', '/report-details', '/new-report'],
+    dividerAfter: true,
+  },
+  {
+    key: 'profile',
+    path: '/profile',
+    label: 'Profile',
+    icon: ProfileOutlined,
+    routes: ['/profile'],
+  },
+  {
+    key: 'settings',
     path: '/settings',
     label: 'Settings',
     icon: SettingOutlined,
     routes: ['/settings', '/user-settings', '/system-settings'],
-    marginBottom: true,
   },
 ];
 
-const SOCIAL_LINKS = [
-  { icon: TwitterOutlined, href: 'https://x.com/techwithbrands', label: 'Twitter' },
-  { icon: FacebookOutlined, href: 'https://www.facebook.com/TwBonFB', label: 'Facebook' },
-  { icon: InstagramOutlined, href: 'https://www.instagram.com/techwithbrands/', label: 'Instagram' },
-  { icon: LinkedinOutlined, href: 'https://www.linkedin.com/company/techwithbrands/', label: 'LinkedIn' },
-];
+// Social links removed from navigation menu - not appropriate for dashboard
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
     const location = useLocation();
@@ -170,68 +197,60 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
     const renderMenuItems = (onItemClick = closeDrawer) => (
         <div className="flex flex-col h-full">
-            <Menu
-                mode="inline"
-                selectedKeys={[selectedKey]}
-                style={{
-                    borderRight: 0,
-                    background: 'transparent',
-                    overflowY: 'auto',
-                    flex: 1,
-                }}
-            >
-                {ROUTE_CONFIG.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                        <Menu.Item
-                            key={item.key}
-                            icon={<Icon className={isFuturistic ? 'text-aurora-muted' : ''} />}
-                            style={{
-                                ...getMenuItemStyle(item.key),
-                                marginBottom: item.marginBottom ? '40px' : '4px',
-                                color: isFuturistic 
-                                    ? (selectedKey === item.key ? themeConfig.accent : themeConfig.sidebar.text)
-                                    : themeConfig.sidebar.text,
-                            }}
-                            className={`menu-item-custom ${isFuturistic ? 'futuristic-menu-item' : ''}`}
-                            onClick={onItemClick}
-                        >
-                            <Link to={item.path}>{item.label}</Link>
-                        </Menu.Item>
-                    );
-                })}
-            </Menu>
+             <Menu
+                 mode="inline"
+                 selectedKeys={[selectedKey]}
+                 style={{
+                     borderRight: 0,
+                     background: 'transparent',
+                     overflowY: 'auto',
+                     flex: 1,
+                     padding: '8px 0'
+                 }}
+             >
+                 {ROUTE_CONFIG.map((item) => {
+                     const Icon = item.icon;
+                     return (
+                         <React.Fragment key={item.key}>
+                             <Menu.Item
+                                 key={item.key}
+                                 icon={<Icon className={isFuturistic ? 'text-aurora-muted' : ''} />}
+                                 style={{
+                                     ...getMenuItemStyle(item.key),
+                                     marginBottom: '4px',
+                                     color: isFuturistic 
+                                         ? (selectedKey === item.key ? themeConfig.accent : themeConfig.sidebar.text)
+                                         : themeConfig.sidebar.text,
+                                     height: '44px',
+                                     lineHeight: '44px'
+                                 }}
+                                 className={`menu-item-custom ${isFuturistic ? 'futuristic-menu-item' : ''}`}
+                                 onClick={() => {
+                                     window.location.href = item.path;
+                                     onItemClick();
+                                 }}
+                             >
+                                 {item.label}
+                             </Menu.Item>
+                             {item.dividerAfter && (
+                                 <div 
+                                     style={{ 
+                                         height: '1px', 
+                                         background: isFuturistic ? '#2a2a3a' : '#e5e7eb',
+                                         margin: '8px 16px'
+                                     }} 
+                                 />
+                             )}
+                         </React.Fragment>
+                     );
+                 })}
+             </Menu>
 
-            {isFuturistic && !collapsed && (
-                <div className="p-4 border-t border-cyber-border">
-                    <ThemeSwitcher compact />
-                </div>
-            )}
-
-            {!collapsed && (
-                <div className="p-4 border-t border-neutral-200 dark:border-cyber-border">
-                    <div className={`text-xs font-semibold uppercase tracking-wider mb-4 ${
-                        isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'
-                    }`}>
-                        Follow Us
-                    </div>
-                    <div className={`flex gap-4 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}`}>
-                        {SOCIAL_LINKS.map((social) => (
-                            <a
-                                key={social.label}
-                                href={social.href}
-                                target="_blank"
-                                rel="noreferrer"
-                                className={`transition-colors hover:scale-110 ${
-                                    isFuturistic ? 'hover:text-aurora-primary' : 'hover:text-accent-600'
-                                }`}
-                            >
-                                <social.icon />
-                            </a>
-                        ))}
-                    </div>
-                </div>
-            )}
+             {!collapsed && (
+                 <div className="p-4 border-t border-neutral-200 dark:border-cyber-border">
+                     <ThemeSwitcher compact />
+                 </div>
+             )}
         </div>
     );
 
@@ -277,55 +296,59 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                     </button>
                     {renderMenuItems()}
                 </Sider>
-            ) : (
-                <>
-                    <button
-                        type="button"
-                        onClick={showDrawer} 
-                        className={`
-                            fixed top-4 left-4 z-[3000] p-2 rounded-lg
-                            ${isFuturistic 
-                                ? 'bg-cyber-surface text-aurora-text' 
-                                : 'bg-white text-primary-900 shadow-md'
-                            }
-                        `}
-                    >
-                        <BarsOutlined className="text-xl" />
-                    </button>
-                    
-                    <Layout.Sider
-                        open={drawerVisible}
-                        onClose={closeDrawer}
-                        placement="left"
-                        width={280}
-                        style={{
-                            background: isFuturistic ? themeConfig.sidebar.bg : '#fff',
-                            height: '100vh',
-                            marginTop: '64px',
-                        }}
-                        drawerStyle={{
-                            background: 'transparent',
-                        }}
-                        className={isFuturistic ? 'mobile-drawer-futuristic' : ''}
-                    >
-                        <div className={`
-                            flex items-center justify-between p-4 border-b
-                            ${isFuturistic ? 'border-cyber-border' : 'border-neutral-200'}
-                        `}>
-                            <span className={`font-semibold ${isFuturistic ? 'text-aurora-text' : 'text-primary-900'}`}>
-                                Menu
-                            </span>
-                            <button
-                                onClick={closeDrawer}
-                                className={`p-1 rounded ${isFuturistic ? 'text-aurora-muted hover:text-aurora-text' : 'text-neutral-500 hover:text-neutral-700'}`}
-                            >
-                                <CloseOutlined />
-                            </button>
-                        </div>
-                        {renderMenuItems()}
-                    </Layout.Sider>
-                </>
-            )}
+             ) : (
+                 <>
+                     <button
+                         type="button"
+                         onClick={showDrawer} 
+                         className={`
+                             fixed top-[72px] left-4 z-[3000] p-3 rounded-xl shadow-lg
+                             ${isFuturistic 
+                                 ? 'bg-cyber-surface text-aurora-text border border-cyber-border' 
+                                 : 'bg-white text-primary-900 shadow-md border border-neutral-200'
+                             }
+                         `}
+                         style={{ touchAction: 'manipulation' }}
+                     >
+                         <BarsOutlined className="text-xl" />
+                     </button>
+                     
+                     <Drawer
+                         open={drawerVisible}
+                         onClose={closeDrawer}
+                         placement="left"
+                         width={280}
+                         style={{
+                             background: isFuturistic ? themeConfig.sidebar.bg : '#fff',
+                             height: '100vh',
+                         }}
+                         drawerStyle={{
+                             background: isFuturistic ? themeConfig.sidebar.bg : '#fff',
+                         }}
+                         className={isFuturistic ? 'mobile-drawer-futuristic' : ''}
+                         closeIcon={null}
+                         maskClosable={true}
+                     >
+                         <div className={`
+                             flex items-center justify-between p-4 border-b
+                             ${isFuturistic ? 'border-cyber-border' : 'border-neutral-200'}
+                         `}>
+                             <span className={`font-semibold text-lg ${isFuturistic ? 'text-aurora-text' : 'text-primary-900'}`}>
+                                 Navigation
+                             </span>
+                             <button
+                                 onClick={closeDrawer}
+                                 className={`p-2 rounded-lg ${isFuturistic ? 'text-aurora-muted hover:text-aurora-text hover:bg-cyber-hover' : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100'}`}
+                             >
+                                 <CloseOutlined />
+                             </button>
+                         </div>
+                         <div style={{ height: 'calc(100vh - 64px)', overflowY: 'auto' }}>
+                             {renderMenuItems(closeDrawer)}
+                         </div>
+                     </Drawer>
+                 </>
+             )}
         </>
     );
 };

@@ -55,10 +55,10 @@ const Start = () => {
           <p className={`mb-6 lg:mb-8 text-xs md:text-sm lg:text-lg max-w-xl ${
             isFuturistic ? 'text-aurora-muted' : 'text-white/90'
           }`}>
-            <strong className={isFuturistic ? 'text-aurora-text' : 'text-white'}>
-              Access pre-vetted remote paralegals
-            </strong> on-demand. No recruitment fees. No long-term commitments. 
-            Just qualified support when you need it, integrated seamlessly with your existing case management workflow.
+             <strong className={isFuturistic ? 'text-aurora-text' : 'text-white'}>
+               Access verified, subscribed law firms
+             </strong> on-demand. No recruitment fees. No long-term commitments. 
+             Just qualified legal support when you need it, integrated seamlessly with your existing case management workflow.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4">
@@ -75,19 +75,19 @@ const Start = () => {
                 <path fillRule="evenodd" d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z" clipRule="evenodd" />
               </svg>
             </a>
-            <a
-              href="/paralegals"
-              className={`inline-flex items-center justify-center gap-2 px-8 py-4 font-semibold rounded-xl transition-all ${
-                isFuturistic
-                  ? 'border border-cyber-border text-aurora-text hover:bg-cyber-hover hover:border-aurora-primary/50'
-                  : 'bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm'
-              }`}
-            >
-              Browse Available Paralegals
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z" clipRule="evenodd" />
-              </svg>
-            </a>
+             <a
+               href="/firms"
+               className={`inline-flex items-center justify-center gap-2 px-8 py-4 font-semibold rounded-xl transition-all ${
+                 isFuturistic
+                   ? 'border border-cyber-border text-aurora-text hover:bg-cyber-hover hover:border-aurora-primary/50'
+                   : 'bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm'
+               }`}
+             >
+               Browse Available Law Firms
+               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+                 <path fillRule="evenodd" d="M2 10a.75.75 0 01.75-.75h12.59l-2.1-1.95a.75.75 0 111.02-1.1l3.5 3.25a.75.75 0 010 1.1l-3.5 3.25a.75.75 0 11-1.02-1.1l2.1-1.95H2.75A.75.75 0 012 10z" clipRule="evenodd" />
+               </svg>
+             </a>
           </div>
           
           {/* Trust indicators */}

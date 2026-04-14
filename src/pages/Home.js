@@ -78,11 +78,16 @@ function Home() {
     fetchCases();
     fetchClients();
     fetchTasks();
-    // fetchInvoices();
-    // fetchPayments();
+    fetchFinancials();
   } , [])
 
 
+
+  const [loadingFinancials, setLoadingFinancials] = useState(true);
+  const [financialData, setFinancialData] = useState({
+    monthlyRevenue: 25410,
+    pendingRevenue: 1352
+  });
 
   const fetchCases = async () => {
     setLoadingCases(true);
@@ -95,8 +100,6 @@ function Home() {
       setLoadingCases(false);
     }
   };
-
-
 
   const fetchClients = async () => {
     setLoadingClients(true);
@@ -124,25 +127,17 @@ function Home() {
     }
   };
 
-  // const fetchInvoices = async () => {
-  //   try {
-  //     const response = await axiosInstance.get('/invoices/');
-  //     const data = await response.data;
-  //     setInvoices(data);
-  //   } catch (error) {
-  //     console.error('Error fetching invoices:', error);
-  //   }
-  // }
-
-  // const fetchPayments = async () => {
-  //   try {
-  //     const response = await axiosInstance.get('/payments/');
-  //     const data = await response.data;
-  //     setPayments(data);
-  //   } catch (error) {
-  //     console.error('Error fetching payments:', error);
-  //   }
-  // }
+  const fetchFinancials = async () => {
+    setLoadingFinancials(true);
+    try {
+      const response = await axiosInstance.get('/accounting/dashboard/summary/');
+      setFinancialData(response.data);
+      setLoadingFinancials(false);
+    } catch (error) {
+      console.error('Error fetching financials:', error);
+      setLoadingFinancials(false);
+    }
+  };
 
   
 
@@ -206,19 +201,19 @@ function Home() {
               >
                 View Calendar
               </Button>
-              <Button 
-                type="primary" 
-                size="large"
-                style={{ 
-                  background: isFuturistic ? '#8b5cf6' : '#38c172', 
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontWeight: 500
-                }}
-                onClick={() => window.location.href = '/paralegals'}
-              >
-                Need Paralegal Support?
-              </Button>
+               <Button 
+                 type="primary" 
+                 size="large"
+                 style={{ 
+                   background: isFuturistic ? '#8b5cf6' : '#38c172', 
+                   border: 'none',
+                   borderRadius: '10px',
+                   fontWeight: 500
+                 }}
+                 onClick={() => window.location.href = '/firms'}
+               >
+                 Need Law Firm Support?
+               </Button>
             </div>
           </Col>
         </Row>
@@ -311,23 +306,23 @@ function Home() {
             <p style={{ margin: 0, fontWeight: 500, color: isFuturistic ? '#f8fafc' : '#102a43' }}>New Invoice</p>
           </Card>
         </Col>
-        <Col xs={12} sm={6} md={4}>
-          <Card 
-            hoverable 
-            className={isFuturistic ? 'hover-glow' : ''}
-            style={{ 
-              borderRadius: '12px', 
-              textAlign: 'center',
-              cursor: 'pointer',
-              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
-              background: isFuturistic ? '#1a1a24' : '#f8fafc',
-              padding: '16px 8px'
-            }}
-            onClick={() => window.location.href = '/paralegals'}
-          >
-            <p style={{ margin: 0, fontWeight: 500, color: isFuturistic ? '#6366f1' : '#102a43' }}>Hire Paralegal</p>
-          </Card>
-        </Col>
+         <Col xs={12} sm={6} md={4}>
+           <Card 
+             hoverable 
+             className={isFuturistic ? 'hover-glow' : ''}
+             style={{ 
+               borderRadius: '12px', 
+               textAlign: 'center',
+               cursor: 'pointer',
+               border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
+               background: isFuturistic ? '#1a1a24' : '#f8fafc',
+               padding: '16px 8px'
+             }}
+             onClick={() => window.location.href = '/firms'}
+           >
+             <p style={{ margin: 0, fontWeight: 500, color: isFuturistic ? '#6366f1' : '#102a43' }}>Find Law Firm</p>
+           </Card>
+         </Col>
       </Row>
 
       <Row gutter={[16, 16]}>
@@ -403,41 +398,45 @@ function Home() {
             }} 
             hoverable
           >
-            <Statistic 
-              title={<span style={{ color: isFuturistic ? '#94a3b8' : '#627d98' }}>Monthly Revenue</span>} 
-              value={25410} 
-              prefix="$" 
-              valueStyle={{ color: isFuturistic ? '#f8fafc' : '#102a43', fontWeight: 600, fontSize: '32px' }}
-            />
-            <div style={{ marginTop: '8px' }}>
-              <span style={{ color: '#f5222d', fontWeight: 500 }}>0.4% </span>
-              <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontSize: '12px' }}>since last month</span>
-            </div>
-          </Card>
-        </Col>
+           <Statistic 
+               title={<span style={{ color: isFuturistic ? '#94a3b8' : '#627d98' }}>Monthly Revenue</span>} 
+               value={financialData.monthlyRevenue || 25410} 
+               prefix="$" 
+               valueStyle={{ color: isFuturistic ? '#f8fafc' : '#102a43', fontWeight: 600, fontSize: '32px' }}
+             />
+             <div style={{ marginTop: '8px' }}>
+               <span style={{ color: financialData.revenueChange >= 0 ? '#38c172' : '#f5222d', fontWeight: 500 }}>
+                 {financialData.revenueChange >= 0 ? '+' : ''}{financialData.revenueChange || 0.4}% 
+               </span>
+               <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontSize: '12px' }}>since last month</span>
+             </div>
+           </Card>
+         </Col>
 
-        <Col xs={24} sm={12} md={6} lg={3}>
-          <Card 
-            className={isFuturistic ? 'hover-glow' : ''}
-            style={{ 
-              borderRadius: "16px", 
-              boxShadow: isFuturistic ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
-              background: isFuturistic ? '#1a1a24' : '#ffffff',
-              border: isFuturistic ? '1px solid #2a2a3a' : '1px solid transparent'
-            }} 
-            hoverable
-          >
-            <Statistic 
-              title={<span style={{ color: isFuturistic ? '#94a3b8' : '#627d98' }}>Pending Revenue</span>} 
-              value={1352} 
-              prefix="$" 
-              valueStyle={{ color: isFuturistic ? '#f59e0b' : '#faad14', fontWeight: 600, fontSize: '32px' }}
-            />
-            <div style={{ marginTop: '8px' }}>
-              <span style={{ color: isFuturistic ? '#f59e0b' : '#faad14', fontWeight: 500 }}>Action Required</span>
-              <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontSize: '12px' }}> - {Math.round((1352/25410)*100)}% outstanding</span>
-            </div>
-          </Card>
+         <Col xs={24} sm={12} md={6} lg={3}>
+           <Card 
+             className={isFuturistic ? 'hover-glow' : ''}
+             style={{ 
+               borderRadius: "16px", 
+               boxShadow: isFuturistic ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
+               background: isFuturistic ? '#1a1a24' : '#ffffff',
+               border: isFuturistic ? '1px solid #2a2a3a' : '1px solid transparent'
+             }} 
+             hoverable
+           >
+             <Statistic 
+               title={<span style={{ color: isFuturistic ? '#94a3b8' : '#627d98' }}>Pending Revenue</span>} 
+               value={financialData.pendingRevenue || 1352} 
+               prefix="$" 
+               valueStyle={{ color: isFuturistic ? '#f59e0b' : '#faad14', fontWeight: 600, fontSize: '32px' }}
+             />
+             <div style={{ marginTop: '8px' }}>
+               <span style={{ color: isFuturistic ? '#f59e0b' : '#faad14', fontWeight: 500 }}>Action Required</span>
+               <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontSize: '12px' }}> 
+                 - {Math.round(((financialData.pendingRevenue || 1352)/(financialData.monthlyRevenue || 25410))*100)}% outstanding
+               </span>
+             </div>
+           </Card>
         </Col>
       </Row>
 
@@ -532,36 +531,36 @@ function Home() {
               : '0 8px 32px rgba(16, 42, 67, 0.2)'
           }}>
             <h3 style={{ margin: '0 0 16px 0', fontWeight: 600, color: 'white' }}>Need Extra Support?</h3>
-            <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '16px' }}>
-              Access vetted remote paralegals on-demand. No recruitment fees. No long-term commitments.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <Button 
-                type="primary" 
-                style={{ 
-                  background: '#38c172', 
-                  border: 'none', 
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  width: '100%'
-                }}
-                onClick={() => window.location.href = '/paralegals'}
-              >
-                Browse Available Paralegals
-              </Button>
-              <Button 
-                style={{ 
-                  background: 'rgba(255,255,255,0.1)', 
-                  borderColor: 'rgba(255,255,255,0.3)', 
-                  color: 'white',
-                  borderRadius: '8px',
-                  width: '100%'
-                }}
-                onClick={() => window.location.href = '/paralegals'}
-              >
-                Post Urgent Request
-              </Button>
-            </div>
+             <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '16px' }}>
+               Access verified, subscribed law firms and advocates on-demand. No recruitment fees. No long-term commitments.
+             </p>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+               <Button 
+                 type="primary" 
+                 style={{ 
+                   background: '#38c172', 
+                   border: 'none', 
+                   borderRadius: '8px',
+                   fontWeight: 600,
+                   width: '100%'
+                 }}
+                 onClick={() => window.location.href = '/firms'}
+               >
+                 Browse Available Law Firms
+               </Button>
+               <Button 
+                 style={{ 
+                   background: 'rgba(255,255,255,0.1)', 
+                   borderColor: 'rgba(255,255,255,0.3)', 
+                   color: 'white',
+                   borderRadius: '8px',
+                   width: '100%'
+                 }}
+                 onClick={() => window.location.href = '/firms'}
+               >
+                 Post Urgent Request
+               </Button>
+             </div>
           </Card>
         </Col>
       </Row>

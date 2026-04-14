@@ -393,7 +393,15 @@ export const standaloneApi = {
     }
 
     if (path === '/case/') {
-      return success({ results: db.cases.map((item) => enrichCase(db, item)) });
+      // ORGANIZATION ISOLATION: Only return cases belonging to current user's organization
+      const userOrg = user?.organization_id || user?.id;
+      const filteredCases = db.cases.filter((item) => 
+        !userOrg || 
+        item.organization_id === userOrg || 
+        item.client_id === user.id || 
+        item.advocate_id === user.id
+      );
+      return success({ results: filteredCases.map((item) => enrichCase(db, item)) });
     }
 
     if (path === '/case/individual-cases/') {
@@ -417,11 +425,25 @@ export const standaloneApi = {
     }
 
     if (path === '/tasks/' || path === '/tasks') {
-      return success({ results: db.tasks.map((task) => enrichTask(db, task)) });
+      // ORGANIZATION ISOLATION: Only return tasks assigned to current user or organization
+      const userOrg = user?.organization_id || user?.id;
+      const filteredTasks = db.tasks.filter((task) => 
+        !userOrg || 
+        task.organization_id === userOrg || 
+        task.assigned_to === user.id
+      );
+      return success({ results: filteredTasks.map((task) => enrichTask(db, task)) });
     }
 
     if (path === '/document_management/api/documents/') {
-      return success({ results: db.documents.map((item) => enrichDocument(db, item)) });
+      // ORGANIZATION ISOLATION: Only return documents owned by or shared with current user
+      const filteredDocs = db.documents.filter((doc) => 
+        !user || 
+        doc.owner === user.id || 
+        (doc.shared_with && doc.shared_with.includes(user.id)) ||
+        doc.organization_id === user?.organization_id
+      );
+      return success({ results: filteredDocs.map((item) => enrichDocument(db, item)) });
     }
 
     if (path.startsWith('/api/documents/')) {
@@ -432,7 +454,11 @@ export const standaloneApi = {
     }
 
     if (path === '/clientcomm/api/clientcommunications/') {
-      return success({ results: [...db.communications].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) });
+      // ORGANIZATION ISOLATION: Only return communications created by current user
+      const filteredComms = db.communications.filter((comm) => 
+        !user || comm.created_by === user.id || comm.organization_id === user?.organization_id
+      );
+      return success({ results: [...filteredComms].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) });
     }
 
     if (path.startsWith('/clientcomm/api/clientcommunications/')) {
@@ -443,7 +469,12 @@ export const standaloneApi = {
     }
 
     if (path === '/api/invoices') {
-      return success(db.invoices);
+      // ORGANIZATION ISOLATION: Only return invoices belonging to current user organization
+      const userOrg = user?.organization_id || user?.id;
+      const filteredInvoices = db.invoices.filter((inv) => 
+        !userOrg || inv.organization_id === userOrg || inv.client_id === user.id
+      );
+      return success(filteredInvoices);
     }
 
     if (path.startsWith('/auth/user/')) {

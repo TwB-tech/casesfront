@@ -100,7 +100,7 @@ const About = () => {
               isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'
             }`}>
               Our platform does not just organize your work - it eliminates it. With intelligent 
-              automation, on-demand paralegal support, and tools built exclusively for legal professionals.
+               automation, on-demand law firm and advocate support, and tools built exclusively for legal professionals.
             </p>
           </div>
         </Col>
@@ -184,7 +184,7 @@ const About = () => {
           {[
             { icon: RocketOutlined, title: 'AI-Powered', desc: 'Intelligent automation that handles routine tasks' },
             { icon: SafetyOutlined, title: 'Secure', desc: 'Bank-grade encryption and compliance features' },
-            { icon: TeamOutlined, title: 'Scalable Support', desc: 'On-demand paralegals when you need them' },
+             { icon: TeamOutlined, title: 'Scalable Support', desc: 'On-demand law firms and advocates when you need them' },
             { icon: HeartOutlined, title: 'Built by Lawyers', desc: 'Created by legal professionals who understand your needs' },
           ].map((feature, idx) => (
             <Col xs={24} sm={12} md={6} key={idx}>

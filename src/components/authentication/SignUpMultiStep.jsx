@@ -25,48 +25,38 @@ function SignUpMultiStep() {
     const borderColor = isFuturistic ? themeConfig.border : '#d1d5db';
     const accentColor = isFuturistic ? '#6366f1' : '#1A365D';
 
-    const fields = {
-        'Advocate': [
-            ['full name', 'email', 'phone number', 'law practice name'],
-            ['license number', 'year admitted', 'practice areas'],
-            ['password', 'confirm password']
-        ],
-        'Paralegal': [
-            ['full name', 'email', 'phone number', 'agency name'],
-            ['certification number', 'specialization', 'years of experience'],
-            ['password', 'confirm password']
-        ],
-        'Law School': [
-            ['institution name', 'email', 'phone number', 'address'],
-            ['dean name', 'faculty size', 'student capacity'],
-            ['password', 'confirm password']
-        ],
-        'Legal Clinic': [
-            ['clinic name', 'email', 'phone number', 'address'],
-            ['organization type', 'registration number', 'focus areas'],
-            ['password', 'confirm password']
-        ],
-        'Paralegal Agency': [
-            ['agency name', 'email', 'phone number', 'address'],
-            ['registration number', 'number of paralegals', 'service areas'],
-            ['password', 'confirm password']
-        ],
-        'Individual': [
-            ['full name', 'email', 'id number or passport number', 'gender', 'nationality', 'date of birth', 'phone number', 'occupation', 'marital status', 'is disabled', 'is advocate'],
-            ['alternative phone number', 'address'],
-            ['password', 'confirm password']
-        ],
-        'Organization': [
-            ['Organization Name', 'Company Registration Number', 'email', 'phone number', 'is auctioneer'],
-            ['address', 'alternative phone number'],
-            ['password', 'confirm password'],
-        ],
-        'Law Firm': [
-            ['Law Firm Registration No', 'Law Firm Name', 'email', 'phone number'],
-            ['address', 'alternative phone number'],
-            ['password', 'confirm password'] 
-        ],
-    };
+     const fields = {
+         'Advocate': [
+             ['full name', 'email', 'phone number', 'bar number'],
+             ['practice areas', 'bio'],
+             ['password', 'confirm password']
+         ],
+         'Law School': [
+             ['institution name', 'email', 'phone number'],
+             ['address', 'description'],
+             ['password', 'confirm password']
+         ],
+         'Legal Clinic': [
+             ['clinic name', 'email', 'phone number'],
+             ['address', 'focus areas', 'bio'],
+             ['password', 'confirm password']
+         ],
+         'Individual': [
+             ['full name', 'email', 'phone number'],
+             ['nationality', 'occupation', 'bio'],
+             ['password', 'confirm password']
+         ],
+         'Organization': [
+             ['Organization Name', 'registration number', 'email', 'phone number'],
+             ['address', 'industry', 'bio'],
+             ['password', 'confirm password'],
+         ],
+         'Law Firm': [
+             ['Law Firm Name', 'registration number', 'email', 'phone number'],
+             ['address', 'practice areas', 'bio'],
+             ['password', 'confirm password'] 
+         ],
+     };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -79,19 +69,17 @@ function SignUpMultiStep() {
     const nextStep = () => setStep(step + 1);
     const prevStep = () => setStep(step - 1);
     
-    const mapRoleToBackend = (displayName) => {
-        const roleMap = {
-            'Advocate': 'advocate',
-            'Paralegal': 'paralegal',
-            'Law School': 'law_school',
-            'Legal Clinic': 'legal_clinic',
-            'Paralegal Agency': 'paralegal_agency',
-            'Law Firm': 'firm',
-            'Individual': 'individual',
-            'Organization': 'organization',
-        };
-        return roleMap[displayName] || displayName.toLowerCase().replace(/\s+/g, '_');
-    };
+     const mapRoleToBackend = (displayName) => {
+         const roleMap = {
+             'Advocate': 'advocate',
+             'Law School': 'law_school',
+             'Legal Clinic': 'legal_clinic',
+             'Law Firm': 'firm',
+             'Individual': 'individual',
+             'Organization': 'organization',
+         };
+         return roleMap[displayName] || displayName.toLowerCase().replace(/\s+/g, '_');
+     };
 
     const handleUserTypeSelection = (type) => {
         setUserType(type);
@@ -162,68 +150,68 @@ function SignUpMultiStep() {
                 <p style={{ color: mutedText }}>Select your account type to get started</p>
             </div>
             
-            <div className="mb-6">
-                <p className="text-sm font-semibold uppercase mb-3" style={{ color: mutedText }}>
-                    Legal Professionals
-                </p>
-                <div className="flex flex-col md:flex-row justify-center md:space-x-3 space-y-3 md:space-y-0">
-                    {['Advocate', 'Paralegal'].map(type => (
-                        <button
-                            key={type}
-                            onClick={() => handleUserTypeSelection(type)}
-                            className={`font-bold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg ${
-                                isFuturistic 
-                                    ? 'futuristic-btn' 
-                                    : 'bg-[#1A365D] hover:bg-[#2D3748] text-white'
-                            }`}
-                        >
-                            {type}
-                        </button>
-                    ))}
-                </div>
-            </div>
-            
-            <div className="mb-6">
-                <p className="text-sm font-semibold uppercase mb-3" style={{ color: mutedText }}>
-                    Institutions
-                </p>
-                <div className="flex flex-col md:flex-row justify-center md:space-x-3 space-y-3 md:space-y-0">
-                    {['Law School', 'Legal Clinic', 'Paralegal Agency'].map(type => (
-                        <button
-                            key={type}
-                            onClick={() => handleUserTypeSelection(type)}
-                            className={`font-bold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg ${
-                                isFuturistic 
-                                    ? 'futuristic-btn-secondary' 
-                                    : 'bg-[#38A169] hover:bg-[#2F855A] text-white'
-                            }`}
-                        >
-                            {type}
-                        </button>
-                    ))}
-                </div>
-            </div>
-            
-            <div className="mb-6">
-                <p className="text-sm font-semibold uppercase mb-3" style={{ color: mutedText }}>
-                    Other
-                </p>
-                <div className="flex flex-col md:flex-row justify-center md:space-x-3 space-y-3 md:space-y-0">
-                    {['Individual', 'Organization', 'Law Firm'].map(type => (
-                        <button
-                            key={type}
-                            onClick={() => handleUserTypeSelection(type)}
-                            className={`font-bold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg ${
-                                isFuturistic 
-                                    ? 'bg-cyber-surface text-aurora-text hover:bg-cyber-accent' 
-                                    : 'bg-[#2D3748] hover:bg-[#1A365D] text-white'
-                            }`}
-                        >
-                            {type}
-                        </button>
-                    ))}
-                </div>
-            </div>
+             <div className="mb-6">
+                 <p className="text-sm font-semibold uppercase mb-3" style={{ color: mutedText }}>
+                     Legal Professionals
+                 </p>
+                 <div className="flex flex-col md:flex-row justify-center md:space-x-3 space-y-3 md:space-y-0">
+                     {['Advocate', 'Law Firm'].map(type => (
+                         <button
+                             key={type}
+                             onClick={() => handleUserTypeSelection(type)}
+                             className={`font-bold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg ${
+                                 isFuturistic 
+                                     ? 'futuristic-btn' 
+                                     : 'bg-[#1A365D] hover:bg-[#2D3748] text-white'
+                             }`}
+                         >
+                             {type}
+                         </button>
+                     ))}
+                 </div>
+             </div>
+             
+             <div className="mb-6">
+                 <p className="text-sm font-semibold uppercase mb-3" style={{ color: mutedText }}>
+                     Institutions
+                 </p>
+                 <div className="flex flex-col md:flex-row justify-center md:space-x-3 space-y-3 md:space-y-0">
+                     {['Law School', 'Legal Clinic'].map(type => (
+                         <button
+                             key={type}
+                             onClick={() => handleUserTypeSelection(type)}
+                             className={`font-bold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg ${
+                                 isFuturistic 
+                                     ? 'futuristic-btn-secondary' 
+                                     : 'bg-[#38A169] hover:bg-[#2F855A] text-white'
+                             }`}
+                         >
+                             {type}
+                         </button>
+                     ))}
+                 </div>
+             </div>
+             
+             <div className="mb-6">
+                 <p className="text-sm font-semibold uppercase mb-3" style={{ color: mutedText }}>
+                     Other
+                 </p>
+                 <div className="flex flex-col md:flex-row justify-center md:space-x-3 space-y-3 md:space-y-0">
+                     {['Individual', 'Organization'].map(type => (
+                         <button
+                             key={type}
+                             onClick={() => handleUserTypeSelection(type)}
+                             className={`font-bold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg ${
+                                 isFuturistic 
+                                     ? 'bg-cyber-surface text-aurora-text hover:bg-cyber-accent' 
+                                     : 'bg-[#2D3748] hover:bg-[#1A365D] text-white'
+                             }`}
+                         >
+                             {type}
+                         </button>
+                     ))}
+                 </div>
+             </div>
             
             <div className="mt-8 text-center">
                 <p style={{ color: mutedText }}>
@@ -251,83 +239,57 @@ function SignUpMultiStep() {
                 <h2 className="text-2xl text-center mb-6 font-bold" style={{ color: textColor }}>
                     {userType} Registration - Step {step}/3
                 </h2>
-                {currentFields.map(field => (
-                    <div key={field} className="mb-4">
-                        <label className="block text-sm font-bold mb-2" style={{ color: textColor }}>
-                            {field.toUpperCase()}
-                        </label>
-                        {field === 'is auctioneer' || field === 'is disabled' || field === 'is advocate' ? (
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    name={field}
-                                    checked={formData[field] || false}
-                                    onChange={handleChange}
-                                    className="form-checkbox h-5 w-5"
-                                    style={{ color: accentColor }}
-                                />
-                            </div>
-                        ) : field === 'gender' ? (
-                            <div className="flex items-center space-x-4">
-                                <label className="flex items-center">
-                                    <input
-                                        type="radio"
-                                        name="gender"
-                                        value="Male"
-                                        checked={formData.gender === 'Male'}
-                                        onChange={handleChange}
-                                        className="form-radio h-5 w-5"
-                                        style={{ color: accentColor }}
-                                    />
-                                    <span className="ml-2" style={{ color: textColor }}>Male</span>
-                                </label>
-                                <label className="flex items-center">
-                                    <input
-                                        type="radio"
-                                        name="gender"
-                                        value="Female"
-                                        checked={formData.gender === 'Female'}
-                                        onChange={handleChange}
-                                        className="form-radio h-5 w-5"
-                                        style={{ color: accentColor }}
-                                    />
-                                    <span className="ml-2" style={{ color: textColor }}>Female</span>
-                                </label>
-                            </div>
-                        ) : field === 'marital status' ? (
-                            <div className="flex flex-wrap items-center gap-4">
-                                {['Single', 'Married', 'Divorced'].map(status => (
-                                    <label key={status} className="flex items-center">
-                                        <input
-                                            type="radio"
-                                            name="marital status"
-                                            value={status}
-                                            checked={formData['marital status'] === status}
-                                            onChange={handleChange}
-                                            className="form-radio h-5 w-5"
-                                            style={{ color: accentColor }}
-                                        />
-                                        <span className="ml-2" style={{ color: textColor }}>{status}</span>
-                                    </label>
-                                ))}
-                            </div>
-                        ) : (
-                            <input
-                                type={field === 'date of birth' ? 'date' : 
-                                    field.includes('password') ? 'password' : 'text'}
-                                name={field}
-                                value={formData[field] || ''}
-                                onChange={handleChange}
-                                className="shadow appearance-none border rounded w-full py-3 px-4 leading-tight focus:outline-none focus:shadow-outline"
-                                style={{ 
-                                    backgroundColor: inputBg, 
-                                    color: textColor,
-                                    borderColor: borderColor
-                                }}
-                            />
-                        )}
-                    </div>
-                ))}
+                 {currentFields.map(field => (
+                     <div key={field} className="mb-4">
+                         <label className="block text-sm font-bold mb-2" style={{ color: textColor }}>
+                             {field.replace(/_/g, ' ').toUpperCase()}
+                         </label>
+                         {field === 'bio' || field === 'description' ? (
+                             <textarea
+                                 name={field}
+                                 value={formData[field] || ''}
+                                 onChange={handleChange}
+                                 placeholder="Tell us about yourself or your organization..."
+                                 rows={3}
+                                 className="shadow appearance-none border rounded w-full py-3 px-4 leading-tight focus:outline-none focus:shadow-outline"
+                                 style={{ 
+                                     backgroundColor: inputBg, 
+                                     color: textColor,
+                                     borderColor: borderColor,
+                                     resize: 'vertical'
+                                 }}
+                             />
+                         ) : field.includes('practice areas') || field.includes('focus areas') ? (
+                             <textarea
+                                 name={field}
+                                 value={formData[field] || ''}
+                                 onChange={handleChange}
+                                 placeholder="List your practice areas, separated by commas..."
+                                 rows={2}
+                                 className="shadow appearance-none border rounded w-full py-3 px-4 leading-tight focus:outline-none focus:shadow-outline"
+                                 style={{ 
+                                     backgroundColor: inputBg, 
+                                     color: textColor,
+                                     borderColor: borderColor
+                                 }}
+                             />
+                         ) : (
+                             <input
+                                 type={field.includes('password') ? 'password' : 'text'}
+                                 name={field}
+                                 value={formData[field] || ''}
+                                 onChange={handleChange}
+                                 placeholder={`Enter ${field.replace(/_/g, ' ')}`}
+                                 className="shadow appearance-none border rounded w-full py-3 px-4 leading-tight focus:outline-none focus:shadow-outline"
+                                 style={{ 
+                                     backgroundColor: inputBg, 
+                                     color: textColor,
+                                     borderColor: borderColor
+                                 }}
+                             />
+                         )}
+                     </div>
+                 ))}
 
                 <div className="flex justify-between mt-6">
                     {step === 1 ? (

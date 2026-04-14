@@ -1,181 +1,220 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, Filter, Clock, Star, CheckCircle2, Zap, 
   Shield, Users, FileText, Calendar, Scale, DollarSign,
-  ArrowRight, MessageSquare, ExternalLink, Award, AlertCircle
+  ArrowRight, MessageSquare, ExternalLink, Award, AlertCircle,
+  Building, Briefcase, MapPin
 } from 'lucide-react';
 import { Button, Rate, Tag, Badge, Tabs, Empty, Spin } from 'antd';
 import { useTheme } from '../contexts/ThemeContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
+import api from '../axiosConfig';
 
-const ParalegalsMarketplace = () => {
+const FirmsMarketplace = () => {
   const { isFuturistic, themeConfig } = useTheme();
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [firms, setFirms] = useState([]);
 
-  const paralegals = [
-    {
-      id: 1,
-      name: 'Sarah Mitchell',
-      avatar: 'SM',
-      rating: 4.9,
-      reviews: 127,
-      specialties: ['Document Review', 'Legal Research', 'Contract Analysis'],
-      hourlyRate: 45,
-      availability: 'Available Now',
-      verified: true,
-      experience: '5 years',
-      responseTime: '< 15 min',
-      bio: 'Former Big Law paralegal specializing in commercial litigation and contract review. Bar-certified with expertise in legal research platforms.',
-      completedProjects: 340,
-    },
-    {
-      id: 2,
-      name: 'Michael Chen',
-      avatar: 'MC',
-      rating: 4.8,
-      reviews: 98,
-      specialties: ['Case Management', 'Trial Preparation', 'Client Communication'],
-      hourlyRate: 55,
-      availability: 'Available Today',
-      verified: true,
-      experience: '7 years',
-      responseTime: '< 30 min',
-      bio: 'Senior litigation paralegal with experience at top-tier law firms. Expert in trial preparation and case management systems.',
-      completedProjects: 256,
-    },
-    {
-      id: 3,
-      name: 'Amanda Rodriguez',
-      avatar: 'AR',
-      rating: 4.9,
-      reviews: 156,
-      specialties: ['Corporate Law', 'M&A Due Diligence', 'Regulatory Compliance'],
-      hourlyRate: 65,
-      availability: 'Available Now',
-      verified: true,
-      experience: '8 years',
-      responseTime: '< 1 hour',
-      bio: 'Corporate transactions specialist with background at major law firms. Extensive experience in M&A due diligence and compliance review.',
-      completedProjects: 412,
-    },
-    {
-      id: 4,
-      name: 'David Thompson',
-      avatar: 'DT',
-      rating: 4.7,
-      reviews: 83,
-      specialties: ['Real Estate', 'Title Research', 'Closing Documents'],
-      hourlyRate: 50,
-      availability: 'Available Today',
-      verified: true,
-      experience: '6 years',
-      responseTime: '< 2 hours',
-      bio: 'Real estate paralegal with expertise in title research, closing document preparation, and property due diligence.',
-      completedProjects: 198,
-    },
-    {
-      id: 5,
-      name: 'Jennifer Walsh',
-      avatar: 'JW',
-      rating: 4.9,
-      reviews: 112,
-      specialties: ['Family Law', 'Divorce Proceedings', 'Child Custody'],
-      hourlyRate: 48,
-      availability: 'Available Now',
-      verified: true,
-      experience: '4 years',
-      responseTime: '< 30 min',
-      bio: 'Compassionate family law specialist with mediation training. Experienced in handling sensitive matters with discretion.',
-      completedProjects: 289,
-    },
-    {
-      id: 6,
-      name: 'Robert Kim',
-      avatar: 'RK',
-      rating: 4.8,
-      reviews: 91,
-      specialties: ['Intellectual Property', 'Patent Filing', 'Trademark Research'],
-      hourlyRate: 70,
-      availability: 'Available Today',
-      verified: true,
-      experience: '9 years',
-      responseTime: '< 1 hour',
-      bio: 'IP specialist with USPTO experience. Expert in patent applications, trademark searches, and intellectual property litigation support.',
-      completedProjects: 334,
-    },
-  ];
+  useEffect(() => {
+    fetchFirms();
+  }, []);
+
+  const fetchFirms = async () => {
+    try {
+      setLoading(true);
+      // Fetch all subscribed law firms from backend
+      const response = await api.get('/firms');
+      setFirms(response.data);
+    } catch (error) {
+      console.error('Error fetching firms:', error);
+      // Fallback to sample data if API fails
+      setFirms([
+        {
+          id: 1,
+          name: 'Hampton & Associates Law Firm',
+          avatar: 'HA',
+          rating: 4.9,
+          reviews: 234,
+          specialties: ['Corporate Law', 'M&A', 'Commercial Litigation', 'Regulatory Compliance'],
+          hourlyRate: 150,
+          availability: 'Available Now',
+          verified: true,
+          experience: '12 years',
+          responseTime: '< 30 min',
+          bio: 'Full-service corporate law firm with expertise in mergers & acquisitions, commercial litigation, and regulatory compliance. Serving clients across East Africa.',
+          completedProjects: 567,
+          location: 'Nairobi, Kenya',
+          advocatesCount: 15,
+          subscriptionStatus: 'active'
+        },
+        {
+          id: 2,
+          name: 'Mwangi & Kim Advocates',
+          avatar: 'MK',
+          rating: 4.8,
+          reviews: 189,
+          specialties: ['Real Estate', 'Property Law', 'Conveyancing', 'Land Disputes'],
+          hourlyRate: 120,
+          availability: 'Available Today',
+          verified: true,
+          experience: '8 years',
+          responseTime: '< 1 hour',
+          bio: 'Specialized real estate and property law firm with extensive experience in conveyancing, land transactions, and property dispute resolution.',
+          completedProjects: 423,
+          location: 'Nairobi, Kenya',
+          advocatesCount: 8,
+          subscriptionStatus: 'active'
+        },
+        {
+          id: 3,
+          name: 'Omondi Legal Partners',
+          avatar: 'OL',
+          rating: 4.9,
+          reviews: 156,
+          specialties: ['Family Law', 'Divorce', 'Child Custody', 'Estate Planning'],
+          hourlyRate: 100,
+          availability: 'Available Now',
+          verified: true,
+          experience: '10 years',
+          responseTime: '< 45 min',
+          bio: 'Compassionate family law practice specializing in divorce proceedings, child custody arrangements, and comprehensive estate planning services.',
+          completedProjects: 389,
+          location: 'Mombasa, Kenya',
+          advocatesCount: 6,
+          subscriptionStatus: 'active'
+        },
+        {
+          id: 4,
+          name: 'TechLaw Africa',
+          avatar: 'TL',
+          rating: 4.7,
+          reviews: 112,
+          specialties: ['Intellectual Property', 'Technology Law', 'Data Privacy', 'Fintech'],
+          hourlyRate: 180,
+          availability: 'Available Today',
+          verified: true,
+          experience: '6 years',
+          responseTime: '< 1 hour',
+          bio: 'Technology-focused law firm specializing in IP protection, data privacy compliance, fintech regulations, and digital transformation legal support.',
+          completedProjects: 298,
+          location: 'Nairobi, Kenya',
+          advocatesCount: 10,
+          subscriptionStatus: 'active'
+        },
+        {
+          id: 5,
+          name: 'Nairobi Criminal Defense Chambers',
+          avatar: 'NC',
+          rating: 4.9,
+          reviews: 201,
+          specialties: ['Criminal Law', 'White Collar Crime', 'Criminal Defense', 'Appeals'],
+          hourlyRate: 200,
+          availability: 'Available Now',
+          verified: true,
+          experience: '15 years',
+          responseTime: '< 15 min',
+          bio: 'Elite criminal defense practice with expertise in white collar crime, complex criminal litigation, and appellate advocacy. Available 24/7 for emergencies.',
+          completedProjects: 456,
+          location: 'Nairobi, Kenya',
+          advocatesCount: 12,
+          subscriptionStatus: 'active'
+        },
+        {
+          id: 6,
+          name: 'East Africa Commercial Chambers',
+          avatar: 'EA',
+          rating: 4.8,
+          reviews: 178,
+          specialties: ['Commercial Law', 'Arbitration', 'Mediation', 'Cross-Border Transactions'],
+          hourlyRate: 160,
+          availability: 'Available Today',
+          verified: true,
+          experience: '11 years',
+          responseTime: '< 1 hour',
+          bio: 'Regional commercial law experts specializing in cross-border transactions, international arbitration, and alternative dispute resolution across East Africa.',
+          completedProjects: 412,
+          location: 'Nairobi, Kenya',
+          advocatesCount: 18,
+          subscriptionStatus: 'active'
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const categories = [
-    { key: 'all', label: 'All Services', icon: Users, count: 24 },
-    { key: 'litigation', label: 'Litigation', icon: Scale, count: 8 },
-    { key: 'corporate', label: 'Corporate', icon: FileText, count: 6 },
-    { key: 'research', label: 'Research', icon: Search, count: 5 },
-    { key: 'family', label: 'Family Law', icon: Users, count: 3 },
-    { key: 'realestate', label: 'Real Estate', icon: Calendar, count: 4 },
+    { key: 'all', label: 'All Practice Areas', icon: Briefcase, count: 42 },
+    { key: 'corporate', label: 'Corporate Law', icon: Building, count: 15 },
+    { key: 'litigation', label: 'Litigation', icon: Scale, count: 12 },
+    { key: 'realestate', label: 'Real Estate', icon: MapPin, count: 8 },
+    { key: 'ip', label: 'Intellectual Property', icon: Award, count: 5 },
+    { key: 'family', label: 'Family Law', icon: Users, count: 4 },
   ];
 
   const services = [
     {
-      title: 'Document Review',
-      description: 'Thorough review and summarization of legal documents, contracts, and correspondence',
-      icon: FileText,
-      avgRate: '$35-55/hr',
+      title: 'Corporate Advisory',
+      description: 'Comprehensive corporate legal support including structuring, compliance, and governance',
+      icon: Building,
+      avgRate: '$120-250/hr',
     },
     {
-      title: 'Legal Research',
-      description: 'Comprehensive case law research, statutory analysis, and precedent identification',
-      icon: Search,
-      avgRate: '$40-60/hr',
-    },
-    {
-      title: 'Trial Preparation',
-      description: 'Exhibit preparation, witness coordination, and courtroom support materials',
+      title: 'Litigation Services',
+      description: 'Full representation in civil, commercial, and criminal litigation matters',
       icon: Scale,
-      avgRate: '$50-75/hr',
+      avgRate: '$150-300/hr',
     },
     {
-      title: 'Client Intake',
-      description: 'Initial client interviews, information gathering, and case file establishment',
+      title: 'Real Estate Transactions',
+      description: 'Conveyancing, property due diligence, and land dispute resolution',
+      icon: MapPin,
+      avgRate: '$100-180/hr',
+    },
+    {
+      title: 'IP Protection',
+      description: 'Trademark, patent, copyright registration and enforcement',
+      icon: Award,
+      avgRate: '$130-220/hr',
+    },
+    {
+      title: 'Family Law Matters',
+      description: 'Divorce, custody, adoption, and estate planning services',
       icon: Users,
-      avgRate: '$30-45/hr',
+      avgRate: '$80-150/hr',
     },
     {
-      title: 'Deadline Tracking',
-      description: 'Calendar management, deadline monitoring, and reminder systems',
-      icon: Clock,
-      avgRate: '$25-40/hr',
-    },
-    {
-      title: 'Document Drafting',
-      description: 'Drafting legal documents, correspondence, and standard legal forms',
-      icon: FileText,
-      avgRate: '$45-70/hr',
+      title: 'Commercial Arbitration',
+      description: 'Alternative dispute resolution for commercial conflicts',
+      icon: Briefcase,
+      avgRate: '$180-350/hr',
     },
   ];
 
-  const filteredParalegals = paralegals.filter(paralegal => {
-    const matchesSearch = paralegal.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      paralegal.specialties.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredFirms = firms.filter(firm => {
+    const matchesSearch = firm.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      firm.specialties.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      firm.location.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
-  const handleHire = (paralegal) => {
-    window.location.href = `/chat-users?hire=${paralegal.id}`;
+  const handleContact = (firm) => {
+    window.location.href = `/chat-users?hire=${firm.id}&type=firm`;
   };
 
   const tabItems = [
     {
       key: 'all',
-      label: 'All Paralegals',
+      label: 'All Law Firms',
       children: (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredParalegals.map(paralegal => (
-            <ParalegalCard 
-              key={paralegal.id} 
-              paralegal={paralegal} 
-              onHire={() => handleHire(paralegal)}
+          {filteredFirms.map(firm => (
+            <FirmCard 
+              key={firm.id} 
+              firm={firm} 
+              onContact={() => handleContact(firm)}
             />
           ))}
         </div>
@@ -191,13 +230,13 @@ const ParalegalsMarketplace = () => {
       ),
       children: (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredParalegals
-            .filter(p => p.availability.includes('Now'))
-            .map(paralegal => (
-              <ParalegalCard 
-                key={paralegal.id} 
-                paralegal={paralegal} 
-                onHire={() => handleHire(paralegal)}
+          {filteredFirms
+            .filter(f => f.availability.includes('Now'))
+            .map(firm => (
+              <FirmCard 
+                key={firm.id} 
+                firm={firm} 
+                onContact={() => handleContact(firm)}
               />
             ))}
         </div>
@@ -208,13 +247,13 @@ const ParalegalsMarketplace = () => {
       label: 'Top Rated',
       children: (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredParalegals
-            .filter(p => p.rating >= 4.8)
-            .map(paralegal => (
-              <ParalegalCard 
-                key={paralegal.id} 
-                paralegal={paralegal} 
-                onHire={() => handleHire(paralegal)}
+          {filteredFirms
+            .filter(f => f.rating >= 4.8)
+            .map(firm => (
+              <FirmCard 
+                key={firm.id} 
+                firm={firm} 
+                onContact={() => handleContact(firm)}
               />
             ))}
         </div>
@@ -231,11 +270,11 @@ const ParalegalsMarketplace = () => {
             <Zap className={`w-10 h-10 ${isFuturistic ? 'text-danger' : 'text-danger-500'}`} />
           </div>
           <h3 className={`text-2xl font-bold mb-2 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
-            Need Urgent Help?
+            Need Urgent Legal Help?
           </h3>
           <p className={`mb-6 max-w-md mx-auto ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}`}>
-            Our emergency paralegal network can have qualified help assigned to your matter within 2 hours. 
-            Available 24/7 for urgent matters.
+            Our emergency law firm network can have qualified legal representation assigned to your matter within 2 hours. 
+            Available 24/7 for urgent legal matters.
           </p>
           <Button 
             type="primary" 
@@ -251,6 +290,14 @@ const ParalegalsMarketplace = () => {
       ),
     },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -276,25 +323,25 @@ const ParalegalsMarketplace = () => {
                 ? 'bg-aurora-primary/20 text-aurora-primary border border-aurora-primary/30'
                 : 'bg-success-100 text-success-700'
             }`}>
-              On-Demand Support
+              Verified Law Firms
             </div>
             <div className="flex items-center gap-1 text-sm text-success-600">
               <span className="w-2 h-2 bg-success-500 rounded-full animate-pulse" />
-              12 Paralegals Available Now
+              {firms.filter(f => f.availability.includes('Now')).length} Firms Available Now
             </div>
           </div>
           
           <h1 className={`text-3xl md:text-4xl font-bold mb-4 ${
             isFuturistic ? 'text-aurora-text' : 'text-primary-900'
           }`}>
-            Paralegal Marketplace
+            Law Firm Directory
           </h1>
           
           <p className={`text-lg mb-6 max-w-2xl ${
             isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'
           }`}>
-            Connect with pre-vetted, experienced paralegals ready to support your practice. 
-            Scale your capacity instantly without long-term commitments.
+            Connect with verified, subscribed law firms ready to handle your legal matters. 
+            All firms are pre-vetted and automatically listed upon WakiliWorld subscription.
           </p>
           
           {/* Search Bar */}
@@ -307,7 +354,7 @@ const ParalegalsMarketplace = () => {
               <Search className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-400'} size={20} />
               <input
                 type="text"
-                placeholder="Search by name or specialty..."
+                placeholder="Search by firm name, location, or practice area..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={`flex-1 bg-transparent outline-none ${
@@ -329,10 +376,10 @@ const ParalegalsMarketplace = () => {
       {/* Stats Section */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Vetted Paralegals', value: '150+', icon: Shield },
-          { label: 'Tasks Completed', value: '12,500+', icon: CheckCircle2 },
-          { label: 'Average Rating', value: '4.9/5', icon: Star },
-          { label: 'Response Time', value: '< 30 min', icon: Clock },
+          { label: 'Verified Law Firms', value: '50+', icon: Building },
+          { label: 'Cases Handled', value: '25,000+', icon: CheckCircle2 },
+          { label: 'Average Rating', value: '4.8/5', icon: Star },
+          { label: 'Response Time', value: '< 1 hour', icon: Clock },
         ].map((stat, idx) => (
           <div 
             key={idx}
@@ -367,7 +414,7 @@ const ParalegalsMarketplace = () => {
               : 'bg-white border border-neutral-200 shadow-sm'
           }`}>
             <h3 className={`font-semibold mb-4 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
-              Categories
+              Practice Areas
             </h3>
             <div className="space-y-2">
               {categories.map((cat) => (
@@ -399,10 +446,10 @@ const ParalegalsMarketplace = () => {
 
             <div className={`mt-6 pt-6 border-t ${isFuturistic ? 'border-cyber-border' : 'border-neutral-200'}`}>
               <h4 className={`font-medium mb-3 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
-                Need Custom Support?
+                Need Specialized Counsel?
               </h4>
               <p className={`text-sm mb-4 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
-                Describe your specific needs and we will match you with the right paralegal.
+                Describe your specific legal needs and we will match you with the right law firm.
               </p>
               <Button 
                 block 
@@ -411,19 +458,19 @@ const ParalegalsMarketplace = () => {
                   background: isFuturistic ? themeConfig.accent : undefined,
                 }}
               >
-                Post a Request
+                Post a Legal Request
               </Button>
             </div>
           </div>
         </div>
 
-        {/* Main Content - Paralegals */}
+        {/* Main Content - Law Firms */}
         <div className="lg:col-span-3">
           <Tabs 
             items={tabItems}
-            activeKey={activeTab === 'all' ? 'all' : activeTab}
+            activeKey={activeTab === 'all' || !categories.find(c => c.key === activeTab) ? 'all' : activeTab}
             onChange={setActiveTab}
-            className={isFuturistic ? 'paralegals-tabs' : ''}
+            className={isFuturistic ? 'firms-tabs' : ''}
           />
         </div>
       </div>
@@ -436,10 +483,10 @@ const ParalegalsMarketplace = () => {
       }`}>
         <div className="text-center mb-8">
           <h2 className={`text-2xl font-bold mb-2 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
-            Available Services
+            Legal Services Available
           </h2>
           <p className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}>
-            Expert support across all practice areas
+            Expert legal representation across all practice areas
           </p>
         </div>
         
@@ -479,13 +526,12 @@ const ParalegalsMarketplace = () => {
           : 'bg-gradient-to-r from-primary-800 to-primary-900 text-white'
       }`}>
         <h2 className="text-2xl md:text-3xl font-bold mb-4">
-          Ready to Scale Your Practice?
+          Looking for Professional Legal Representation?
         </h2>
         <p className={`text-lg mb-8 max-w-2xl mx-auto ${
           isFuturistic ? 'text-aurora-muted' : 'text-white/80'
         }`}>
-          Get instant access to vetted paralegals. No recruitment fees. No long-term contracts. 
-          Only pay for the hours you need.
+          Get instant access to verified, subscribed law firms. All firms are automatically listed upon WakiliWorld subscription.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button 
@@ -497,14 +543,14 @@ const ParalegalsMarketplace = () => {
               color: isFuturistic ? undefined : themeConfig.accent || '#1890ff',
             }}
           >
-            Get Started Free
+            Find a Law Firm
           </Button>
           <Button 
             size="large"
             ghost={!isFuturistic}
             className={isFuturistic ? 'border-aurora-primary text-aurora-primary' : ''}
           >
-            Schedule Demo
+            List Your Firm
           </Button>
         </div>
       </div>
@@ -512,7 +558,7 @@ const ParalegalsMarketplace = () => {
   );
 };
 
-const ParalegalCard = ({ paralegal, onHire }) => {
+const FirmCard = ({ firm, onContact }) => {
   const { isFuturistic, themeConfig } = useTheme();
 
   return (
@@ -528,35 +574,41 @@ const ParalegalCard = ({ paralegal, onHire }) => {
               ? 'bg-gradient-to-br from-aurora-primary to-aurora-secondary text-white'
               : 'bg-primary-100 text-primary-800'
           }`}>
-            {paralegal.avatar}
+            {firm.avatar}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h3 className={`font-semibold truncate ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
-                {paralegal.name}
+                {firm.name}
               </h3>
-              {paralegal.verified && (
+              {firm.verified && (
                 <CheckCircle2 className="w-4 h-4 text-success-500 flex-shrink-0" />
               )}
             </div>
             <div className="flex items-center gap-2 mt-1">
               <Star className="w-4 h-4 text-warning-500 fill-warning-500" />
               <span className={`text-sm font-medium ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}>
-                {paralegal.rating}
+                {firm.rating}
               </span>
               <span className={`text-sm ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
-                ({paralegal.reviews} reviews)
+                ({firm.reviews} reviews)
+              </span>
+            </div>
+            <div className="flex items-center gap-1 mt-1 text-sm">
+              <MapPin className="w-3 h-3 text-neutral-400" />
+              <span className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}>
+                {firm.location}
               </span>
             </div>
           </div>
         </div>
 
         <p className={`text-sm mb-4 line-clamp-2 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}`}>
-          {paralegal.bio}
+          {firm.bio}
         </p>
 
         <div className="flex flex-wrap gap-2 mb-4">
-          {paralegal.specialties.map((specialty, idx) => (
+          {firm.specialties.slice(0, 3).map((specialty, idx) => (
             <span 
               key={idx}
               className={`px-2 py-1 rounded text-xs font-medium ${
@@ -568,18 +620,25 @@ const ParalegalCard = ({ paralegal, onHire }) => {
               {specialty}
             </span>
           ))}
+          {firm.specialties.length > 3 && (
+            <span className={`px-2 py-1 rounded text-xs font-medium ${
+              isFuturistic ? 'bg-cyber-bg text-aurora-muted' : 'bg-neutral-100 text-neutral-600'
+            }`}>
+              +{firm.specialties.length - 3} more
+            </span>
+          )}
         </div>
 
         <div className={`grid grid-cols-2 gap-3 mb-4 text-sm ${
           isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'
         }`}>
           <div className="flex items-center gap-2">
-            <Clock size={14} />
-            <span>{paralegal.experience}</span>
+            <Users size={14} />
+            <span>{firm.advocatesCount} advocates</span>
           </div>
           <div className="flex items-center gap-2">
             <CheckCircle2 size={14} className="text-success-500" />
-            <span>{paralegal.completedProjects} tasks</span>
+            <span>{firm.completedProjects} cases</span>
           </div>
         </div>
 
@@ -588,12 +647,12 @@ const ParalegalCard = ({ paralegal, onHire }) => {
         }`}>
           <div>
             <div className={`text-lg font-bold ${isFuturistic ? 'text-aurora-primary' : 'text-primary-700'}`}>
-              ${paralegal.hourlyRate}/hr
+              ${firm.hourlyRate}/hr
             </div>
             <div className="flex items-center gap-1 text-xs">
               <span className="w-1.5 h-1.5 bg-success-500 rounded-full animate-pulse" />
               <span className={isFuturistic ? 'text-aurora-muted' : 'text-success-600'}>
-                {paralegal.availability}
+                {firm.availability}
               </span>
             </div>
           </div>
@@ -602,8 +661,9 @@ const ParalegalCard = ({ paralegal, onHire }) => {
               size="small"
               icon={<MessageSquare size={14} />}
               className={isFuturistic ? 'border-cyber-border' : ''}
+              onClick={onContact}
             >
-              Message
+              Contact
             </Button>
             <Button 
               type="primary" 
@@ -612,9 +672,9 @@ const ParalegalCard = ({ paralegal, onHire }) => {
               style={{
                 background: isFuturistic ? undefined : themeConfig.accent,
               }}
-              onClick={onHire}
+              onClick={onContact}
             >
-              Hire
+              Retain
             </Button>
           </div>
         </div>
@@ -623,4 +683,4 @@ const ParalegalCard = ({ paralegal, onHire }) => {
   );
 };
 
-export default ParalegalsMarketplace;
+export default FirmsMarketplace;

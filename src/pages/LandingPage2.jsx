@@ -39,12 +39,12 @@ function LandingPage() {
       description: 'Never miss a deadline with automated reminders and calendar integrations.',
       color: 'success',
     },
-    {
-      icon: Users,
-      title: 'Paralegal Network',
-      description: 'Access vetted remote paralegals on-demand for extra support when you need it.',
-      color: 'warning',
-    },
+     {
+       icon: Users,
+       title: 'Law Firm Directory',
+       description: 'Access verified, subscribed law firms on-demand for specialized legal support.',
+       color: 'warning',
+     },
     {
       icon: BarChart3,
       title: 'Analytics Dashboard',
@@ -79,12 +79,12 @@ function LandingPage() {
       role: 'Solo Practitioner',
       rating: 5,
     },
-    {
-      quote: 'The paralegal marketplace is a game-changer. I can scale my practice without hiring full-time staff.',
-      author: 'Amanda Rodriguez',
-      role: 'Managing Partner, Rodriguez Legal',
-      rating: 5,
-    },
+     {
+       quote: 'The law firm directory is a game-changer. I can find specialized legal support without hiring full-time staff.',
+       author: 'Amanda Rodriguez',
+       role: 'Managing Partner, Rodriguez Legal',
+       rating: 5,
+     },
   ];
 
   const getColorClasses = (color) => {
@@ -253,78 +253,78 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* Paralegal Section */}
-      <section className={`py-20 px-4 md:px-8 ${
-        isFuturistic ? 'bg-surface-900' : 'bg-neutral-50'
-      }`}>
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div data-aos="fade-right">
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4 ${
-                isFuturistic ? 'bg-success/20 text-success' : 'bg-success-100 text-success-700'
-              }`}>
-                <Users className="w-4 h-4" />
-                <span className="text-sm font-medium">Paralegal Marketplace</span>
-              </div>
-              <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${
-                isFuturistic ? 'text-aurora-text' : 'text-primary-900'
-              }`}>
-                Never Handle It Alone
-              </h2>
-              <p className={`text-lg mb-6 ${
-                isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'
-              }`}>
-                Access our network of pre-vetted, experienced paralegals whenever you need extra support. No recruitment fees. No long-term commitments. Just qualified help when you need it.
-              </p>
-              <ul className="space-y-3 mb-8">
-                {[
-                  'Emergency support within 2 hours',
-                  'Minimum 3 years experience',
-                  'Background checked and vetted',
-                  'Specialized by practice area',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <CheckCircle2 className={`w-5 h-5 ${isFuturistic ? 'text-success' : 'text-success-500'}`} />
-                    <span className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-700'}>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <a
-                href="/paralegals"
-                className={`inline-flex items-center gap-2 px-6 py-3 font-semibold rounded-xl transition-all ${
-                  isFuturistic
-                    ? 'bg-gradient-to-r from-aurora-primary to-aurora-secondary text-white shadow-aurora-primary/30 hover:shadow-aurora-primary/50'
-                    : 'bg-primary-800 hover:bg-primary-700 text-white'
-                }`}
-              >
-                Browse Paralegals
-                <ArrowRight className="w-5 h-5" />
-              </a>
-            </div>
-            <div className="relative" data-aos="fade-left">
-              <div className={`aspect-square rounded-2xl flex items-center justify-center ${
-                isFuturistic
-                  ? 'bg-gradient-to-br from-aurora-primary/20 to-aurora-secondary/20 border border-aurora-primary/30'
-                  : 'bg-gradient-to-br from-primary-100 to-accent-100'
-              }`}>
-                <Users className={`w-32 h-32 ${isFuturistic ? 'text-aurora-primary' : 'text-primary-600'}`} />
-              </div>
-              <div className={`absolute -bottom-4 -right-4 px-4 py-3 rounded-xl shadow-lg ${
-                isFuturistic
-                  ? 'bg-cyber-card border border-cyber-border'
-                  : 'bg-white'
-              }`}>
-                <div className="flex items-center gap-2">
-                  <Clock className={`w-5 h-5 ${isFuturistic ? 'text-success' : 'text-success-500'}`} />
-                  <span className={`font-medium ${isFuturistic ? 'text-aurora-text' : 'text-primary-900'}`}>
-                    Avg Response: 30 min
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+       {/* Law Firms Section */}
+       <section className={`py-20 px-4 md:px-8 ${
+         isFuturistic ? 'bg-surface-900' : 'bg-neutral-50'
+       }`}>
+         <div className="max-w-6xl mx-auto">
+           <div className="grid md:grid-cols-2 gap-12 items-center">
+             <div data-aos="fade-right">
+               <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4 ${
+                 isFuturistic ? 'bg-success/20 text-success' : 'bg-success-100 text-success-700'
+               }`}>
+                 <Users className="w-4 h-4" />
+                 <span className="text-sm font-medium">Law Firm Directory</span>
+               </div>
+               <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${
+                 isFuturistic ? 'text-aurora-text' : 'text-primary-900'
+               }`}>
+                 Connect With Verified Law Firms
+               </h2>
+               <p className={`text-lg mb-6 ${
+                 isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'
+               }`}>
+                 Access our directory of verified, subscribed law firms whenever you need specialized legal support. All firms are automatically listed upon WakiliWorld subscription. No recruitment fees. No long-term commitments.
+               </p>
+               <ul className="space-y-3 mb-8">
+                 {[
+                   'Emergency support within 2 hours',
+                   'Verified legal credentials',
+                   'Background checked and vetted',
+                   'Specialized by practice area',
+                 ].map((item, i) => (
+                   <li key={i} className="flex items-center gap-3">
+                     <CheckCircle2 className={`w-5 h-5 ${isFuturistic ? 'text-success' : 'text-success-500'}`} />
+                     <span className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-700'}>{item}</span>
+                   </li>
+                 ))}
+               </ul>
+               <a
+                 href="/firms"
+                 className={`inline-flex items-center gap-2 px-6 py-3 font-semibold rounded-xl transition-all ${
+                   isFuturistic
+                     ? 'bg-gradient-to-r from-aurora-primary to-aurora-secondary text-white shadow-aurora-primary/30 hover:shadow-aurora-primary/50'
+                     : 'bg-primary-800 hover:bg-primary-700 text-white'
+                 }`}
+               >
+                 Browse Law Firms
+                 <ArrowRight className="w-5 h-5" />
+               </a>
+             </div>
+             <div className="relative" data-aos="fade-left">
+               <div className={`aspect-square rounded-2xl flex items-center justify-center ${
+                 isFuturistic
+                   ? 'bg-gradient-to-br from-aurora-primary/20 to-aurora-secondary/20 border border-aurora-primary/30'
+                   : 'bg-gradient-to-br from-primary-100 to-accent-100'
+               }`}>
+                 <Users className={`w-32 h-32 ${isFuturistic ? 'text-aurora-primary' : 'text-primary-600'}`} />
+               </div>
+               <div className={`absolute -bottom-4 -right-4 px-4 py-3 rounded-xl shadow-lg ${
+                 isFuturistic
+                   ? 'bg-cyber-card border border-cyber-border'
+                   : 'bg-white'
+               }`}>
+                 <div className="flex items-center gap-2">
+                   <Clock className={`w-5 h-5 ${isFuturistic ? 'text-success' : 'text-success-500'}`} />
+                   <span className={`font-medium ${isFuturistic ? 'text-aurora-text' : 'text-primary-900'}`}>
+                     Avg Response: 1 hour
+                   </span>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
+       </section>
 
       {/* Final CTA Section */}
       <section className={`py-20 px-4 md:px-8 ${
@@ -387,7 +387,7 @@ function LandingPage() {
               <ul className={`space-y-2 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}`}>
                 <li><a href="/#features" className="hover:underline">Features</a></li>
                 <li><a href="/pricing" className="hover:underline">Pricing</a></li>
-                <li><a href="/paralegals" className="hover:underline">Paralegals</a></li>
+                 <li><a href="/firms" className="hover:underline">Law Firms</a></li>
                 <li><a href="#" className="hover:underline">Integrations</a></li>
               </ul>
             </div>

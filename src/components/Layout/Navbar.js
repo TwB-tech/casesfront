@@ -38,7 +38,7 @@ const Navbar = () => {
       <Menu.Item key="home" onClick={() => handleNav('/')}>Home</Menu.Item>
       <Menu.Item key="features" onClick={() => handleNav('/#features')}>Features</Menu.Item>
       <Menu.Item key="pricing" onClick={() => handleNav('/pricing')}>Pricing</Menu.Item>
-      <Menu.Item key="paralegals" onClick={() => handleNav('/paralegals')}>Paralegals</Menu.Item>
+       <Menu.Item key="firms" onClick={() => handleNav('/firms')}>Law Firms</Menu.Item>
       <Menu.Item key="about" onClick={() => handleNav('/about')}>About</Menu.Item>
       <Menu.Item key="contact" onClick={() => handleNav('/contact')}>Contact Us</Menu.Item>
     </Menu>
@@ -131,14 +131,14 @@ const Navbar = () => {
           >
             Pricing
           </Button>
-          <Button 
-            type="link" 
-            className={`menu-item ${isFuturistic ? 'menu-item-futuristic' : ''}`} 
-            onClick={() => handleNav('/paralegals')}
-            style={{ color: isFuturistic ? '#f8fafc' : '#102a43' }}
-          >
-            Paralegals
-          </Button>
+           <Button 
+             type="link" 
+             className={`menu-item ${isFuturistic ? 'menu-item-futuristic' : ''}`} 
+             onClick={() => handleNav('/firms')}
+             style={{ color: isFuturistic ? '#f8fafc' : '#102a43' }}
+           >
+             Law Firms
+           </Button>
           <Button 
             type="link" 
             className={`menu-item ${isFuturistic ? 'menu-item-futuristic' : ''}`} 

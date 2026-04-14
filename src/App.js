@@ -8,7 +8,7 @@ import Navbar from './components/Layout/Navbar';
 import Sidebar from './components/Layout/SideBar';
 import AppFooter from './components/Layout/Footer';
 import { Layout, Skeleton } from 'antd';
-import ProtectedRoute from './utils/ProtectedRoute';
+import ProtectedRoute, { AccountingRoute, HRRoute, AdminRoute, AdvocateRoute } from './utils/ProtectedRoute';
 import ReactGA from 'react-ga4';
 import ReyaAssistant from './components/Reya/ReyaAssistant';
 import { useTheme, THEMES } from './contexts/ThemeContext';
@@ -45,7 +45,12 @@ const AboutPage = lazy(() => import('./pages/About'));
 const ContactUsPage = lazy(() => import('./pages/ContactUs'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const OnboardingRequest = lazy(() => import('./components/OnboardingRequest'));
-const ParalegalsMarketplace = lazy(() => import('./pages/ParalegalsMarketplace'));
+const FirmsMarketplace = lazy(() => import('./pages/FirmsMarketplace'));
+const AccountingDashboard = lazy(() => import('./pages/AccountingDashboard'));
+const ExpenseManagement = lazy(() => import('./pages/ExpenseManagement'));
+const HRManagement = lazy(() => import('./pages/HRManagement'));
+const FinancialReports = lazy(() => import('./pages/FinancialReports'));
+const PayrollManagement = lazy(() => import('./pages/PayrollManagement'));
 
 
 const Settings = lazy(() => import('./pages/Settings'));
@@ -88,7 +93,7 @@ function AppContent() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const hideSidebarRoutes = ['/login', '/signup', '/', '/register-success', '/hero', '/about', '/contact', '/forgot-password', '/reset-password', '/password-reset-success', '/verify-email', '/pricing', '/paralegals', '*'];
+  const hideSidebarRoutes = ['/login', '/signup', '/', '/register-success', '/hero', '/about', '/contact', '/forgot-password', '/reset-password', '/password-reset-success', '/verify-email', '/pricing', '/firms', '*'];
 
   const shouldHideSidebar = hideSidebarRoutes.includes(location.pathname) || location.pathname === '*';
 
@@ -99,19 +104,19 @@ function AppContent() {
      <Layout className={`app-layout ${isFuturistic ? 'futuristic' : 'classic'}`} style={{ minHeight: '100vh' }}>
       <Navbar />
         <Layout>
-          {!shouldHideSidebar && <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />}
-           <Layout
-             style={{
-               marginLeft: !shouldHideSidebar && (collapsed ? (isMobile ? 0 : 80) : 260),
-               marginTop: 0,
-               padding: '24px',
-               flexGrow: 1,
-               transition: 'margin-left 0.2s, background 0.3s ease',
-               background: isFuturistic
-                 ? 'linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0f0f18 100%)'
-                 : 'linear-gradient(106.5deg, #f8fafc 0%, #f1f5f9 100%)',
-               minHeight: 'calc(100vh - 64px)',
-           }}
+           {!shouldHideSidebar && <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />}
+            <Layout
+              style={{
+                marginLeft: !shouldHideSidebar ? (collapsed ? (isMobile ? 0 : 80) : 260) : 0,
+                marginTop: isMobile ? '64px' : 0,
+                padding: isMobile ? '16px' : '24px',
+                flexGrow: 1,
+                transition: 'margin-left 0.2s, background 0.3s ease',
+                background: isFuturistic
+                  ? 'linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0f0f18 100%)'
+                  : 'linear-gradient(106.5deg, #f8fafc 0%, #f1f5f9 100%)',
+                minHeight: 'calc(100vh - 64px)',
+            }}
          >
            {!shouldHideSidebar && (
              <div className={`mb-6 ${isFuturistic ? '' : ''}`}>
@@ -219,8 +224,13 @@ function AppContent() {
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/contact" element={<ContactUsPage />} />
                   <Route path="/pricing" element={<Pricing />} />
-                  <Route path="/onboarding" element={<OnboardingRequest />} />
-                  <Route path="/paralegals" element={<ParalegalsMarketplace />} />
+                   <Route path="/onboarding" element={<OnboardingRequest />} />
+                   <Route path="/firms" element={<FirmsMarketplace />} />
+                   <Route path="/accounting" element={<AccountingRoute><AccountingDashboard /></AccountingRoute>} />
+                   <Route path="/expenses" element={<AccountingRoute><ExpenseManagement /></AccountingRoute>} />
+                   <Route path="/hr" element={<HRRoute><HRManagement /></HRRoute>} />
+                   <Route path="/reports/financial" element={<AccountingRoute><FinancialReports /></AccountingRoute>} />
+                   <Route path="/payroll" element={<HRRoute><PayrollManagement /></HRRoute>} />
 
                   
                   <Route path='*' element={<ErrorBoundary />} />

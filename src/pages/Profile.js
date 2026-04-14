@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
-import { Card, Tabs, Avatar, Button, Modal, Form, Input, Upload, Tooltip } from 'antd';
-import { EditOutlined, SettingOutlined, UploadOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Card, Tabs, Avatar, Button, Modal, Form, Input, Upload, Tooltip, Statistic, Row, Col, Tag, message } from 'antd';
+import { EditOutlined, SettingOutlined, UploadOutlined, UserOutlined, FileTextOutlined, CalendarOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import useAuth from '../hooks/useAuth';
+import { useTheme } from '../contexts/ThemeContext';
+import { useMediaQuery } from 'react-responsive';
+import axiosInstance from '../axiosConfig';
+import moment from 'moment';
 
 const { TabPane } = Tabs;
 
@@ -10,18 +14,58 @@ const ProfilePage = () => {
   const [isPasswordModalVisible, setPasswordModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
-  const {user } = useAuth();
+  const [profileData, setProfileData] = useState(null);
+  const [stats, setStats] = useState({ cases: 0, clients: 0, documents: 0, tasks: 0 });
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { isFuturistic, themeConfig } = useTheme();
+  const isSmallScreen = useMediaQuery({ maxWidth: 768 });
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        setLoading(true);
+        // Fetch user profile
+        const profileResponse = await axiosInstance.get('/auth/profile/');
+        setProfileData(profileResponse.data);
+
+        // Fetch user stats
+        const statsResponse = await axiosInstance.get('/users/stats/');
+        setStats(statsResponse.data);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        // Fallback sample data
+        setProfileData(user);
+        setStats({ cases: 12, clients: 8, documents: 47, tasks: 23 });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchProfileData();
+    }
+  }, [user]);
 
   const showEditModal = () => {
     setEditModalVisible(true);
   };
 
-  const handleEditOk = () => {
-    form.validateFields().then(values => {
-      console.log('Updated user details:', values);
+  const handleEditOk = async () => {
+    try {
+      const values = await form.validateFields();
+      await axiosInstance.put('/auth/profile/', values);
+      message.success('Profile updated successfully');
       setEditModalVisible(false);
       form.resetFields();
-    });
+      
+      // Refresh profile data
+      const profileResponse = await axiosInstance.get('/auth/profile/');
+      setProfileData(profileResponse.data);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      message.error('Failed to update profile');
+    }
   };
 
   const handleEditCancel = () => {
@@ -33,12 +77,17 @@ const ProfilePage = () => {
     setPasswordModalVisible(true);
   };
 
-  const handlePasswordOk = () => {
-    passwordForm.validateFields().then(values => {
-      console.log('Updated password:', values);
+  const handlePasswordOk = async () => {
+    try {
+      const values = await passwordForm.validateFields();
+      await axiosInstance.post('/auth/change-password/', values);
+      message.success('Password changed successfully');
       setPasswordModalVisible(false);
       passwordForm.resetFields();
-    });
+    } catch (error) {
+      console.error('Error changing password:', error);
+      message.error('Failed to change password');
+    }
   };
 
   const handlePasswordCancel = () => {
@@ -47,27 +96,193 @@ const ProfilePage = () => {
   };
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ 
+      padding: isSmallScreen ? '16px' : '24px', 
+      marginTop: isSmallScreen ? '60px' : '0',
+      background: isFuturistic ? '#12121a' : '#f8fafc',
+      minHeight: '100vh'
+    }}>
+      {/* Stats Cards */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Col xs={12} sm={6}>
+          <Card 
+            className={isFuturistic ? 'bg-cyber-card border-cyber-border' : ''}
+            style={{ borderRadius: '12px' }}
+          >
+            <Statistic 
+              title="Cases"
+              value={stats.cases}
+              valueStyle={{ color: isFuturistic ? '#f8fafc' : '#1e293b', fontWeight: 700 }}
+              prefix={<FileTextOutlined style={{ color: '#3b82f6', marginRight: '8px' }} />}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card 
+            className={isFuturistic ? 'bg-cyber-card border-cyber-border' : ''}
+            style={{ borderRadius: '12px' }}
+          >
+            <Statistic 
+              title="Clients"
+              value={stats.clients}
+              valueStyle={{ color: isFuturistic ? '#f8fafc' : '#1e293b', fontWeight: 700 }}
+              prefix={<UserOutlined style={{ color: '#22c55e', marginRight: '8px' }} />}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card 
+            className={isFuturistic ? 'bg-cyber-card border-cyber-border' : ''}
+            style={{ borderRadius: '12px' }}
+          >
+            <Statistic 
+              title="Documents"
+              value={stats.documents}
+              valueStyle={{ color: isFuturistic ? '#f8fafc' : '#1e293b', fontWeight: 700 }}
+              prefix={<FileTextOutlined style={{ color: '#8b5cf6', marginRight: '8px' }} />}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card 
+            className={isFuturistic ? 'bg-cyber-card border-cyber-border' : ''}
+            style={{ borderRadius: '12px' }}
+          >
+            <Statistic 
+              title="Tasks"
+              value={stats.tasks}
+              valueStyle={{ color: isFuturistic ? '#f8fafc' : '#1e293b', fontWeight: 700 }}
+              prefix={<CheckCircleOutlined style={{ color: '#f59e0b', marginRight: '8px' }} />}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Profile Card */}
       <Card
-        style={{ maxWidth: '600px', margin: 'auto', marginBottom: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+        style={{ 
+          maxWidth: '800px', 
+          margin: 'auto', 
+          marginBottom: '24px', 
+          borderRadius: '16px', 
+          boxShadow: isFuturistic ? '0 4px 12px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.06)',
+          background: isFuturistic ? '#1a1a24' : '#ffffff',
+          border: isFuturistic ? '1px solid #2a2a3a' : 'none'
+        }}
         actions={[
           <Tooltip title="Edit User Details">
-            <EditOutlined key="edit" onClick={showEditModal} />
+            <EditOutlined key="edit" onClick={showEditModal} style={{ fontSize: '18px' }} />
           </Tooltip>,
           <Tooltip title="Change Password">
-            <SettingOutlined key="setting" onClick={showPasswordModal} />
+            <SettingOutlined key="setting" onClick={showPasswordModal} style={{ fontSize: '18px' }} />
           </Tooltip>,
         ]}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Avatar size={64} icon={<UploadOutlined />} />
-          <Upload showUploadList={false}>
-            <Button icon={<UploadOutlined />}>Upload Image</Button>
-          </Upload>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: isSmallScreen ? 'column' : 'row',
+          alignItems: 'center', 
+          gap: '24px',
+          marginBottom: '24px'
+        }}>
+          <div style={{ position: 'relative' }}>
+            <Avatar 
+              size={isSmallScreen ? 80 : 100} 
+              icon={<UserOutlined />}
+              src={profileData?.profile}
+              style={{
+                background: isFuturistic ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#3b82f6',
+                fontSize: '36px',
+                fontWeight: 700
+              }}
+            />
+            <Upload 
+              showUploadList={false}
+              action="/api/upload-avatar"
+              style={{ position: 'absolute', bottom: 0, right: 0 }}
+            >
+              <Button 
+                size="small" 
+                icon={<UploadOutlined />}
+                style={{ borderRadius: '50%', width: '32px', height: '32px', padding: 0 }}
+              />
+            </Upload>
+          </div>
+          
+          <div style={{ flex: 1, textAlign: isSmallScreen ? 'center' : 'left' }}>
+            <h2 style={{ 
+              fontSize: isSmallScreen ? '22px' : '28px', 
+              fontWeight: 700,
+              margin: 0,
+              color: isFuturistic ? '#f8fafc' : '#1e293b'
+            }}>
+              {(profileData?.username || user?.username || 'User').toUpperCase()}
+            </h2>
+            <p style={{ 
+              fontSize: '16px', 
+              margin: '8px 0',
+              color: isFuturistic ? '#e2e8f0' : '#475569'
+            }}>
+              {profileData?.email || user?.email}
+            </p>
+            <Tag 
+              color="blue" 
+              style={{ 
+                borderRadius: '20px', 
+                padding: '4px 16px',
+                fontWeight: 600,
+                textTransform: 'capitalize'
+              }}
+            >
+              {profileData?.role || user?.role}
+            </Tag>
+            
+            {profileData?.bio && (
+              <p style={{ 
+                marginTop: '16px', 
+                color: isFuturistic ? '#94a3b8' : '#64748b',
+                fontSize: '14px',
+                lineHeight: 1.5
+              }}>
+                {profileData.bio}
+              </p>
+            )}
+            
+            {profileData?.practice_areas && (
+              <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: isSmallScreen ? 'center' : 'flex-start' }}>
+                {profileData.practice_areas.split(',').map((area, idx) => (
+                  <Tag key={idx} style={{ borderRadius: '12px' }}>
+                    {area.trim()}
+                  </Tag>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        <h2 style={{ marginTop: '20px' }}>UserName: {user.username.toUpperCase()}</h2>
-        <span>Email: <span style={{fontWeight:"bold"}}>{user.email}</span></span> <br/>
-        <span>Role: <span style={{fontWeight:"bold"}}>{user.role} </span></span>
+        
+        {profileData?.member_since && (
+          <div style={{ 
+            paddingTop: '16px', 
+            borderTop: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px'
+          }}>
+            <div>
+              <p style={{ fontSize: '12px', color: isFuturistic ? '#94a3b8' : '#64748b', margin: 0 }}>Member Since</p>
+              <p style={{ fontWeight: 600, color: isFuturistic ? '#f8fafc' : '#1e293b', margin: '4px 0 0 0' }}>
+                {moment(profileData.member_since).format('MMMM YYYY')}
+              </p>
+            </div>
+            <div>
+              <p style={{ fontSize: '12px', color: isFuturistic ? '#94a3b8' : '#64748b', margin: 0 }}>Last Active</p>
+              <p style={{ fontWeight: 600, color: isFuturistic ? '#f8fafc' : '#1e293b', margin: '4px 0 0 0' }}>
+                {moment(profileData.last_active).fromNow()}
+              </p>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Tabs defaultActiveKey="1" style={{ maxWidth: '600px', margin: 'auto' }}>
