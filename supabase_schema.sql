@@ -34,7 +34,7 @@ CREATE TABLE organizations (
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can only access their organization" ON organizations
-  FOR ALL USING (id = auth.jwt() ->> 'organization_id');
+  FOR ALL USING (id = (auth.jwt() ->> 'organization_id')::uuid);
 
 -- =====================================================
 -- USERS & AUTHENTICATION
@@ -60,7 +60,7 @@ CREATE TABLE users (
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view users in their organization" ON users
-  FOR SELECT USING (organization_id = auth.jwt() ->> 'organization_id');
+  FOR SELECT USING (organization_id = (auth.jwt() ->> 'organization_id')::uuid);
 
 CREATE POLICY "Users can update their own profile" ON users
   FOR UPDATE USING (id = auth.uid());
@@ -99,7 +99,7 @@ CREATE TABLE cases (
 ALTER TABLE cases ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Full access to own organization cases" ON cases
-  FOR ALL USING (organization_id = auth.jwt() ->> 'organization_id');
+  FOR ALL USING (organization_id = (auth.jwt() ->> 'organization_id')::uuid);
 
 -- =====================================================
 -- TASKS
@@ -122,7 +122,7 @@ CREATE TABLE tasks (
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Tasks access limited to organization" ON tasks
-  FOR ALL USING (organization_id = auth.jwt() ->> 'organization_id');
+  FOR ALL USING (organization_id = (auth.jwt() ->> 'organization_id')::uuid);
 
 -- =====================================================
 -- DOCUMENTS
@@ -145,7 +145,7 @@ ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Document access for organization or shared" ON documents
   FOR SELECT USING (
-    organization_id = auth.jwt() ->> 'organization_id' 
+    organization_id = (auth.jwt() ->> 'organization_id')::uuid 
     OR owner = auth.uid() 
     OR auth.uid() = ANY(shared_with)
   );
@@ -167,7 +167,7 @@ CREATE TABLE communications (
 ALTER TABLE communications ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Communications restricted to organization" ON communications
-  FOR ALL USING (organization_id = auth.jwt() ->> 'organization_id');
+  FOR ALL USING (organization_id = (auth.jwt() ->> 'organization_id')::uuid);
 
 -- =====================================================
 -- INVOICES
@@ -192,7 +192,7 @@ CREATE TABLE invoices (
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Invoices limited to organization" ON invoices
-  FOR ALL USING (organization_id = auth.jwt() ->> 'organization_id');
+  FOR ALL USING (organization_id = (auth.jwt() ->> 'organization_id')::uuid);
 
 -- =====================================================
 -- INVOICE ITEMS
@@ -222,7 +222,7 @@ ALTER TABLE chat_rooms ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Chat rooms for organization members" ON chat_rooms
   FOR ALL USING (
-    organization_id = auth.jwt() ->> 'organization_id'
+    organization_id = (auth.jwt() ->> 'organization_id')::uuid
     AND auth.uid() = ANY(participants)
   );
 
@@ -335,7 +335,7 @@ BEGIN
     record_id,
     changes
   ) VALUES (
-    auth.jwt() ->> 'organization_id',
+    (auth.jwt() ->> 'organization_id')::uuid,
     auth.uid(),
     TG_OP,
     TG_TABLE_NAME,
