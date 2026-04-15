@@ -20,7 +20,7 @@ import {
   SolutionOutlined,
   ShopOutlined
 } from '@ant-design/icons';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMediaQuery } from 'react-responsive';
 import { useTheme } from '../../contexts/ThemeContext';
 import ThemeSwitcher from './ThemeSwitcher';
@@ -151,6 +151,7 @@ const ROUTE_CONFIG = [
 
 const Sidebar = ({ collapsed, setCollapsed }) => {
     const location = useLocation();
+    const navigate = useNavigate();
     const { themeConfig, isFuturistic } = useTheme();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const isMobile = useMediaQuery({ query: '(max-width: 780px)' });
@@ -212,26 +213,26 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
                      const Icon = item.icon;
                      return (
                          <React.Fragment key={item.key}>
-                             <Menu.Item
-                                 key={item.key}
-                                 icon={<Icon className={isFuturistic ? 'text-aurora-muted' : ''} />}
-                                 style={{
-                                     ...getMenuItemStyle(item.key),
-                                     marginBottom: '4px',
-                                     color: isFuturistic 
-                                         ? (selectedKey === item.key ? themeConfig.accent : themeConfig.sidebar.text)
-                                         : themeConfig.sidebar.text,
-                                     height: '44px',
-                                     lineHeight: '44px'
-                                 }}
-                                 className={`menu-item-custom ${isFuturistic ? 'futuristic-menu-item' : ''}`}
-                                 onClick={() => {
-                                     window.location.href = item.path;
-                                     onItemClick();
-                                 }}
-                             >
-                                 {item.label}
-                             </Menu.Item>
+                              <Menu.Item
+                                  key={item.key}
+                                  icon={<Icon className={isFuturistic ? 'text-aurora-muted' : ''} />}
+                                  style={{
+                                      ...getMenuItemStyle(item.key),
+                                      marginBottom: '4px',
+                                      color: isFuturistic 
+                                          ? (selectedKey === item.key ? themeConfig.accent : themeConfig.sidebar.text)
+                                          : themeConfig.sidebar.text,
+                                      height: '44px',
+                                      lineHeight: '44px'
+                                  }}
+                                  className={`menu-item-custom ${isFuturistic ? 'futuristic-menu-item' : ''}`}
+                                  onClick={() => {
+                                      navigate(item.path);
+                                      onItemClick();
+                                  }}
+                              >
+                                  {item.label}
+                              </Menu.Item>
                              {item.dividerAfter && (
                                  <div 
                                      style={{ 

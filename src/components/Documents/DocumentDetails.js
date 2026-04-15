@@ -18,12 +18,17 @@ function DocumentDetails() {
   useEffect(() => {
     const fetchDocument = async () => {
       try {
-        const response = await axiosInstance.get(`/api/documents/${id}/`);
-        setDocument(response.data);
-        setFormData({
-          title: response.data.title,
-          description: response.data.description,
-        });
+        // First get all documents then find the one with matching id
+        const response = await axiosInstance.get('/document_management/api/documents/');
+        const documents = response.data.results || response.data || [];
+        const found = documents.find(doc => String(doc.$id || doc.id) === String(id));
+        setDocument(found || null);
+        if (found) {
+          setFormData({
+            title: found.title,
+            description: found.description,
+          });
+        }
       } catch (error) {
         console.error('Error fetching document:', error);
       }

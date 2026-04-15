@@ -10,16 +10,17 @@ const appwriteApi = {
   },
 
   async get(url) {
-    const path = url.replace(/^\/api\//, '').replace(/^\//, '');
+    // Normalize path by removing trailing slashes and leading /api/ prefix
+    const path = url.replace(/^\/api\//, '').replace(/^\//, '').replace(/\/$/, '');
     
     // Case List
-    if (path === 'case' || path === 'case/') {
+    if (path === 'case') {
       const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.CASES, withOrganizationId());
       return { data: { results: response.documents } };
     }
 
     // Client List
-    if (path === 'client' || path === 'client/') {
+    if (path === 'client') {
       const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USERS, [
         ...withOrganizationId(),
         Query.equal('role', ['individual', 'client'])
@@ -28,13 +29,13 @@ const appwriteApi = {
     }
 
     // Task List
-    if (path === 'tasks' || path === 'tasks/') {
+    if (path === 'tasks') {
       const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.TASKS, withOrganizationId());
       return { data: { results: response.documents } };
     }
 
     // Document List
-    if (path === 'document_management/api/documents' || path === 'documents/') {
+    if (path === 'document_management/api/documents' || path === 'documents') {
       const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.DOCUMENTS, withOrganizationId());
       return { data: { results: response.documents } };
     }
@@ -42,17 +43,29 @@ const appwriteApi = {
     // Invoice List
     if (path === 'invoices' || path === 'api/invoices') {
       const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.INVOICES, withOrganizationId());
-      return { data: response.documents };
+      
+      // Convert snake_case to camelCase for frontend compatibility
+      const convertedDocuments = response.documents.map(invoice => ({
+        ...invoice,
+        id: invoice.$id,
+        invoiceNumber: invoice.invoice_number,
+        clientName: invoice.client_name,
+        totalAmount: Number(invoice.total_amount || 0),
+        createdAt: invoice.$createdAt,
+        updatedAt: invoice.$updatedAt
+      }));
+      
+      return { data: convertedDocuments };
     }
 
     // HR/Employees
-    if (path === 'hr/employees' || path === 'hr/employees/') {
+    if (path === 'hr/employees') {
       const response = await databases.listDocuments(DATABASE_ID, COLLECTIONS.USERS, withOrganizationId());
       return { data: { results: response.documents } };
     }
 
     // Payroll
-    if (path === 'payroll' || path === 'payroll/') {
+    if (path === 'payroll') {
       const response = await databases.listDocuments(DATABASE_ID, 'payroll_runs', withOrganizationId());
       return { data: response.documents };
     }
