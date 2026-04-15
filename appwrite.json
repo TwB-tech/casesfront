@@ -13,7 +13,8 @@
       "active": true,
       "variables": {},
       "buildCommand": "npm install && npm run build",
-      "commands": ["npm install --omit=dev"]
+      "commands": ["npm install --omit=dev"],
+      "runtimeEntrypoint": "server.main"
     }
   ]
 }
