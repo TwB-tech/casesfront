@@ -10,9 +10,10 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- =====================================================
--- RLS BASE SECURITY CONFIGURATION
+-- SUPABASE COMPATIBLE SECURITY CONFIGURATION
 -- =====================================================
-ALTER DATABASE postgres SET app.jwt_secret TO 'generate_your_secure_jwt_secret_here';
+-- NOTE: JWT secret is managed directly in Supabase dashboard under Auth Settings
+-- You do not need to set this manually
 
 -- =====================================================
 -- ORGANIZATIONS (FIRM ISOLATION FOUNDATION)
@@ -349,24 +350,9 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- SUPABASE AUTH CONFIGURATION
 -- =====================================================
 
--- Create custom JWT token with organization claim
-CREATE OR REPLACE FUNCTION custom_access_token_hook(event jsonb)
-RETURNS jsonb AS $$
-DECLARE
-  claims jsonb;
-  user_organization_id uuid;
-BEGIN
-  claims := event -> 'claims';
-
-  SELECT organization_id INTO user_organization_id
-  FROM public.users
-  WHERE id = (claims ->> 'sub')::uuid;
-
-  claims := jsonb_set(claims, '{organization_id}', to_jsonb(user_organization_id));
-
-  RETURN jsonb_set(event, '{claims}', claims);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- Custom JWT claims are handled automatically in Supabase Auth triggers
+-- Organization ID will be added to JWT tokens via Supabase Auth configuration
+-- Configure this under Authentication > Hooks in Supabase dashboard
 
 -- =====================================================
 -- INITIAL DATA
@@ -379,14 +365,21 @@ INSERT INTO courts (name, jurisdiction) VALUES
 ('Eldoret Law Courts', 'Eldoret');
 
 -- =====================================================
--- SECURITY GRANTS
+-- SUPABASE COMPATIBLE SECURITY GRANTS
 -- =====================================================
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR USER postgres IN SCHEMA public 
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
+
+ALTER DEFAULT PRIVILEGES FOR USER postgres IN SCHEMA public 
+  GRANT USAGE, SELECT ON SEQUENCES TO authenticated;
+
+-- Supabase requires explicit grant for audit logs
+GRANT INSERT ON TABLE audit_logs TO authenticated;
+GRANT SELECT ON TABLE audit_logs TO service_role;
 
 -- =====================================================
 -- POST DEPLOYMENT NOTES:
