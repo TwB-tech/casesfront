@@ -42,7 +42,7 @@ export const BUCKETS = {
 export const withOrganizationId = (query = []) => {
   const organizationId = localStorage.getItem('organization_id');
   if (organizationId) {
-    query.push(`organization_id=${organizationId}`);
+    query.push(Query.equal('organization_id', organizationId));
   }
   return query;
 };

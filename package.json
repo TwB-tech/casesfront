@@ -33,7 +33,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && rimraf dist && node -e \"const fs = require('fs-extra'); fs.copySync('build', 'dist'); fs.copySync('src/server.js', './server.js');\" && tar -czf code.tar.gz --exclude=\"node_modules\" --exclude=\".git\" --exclude=\"code.tar.gz\" --exclude=\".env\" .",
+    "build": "react-scripts build && rimraf dist && node -e \"const fs = require('fs-extra'); fs.copySync('build', 'dist'); fs.copySync('src/server.js', './server.js');\" && tar -czf code.tar.gz --warning=no-file-changed --exclude=\"node_modules\" --exclude=\".git\" --exclude=\"code.tar.gz\" --exclude=\".env\" .",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
