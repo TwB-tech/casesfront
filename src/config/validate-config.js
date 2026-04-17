@@ -17,32 +17,29 @@ function validateConfig() {
 
   console.log('🔍 Validating Database Configuration\n');
 
-  // Check if .env exists
-  if (!fs.existsSync(envPath)) {
-    console.error('❌ .env file not found at:', envPath);
-    console.error('   Copy .env.example to .env and configure your settings.');
-    process.exit(1);
+  // Load environment variables from .env if exists
+  const envFromFile = {};
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    const envLines = envContent
+      .split('\n')
+      .filter((line) => line.trim() && !line.trim().startsWith('#'));
+    envLines.forEach((line) => {
+      const [key, ...valueParts] = line.split('=');
+      if (key) {
+        envFromFile[key.trim()] = valueParts
+          .join('=')
+          .trim()
+          .replace(/^["']|["']$/g, '');
+      }
+    });
   }
 
-  // Read .env file
-  const envContent = fs.readFileSync(envPath, 'utf8');
-  const envLines = envContent
-    .split('\n')
-    .filter((line) => line.trim() && !line.trim().startsWith('#'));
+  // Merge with process.env (captures Vercel runtime env)
+  const allEnv = { ...envFromFile, ...process.env };
 
-  const envVars = {};
-  envLines.forEach((line) => {
-    const [key, ...valueParts] = line.split('=');
-    if (key) {
-      envVars[key.trim()] = valueParts
-        .join('=')
-        .trim()
-        .replace(/^["']|["']$/g, '');
-    }
-  });
-
-  // Check database mode
-  const dbMode = envVars['REACT_APP_DATABASE_MODE'] || 'standalone';
+  // Determine database mode (check both prefixed and non-prefixed)
+  const dbMode = allEnv.REACT_APP_DATABASE_MODE || allEnv.DATABASE_MODE || 'standalone';
 
   console.log(
     'Database Mode:',
@@ -50,33 +47,36 @@ function validateConfig() {
   );
 
   if (dbMode === 'supabase') {
-    const requiredSupabase = ['REACT_APP_SUPABASE_URL', 'REACT_APP_SUPABASE_ANON_KEY'];
+    const requiredSupabase = ['SUPABASE_URL', 'SUPABASE_ANON_KEY'];
+    const altKeys = ['REACT_APP_SUPABASE_URL', 'REACT_APP_SUPABASE_ANON_KEY'];
 
     console.log('Supabase Required Variables:\n');
-    requiredSupabase.forEach((key) => {
-      const value = envVars[key];
+    requiredSupabase.forEach((key, idx) => {
+      const alt = altKeys[idx];
+      const value = allEnv[key] || allEnv[alt];
       if (!value) {
         errors.push(key);
-        console.log(`  ✗ ${key}: Missing`);
+        console.log(`  ✗ ${key} (or ${alt}): Missing`);
       } else {
         success.push(key);
         console.log(`  ✓ ${key}: Set`);
       }
     });
 
-    if (envVars.REACT_APP_SUPABASE_URL && !envVars.REACT_APP_SUPABASE_URL.includes('supabase.co')) {
-      warnings.push('REACT_APP_SUPABASE_URL should be a valid Supabase URL');
-      console.log(`  ⚠ REACT_APP_SUPABASE_URL: Does not look like a Supabase URL`);
+    const url = allEnv.SUPABASE_URL || allEnv.REACT_APP_SUPABASE_URL;
+    if (url && !url.includes('supabase.co')) {
+      warnings.push('SUPABASE_URL should be a valid Supabase URL');
+      console.log(`  ⚠ SUPABASE_URL: Does not look like a Supabase URL`);
     }
   } else {
     console.log('  ℹ Standalone mode - no external database required');
   }
 
-  // Security settings
+  // Security settings (check both prefixed and non-prefixed if needed)
   console.log('\nSecurity Settings:\n');
   const securityVars = ['REACT_APP_SESSION_COOKIE_SECURE', 'REACT_APP_SESSION_COOKIE_SAMESITE'];
   securityVars.forEach((key) => {
-    const value = envVars[key];
+    const value = allEnv[key];
     if (value) {
       console.log(`  ✓ ${key}: ${value}`);
     } else {
@@ -107,12 +107,16 @@ function validateConfig() {
     console.log('✅ Configuration is valid for Supabase production mode');
     console.log('\nNext steps:');
     console.log('  1. Create database tables in Supabase (run supabase-schema.sql)');
-    console.log('  2. Set up Row Level Security (RLS) policies if needed');
+    console.log('  2. Set proper Row Level Security (RLS) policies if required');
     console.log('  3. Configure Supabase Auth for user management');
+    console.log('  4. Set environment variables in Vercel:');
+    console.log('     - DATABASE_MODE=supabase');
+    console.log('     - SUPABASE_URL=...');
+    console.log('     - SUPABASE_ANON_KEY=...');
   } else {
     console.log('✅ Configuration is valid for Standalone mode');
     console.log('\nApp will use localStorage for data storage.');
-    console.log('Set REACT_APP_DATABASE_MODE=supabase to enable Supabase.');
+    console.log('Set DATABASE_MODE=supabase to enable Supabase.');
   }
 
   console.log('\n' + '='.repeat(50) + '\n');

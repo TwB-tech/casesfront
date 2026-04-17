@@ -4,22 +4,22 @@
  */
 
 // Database mode flag: 'supabase' | 'standalone' (localStorage mock)
-// Set REACT_APP_DATABASE_MODE in .env (default: 'standalone' for demo)
-const dbMode = process.env.REACT_APP_DATABASE_MODE || 'standalone';
+// Supports both REACT_APP_* (CRA) and plain vars (Vercel style)
+const dbMode = process.env.REACT_APP_DATABASE_MODE || process.env.DATABASE_MODE || 'standalone';
 export const USE_SUPABASE = dbMode === 'supabase';
 export const USE_STANDALONE = dbMode === 'standalone';
 
-// Supabase Configuration
+// Supabase Configuration - supports both prefixed and non-prefixed env vars
 export const SUPABASE_CONFIG = {
-  URL: process.env.REACT_APP_SUPABASE_URL,
-  ANON_KEY: process.env.REACT_APP_SUPABASE_ANON_KEY,
+  URL: process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL,
+  ANON_KEY: process.env.SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY,
 };
 
-// Security Configuration
+// Security Configuration (kept for compatibility)
 export const SECURITY_CONFIG = {
   SESSION_COOKIE_SECURE: process.env.REACT_APP_SESSION_COOKIE_SECURE === 'true',
   SESSION_COOKIE_SAMESITE: process.env.REACT_APP_SESSION_COOKIE_SAMESITE || 'Strict',
-  CSRF_TOKEN_EXPIRY: 24 * 60 * 60 * 1000, // 24 hours
+  CSRF_TOKEN_EXPIRY: 24 * 60 * 60 * 1000,
   ENCRYPTION_ITERATIONS: 100000,
 };
 
@@ -30,14 +30,12 @@ export const FEATURES = {
   ENABLE_STORAGE: true,
 };
 
-// Validate required configuration on startup
+// Validate required configuration
 export const validateConfig = () => {
   const errors = [];
 
   if (USE_SUPABASE && (!SUPABASE_CONFIG.URL || !SUPABASE_CONFIG.ANON_KEY)) {
-    errors.push(
-      'REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY are required when DATABASE_MODE=supabase'
-    );
+    errors.push('SUPABASE_URL and SUPABASE_ANON_KEY are required when DATABASE_MODE=supabase');
   }
 
   if (errors.length > 0) {
@@ -46,7 +44,7 @@ export const validateConfig = () => {
   }
 };
 
-// Run validation in development
+// Run validation in development (skip in production build to avoid build failures)
 if (process.env.NODE_ENV !== 'production') {
   try {
     validateConfig();
