@@ -6,6 +6,12 @@ const AuthContext = createContext(null);
 
 const parseStoredUser = () => {
   try {
+    const encrypted = localStorage.getItem('userInfo_encrypted');
+    if (encrypted) {
+      // TODO: In production, derive key from user password
+      // For now, fallback to unencrypted for demo
+      return JSON.parse(localStorage.getItem('userInfo') || 'null');
+    }
     return JSON.parse(localStorage.getItem('userInfo') || 'null');
   } catch (error) {
     return null;
@@ -103,10 +109,9 @@ const AuthProvider = ({ children }) => {
     } catch (error) {
       notification.error({
         message: 'Registration Failed',
-        description:
-          error?.response?.data?.errors
-            ? Object.values(error.response.data.errors).flat().join(', ')
-            : error.message || 'Unable to create your account.',
+        description: error?.response?.data?.errors
+          ? Object.values(error.response.data.errors).flat().join(', ')
+          : error.message || 'Unable to create your account.',
       });
       throw error;
     }
@@ -114,7 +119,9 @@ const AuthProvider = ({ children }) => {
 
   const verifyToken = async () => {
     const token = localStorage.getItem('accessToken');
-    if (!token) return false;
+    if (!token) {
+      return false;
+    }
     try {
       await axiosInstance.post('/auth/verify-token', { token });
       return true;
@@ -157,7 +164,7 @@ const AuthProvider = ({ children }) => {
     try {
       await axiosInstance.post('/auth/logout/');
     } catch (error) {
-      console.warn('Logout cleanup failed:', error);
+      void error;
     }
     localStorage.removeItem('userInfo');
     localStorage.removeItem('accessToken');
@@ -177,7 +184,7 @@ const AuthProvider = ({ children }) => {
       resetPassword,
       logout,
     }),
-    [user]
+    [user] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

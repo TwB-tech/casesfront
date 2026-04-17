@@ -15,25 +15,24 @@ const generateInvoiceNumber = () => {
 const NewInvoice = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [invoiceNumber, setInvoiceNumber] = useState(() => generateInvoiceNumber());
 
   useEffect(() => {
-    setInvoiceNumber(generateInvoiceNumber());
-    form.setFieldsValue({ date: moment() }); 
-  }, []);
+    form.setFieldsValue({ date: moment() });
+  }, [form]);
 
   const onFinish = (values) => {
     setLoading(true);
     values.invoiceNumber = invoiceNumber;
-    axiosInstance.post('/api/invoices', values)
-      .then(response => {
+    axiosInstance
+      .post('/api/invoices', values)
+      .then(() => {
         message.success('Invoice created successfully!');
         form.resetFields();
         setInvoiceNumber(generateInvoiceNumber());
       })
-      .catch(error => {
+      .catch((_error) => {
         message.error('There was an error creating the invoice!');
-        console.error('Error:', error);
       })
       .finally(() => {
         setLoading(false);
@@ -41,14 +40,16 @@ const NewInvoice = () => {
   };
 
   return (
-    <div style={{
-      maxWidth: '100%',
-      margin: '0 auto',
-      padding: '20px',
-      border: '1px solid #e0e0e0',
-      backgroundColor: '#fff',
-      fontFamily: 'Arial, sans-serif',
-    }}>
+    <div
+      style={{
+        maxWidth: '100%',
+        margin: '0 auto',
+        padding: '20px',
+        border: '1px solid #e0e0e0',
+        backgroundColor: '#fff',
+        fontFamily: 'Arial, sans-serif',
+      }}
+    >
       <Form form={form} layout="vertical" onFinish={onFinish}>
         <header style={{ marginBottom: '20px' }}>
           <Row gutter={[16, 16]} justify="space-between" align="middle">
@@ -91,38 +92,75 @@ const NewInvoice = () => {
 
         <section style={{ marginBottom: '20px' }}>
           <h3>Items:</h3>
-          <Form.List name="items" rules={[{ required: true, message: 'Please add at least one item' }]}>
+          <Form.List
+            name="items"
+            rules={[{ required: true, message: 'Please add at least one item' }]}
+          >
             {(fields, { add, remove }) => (
               <>
                 {fields.map(({ key, name, fieldKey, ...restField }) => (
                   <Row gutter={[16, 16]} key={key}>
                     <Col xs={24} md={10}>
-                      <Form.Item {...restField} name={[name, 'description']} fieldKey={[fieldKey, 'description']} rules={[{ required: true, message: 'Missing item description' }]}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'description']}
+                        fieldKey={[fieldKey, 'description']}
+                        rules={[{ required: true, message: 'Missing item description' }]}
+                      >
                         <Input placeholder="Item Description" />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={4}>
-                      <Form.Item {...restField} name={[name, 'rate']} fieldKey={[fieldKey, 'rate']} rules={[{ required: true, message: 'Missing rate' }]}>
-                        <InputNumber min={0} prefix="$" placeholder="Rate" style={{ width: '100%' }} />
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'rate']}
+                        fieldKey={[fieldKey, 'rate']}
+                        rules={[{ required: true, message: 'Missing rate' }]}
+                      >
+                        <InputNumber
+                          min={0}
+                          prefix="$"
+                          placeholder="Rate"
+                          style={{ width: '100%' }}
+                        />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={4}>
-                      <Form.Item {...restField} name={[name, 'hours']} fieldKey={[fieldKey, 'hours']} rules={[{ required: true, message: 'Missing hours' }]}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'hours']}
+                        fieldKey={[fieldKey, 'hours']}
+                        rules={[{ required: true, message: 'Missing hours' }]}
+                      >
                         <InputNumber min={0} placeholder="Hours" style={{ width: '100%' }} />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={4}>
-                      <Form.Item {...restField} name={[name, 'total']} fieldKey={[fieldKey, 'total']} rules={[{ required: true, message: 'Missing total' }]}>
-                        <InputNumber min={0} prefix="$" placeholder="Total" style={{ width: '100%' }} />
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'total']}
+                        fieldKey={[fieldKey, 'total']}
+                        rules={[{ required: true, message: 'Missing total' }]}
+                      >
+                        <InputNumber
+                          min={0}
+                          prefix="$"
+                          placeholder="Total"
+                          style={{ width: '100%' }}
+                        />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={2}>
-                      <Button type="link" onClick={() => remove(name)}>Remove</Button>
+                      <Button type="link" onClick={() => remove(name)}>
+                        Remove
+                      </Button>
                     </Col>
                   </Row>
                 ))}
                 <Form.Item>
-                  <Button type="dashed" onClick={() => add()} block>Add Item</Button>
+                  <Button type="dashed" onClick={() => add()} block>
+                    Add Item
+                  </Button>
                 </Form.Item>
               </>
             )}
@@ -159,10 +197,21 @@ const NewInvoice = () => {
           </Row>
         </section>
 
-        <footer style={{ textAlign: 'center', fontSize: '12px', marginTop: '20px', borderTop: '1px solid #e0e0e0', paddingTop: '10px' }}>
+        <footer
+          style={{
+            textAlign: 'center',
+            fontSize: '12px',
+            marginTop: '20px',
+            borderTop: '1px solid #e0e0e0',
+            paddingTop: '10px',
+          }}
+        >
           <h3>Terms & Conditions:</h3>
           <Form.Item name="terms" label="Terms & Conditions" rules={[{ required: true }]}>
-            <Input.TextArea rows={4} placeholder="Enter unique terms & conditions for this invoice" />
+            <Input.TextArea
+              rows={4}
+              placeholder="Enter unique terms & conditions for this invoice"
+            />
           </Form.Item>
           <div style={{ marginTop: '20px', fontWeight: 'bold' }}>
             <Form.Item name="signature" label="Authorized Signature" rules={[{ required: true }]}>
@@ -171,7 +220,9 @@ const NewInvoice = () => {
           </div>
         </footer>
 
-        <Button type="primary" htmlType="submit" loading={loading} block>Create Invoice</Button>
+        <Button type="primary" htmlType="submit" loading={loading} block>
+          Create Invoice
+        </Button>
       </Form>
     </div>
   );

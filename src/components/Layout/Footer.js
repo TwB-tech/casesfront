@@ -7,8 +7,8 @@ const { Footer } = Layout;
 
 const AppFooter = () => {
   const currentYear = moment().format('YYYY');
-  const { isFuturistic, themeConfig } = useTheme();
-  
+  const { isFuturistic } = useTheme();
+
   return (
     <Footer
       style={{

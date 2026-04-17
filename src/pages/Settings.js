@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Checkbox, Select, Tabs, message } from 'antd';
 import axiosInstance from '../axiosConfig';
 import useAuth from '../hooks/useAuth';
+/* eslint-disable no-console, react-hooks/exhaustive-deps */
 
 const { TabPane } = Tabs;
 const { Option } = Select;
@@ -25,7 +26,6 @@ const UserSettings = () => {
       }
       const response = await axiosInstance.get(`/auth/user/${user.id}`);
       form.setFieldsValue(response.data);
-
     } catch (error) {
       message.error('Failed to load user details');
     } finally {
@@ -37,7 +37,7 @@ const UserSettings = () => {
     try {
       setLoading(true);
       if (user) {
-        await axiosInstance.put(`/individual/${user.id}/`, values); 
+        await axiosInstance.put(`/individual/${user.id}/`, values);
         message.success('General settings updated successfully');
       } else {
         message.error('User ID not found');
@@ -79,10 +79,18 @@ const UserSettings = () => {
       <Tabs defaultActiveKey="1">
         <TabPane tab="General Settings" key="1">
           <Form form={form} onFinish={handleGeneralSettingsSubmit}>
-            <Form.Item label="Name" name="username" rules={[{ required: true, message: 'Please enter your name!' }]}>
+            <Form.Item
+              label="Name"
+              name="username"
+              rules={[{ required: true, message: 'Please enter your name!' }]}
+            >
               <Input placeholder="User Name" />
             </Form.Item>
-            <Form.Item label="Email" name="email" rules={[{ required: true, message: 'Please enter your email!' }]}>
+            <Form.Item
+              label="Email"
+              name="email"
+              rules={[{ required: true, message: 'Please enter your email!' }]}
+            >
               <Input placeholder="Your Email" />
             </Form.Item>
             <Form.Item label="Change Password" name="password">
@@ -96,7 +104,9 @@ const UserSettings = () => {
               </Select>
             </Form.Item>
             <Form.Item>
-              <Button type="primary" htmlType="submit" loading={loading}>Save</Button>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                Save
+              </Button>
             </Form.Item>
           </Form>
         </TabPane>
@@ -109,7 +119,9 @@ const UserSettings = () => {
               <Checkbox>Enable Client Communication Logging</Checkbox>
             </Form.Item>
             <Form.Item>
-              <Button type="primary" htmlType="submit" loading={loading}>Save</Button>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                Save
+              </Button>
             </Form.Item>
           </Form>
         </TabPane>
@@ -122,7 +134,9 @@ const UserSettings = () => {
               <Checkbox>Enable Deadline Notifications</Checkbox>
             </Form.Item>
             <Form.Item>
-              <Button type="primary" htmlType="submit" loading={loading}>Save</Button>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                Save
+              </Button>
             </Form.Item>
           </Form>
         </TabPane>

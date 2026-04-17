@@ -14,7 +14,16 @@ function Tasks() {
     const [taskMap, setTaskMap] = useState({});
     const [previewTask, setPreviewTask] = useState(null);
     const [isPreviewVisible, setIsPreviewVisible] = useState(false);
+    const [screenWidth, setScreenWidth] = useState(() =>
+      typeof window !== 'undefined' ? window.innerWidth : 1024
+    );
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const handleResize = () => setScreenWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         const fetchTasks = async () => {
@@ -75,23 +84,24 @@ function Tasks() {
     };
 
     // Determine responsive height based on screen width
-    const calendarHeight = window.innerWidth < 768 ? 300 : 500;
+    const isSmallScreen = screenWidth < 768;
+    const calendarHeight = isSmallScreen ? 300 : 500;
 
     return (
         <div style={{ padding: '15px', maxWidth: '100%' }}>
-            <div style={{
+            <div             style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+                flexDirection: isSmallScreen ? 'column' : 'row',
                 marginBottom: '20px',
             }}>
                 <Button
                     type="primary"
                     onClick={handleNewTaskClick}
                     style={{
-                        marginBottom: window.innerWidth < 768 ? '10px' : '20px',
-                        width: window.innerWidth < 768 ? '100%' : 'auto'
+                        marginBottom: isSmallScreen ? '10px' : '20px',
+                        width: isSmallScreen ? '100%' : 'auto'
                     }}
                 >
                     Add Task
@@ -100,7 +110,7 @@ function Tasks() {
             <Card style={{
                 borderRadius: '20px',
                 margin: '20px',
-                padding: window.innerWidth < 768 ? '10px' : '20px',
+                padding: isSmallScreen ? '10px' : '20px',
             }}>
                 <Calendar
                     localizer={localizer}

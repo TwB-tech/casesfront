@@ -1,4 +1,5 @@
 const DB_KEY = 'wakiliworld.frontend.db.v1';
+import DOMPurify from 'dompurify';
 
 const delay = (ms = 120) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -100,6 +101,29 @@ const seedDb = () => ({
       timezone: 'EAT',
       messaging: true,
       clientCommunication: true,
+      taskManagement: true,
+      deadlineNotifications: true,
+    },
+    {
+      id: 5,
+      username: 'John Doe',
+      email: 'employee@wakiliworld.local',
+      password: 'demo1234',
+      role: 'employee',
+      phone_number: '+254700000005',
+      alternative_phone_number: '+254711000005',
+      id_number: '52345678',
+      passport_number: 'E1234567',
+      date_of_birth: '1994-08-20',
+      gender: 'Male',
+      address: 'Nakuru, Kenya',
+      nationality: 'Kenyan',
+      occupation: 'Paralegal',
+      marital_status: 'Married',
+      status: 'Active',
+      timezone: 'EAT',
+      messaging: true,
+      clientCommunication: false,
       taskManagement: true,
       deadlineNotifications: true,
     },
@@ -228,9 +252,7 @@ const seedDb = () => ({
       signature: 'Amina Wanjiru',
     },
   ],
-  chatRooms: [
-    { room_name: 'room-1-2', participants: [1, 2] },
-  ],
+  chatRooms: [{ room_name: 'room-1-2', participants: [1, 2] }],
   chatMessages: [
     {
       id: 1,
@@ -247,8 +269,39 @@ const seedDb = () => ({
       timestamp: addDays(-1),
     },
   ],
+  invites: [],
   onboarding: [],
   subscriptions: [],
+  expenses: [
+    {
+      id: 1,
+      title: 'Office Supplies',
+      description: 'Stationery and printing materials',
+      amount: 500,
+      date: addDays(-10).slice(0, 10),
+      category: 'Supplies',
+      organization_id: 1,
+    },
+    {
+      id: 2,
+      title: 'Client Lunch',
+      description: 'Meeting with client',
+      amount: 2500,
+      date: addDays(-5).slice(0, 10),
+      category: 'Entertainment',
+      organization_id: 1,
+    },
+  ],
+  payroll_runs: [
+    {
+      id: 1,
+      period_start: addDays(-30).slice(0, 10),
+      period_end: addDays(-1).slice(0, 10),
+      total_amount: 50000,
+      status: 'processed',
+      organization_id: 1,
+    },
+  ],
   adminSettings: {
     caseStatus: 'open',
     caseAssignment: true,
@@ -264,7 +317,18 @@ const readDb = () => {
   const raw = localStorage.getItem(DB_KEY);
   if (raw) {
     try {
-      return JSON.parse(raw);
+      const db = JSON.parse(raw);
+      // Ensure new collections exist for backwards compatibility
+      if (!db.expenses) {
+        db.expenses = [];
+      }
+      if (!db.payroll_runs) {
+        db.payroll_runs = [];
+      }
+      if (!db.invites) {
+        db.invites = [];
+      }
+      return db;
     } catch (error) {
       localStorage.removeItem(DB_KEY);
     }
@@ -279,7 +343,8 @@ const writeDb = (db) => {
   return db;
 };
 
-const nextId = (items) => (items.length ? Math.max(...items.map((item) => Number(item.id) || 0)) + 1 : 1);
+const nextId = (items) =>
+  items.length ? Math.max(...items.map((item) => Number(item.id) || 0)) + 1 : 1;
 
 const currentUser = () => {
   try {
@@ -290,8 +355,10 @@ const currentUser = () => {
 };
 
 const publicUser = (user) => {
-  if (!user) return null;
-  const { password, ...safeUser } = user;
+  if (!user) {
+    return null;
+  }
+  const { ...safeUser } = user;
   return safeUser;
 };
 
@@ -302,7 +369,9 @@ const enrichCase = (db, item) => {
   return {
     ...item,
     name: client?.username || 'Unknown Client',
-    client: client ? { id: client.id, name: client.username, username: client.username, avatar: null } : null,
+    client: client
+      ? { id: client.id, name: client.username, username: client.username, avatar: null }
+      : null,
     advocate: advocate ? { id: advocate.id, username: advocate.username } : null,
     court: court || null,
     court_name: court?.name || 'Not assigned',
@@ -348,9 +417,57 @@ const normalizeUrl = (input) => {
   return url.replace(/\/+/g, '/');
 };
 
+// Recursive sanitization for all string values
+const sanitizeResponse = (value) => {
+  if (typeof value === 'string') {
+    return DOMPurify.sanitize(value, {
+      ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li'],
+      ALLOWED_ATTR: ['href', 'target', 'rel'],
+      ALLOW_DATA_ATTR: false,
+      ALLOWED_URI_REGEXP: /^https?:\/\//,
+    });
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeResponse(item));
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const sanitized = {};
+    for (const [key, val] of Object.entries(value)) {
+      // Safe fields: IDs, numbers, booleans, dates, enums
+      const isSafe =
+        typeof val === 'number' ||
+        typeof val === 'boolean' ||
+        val === null ||
+        val === undefined ||
+        (key.includes('id') && typeof val !== 'object') ||
+        ['created_at', 'updated_at', '$createdAt', '$updatedAt', 'date', 'timestamp'].includes(key);
+      if (isSafe) {
+        sanitized[key] = val;
+      } else if (typeof val === 'string') {
+        sanitized[key] = DOMPurify.sanitize(val, {
+          ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'],
+          ALLOWED_ATTR: ['href', 'target', 'rel'],
+          ALLOW_DATA_ATTR: false,
+        });
+      } else if (typeof val === 'object' && val !== null) {
+        sanitized[key] = sanitizeResponse(val);
+      } else {
+        sanitized[key] = val;
+      }
+    }
+    return sanitized;
+  }
+
+  return value;
+};
+
 const success = async (data, status = 200) => {
   await delay();
-  return { data, status };
+  // Sanitize all string fields in response
+  const sanitized = sanitizeResponse(data);
+  return { data: sanitized, status };
 };
 
 const failure = async (message, status = 400, errors) => {
@@ -375,13 +492,31 @@ export const standaloneApi = {
     const user = currentUser();
 
     if (path === '/advocate/') {
-      return success({ results: db.users.filter((item) => item.role === 'advocate').map(publicUser) });
+      return success({
+        results: db.users.filter((item) => item.role === 'advocate').map(publicUser),
+      });
     }
 
     if (path === '/individual/' || path === '/client/') {
       return success({
-        results: db.users.filter((item) => item.role === 'individual' || item.role === 'client').map(publicUser),
+        results: db.users
+          .filter((item) => item.role === 'individual' || item.role === 'client')
+          .map(publicUser),
       });
+    }
+
+    // Single client/individual by ID
+    if (/^\/individual\/\d+$/.test(path) || /^\/client\/\d+$/.test(path)) {
+      const id = Number(path.split('/').filter(Boolean).pop());
+      const found = db.users.find((u) => u.id === id);
+      if (!found) {
+        return failure('User not found', 404);
+      }
+      // Only allow if role is individual or client
+      if (found.role !== 'individual' && found.role !== 'client') {
+        return failure('Not a client', 403);
+      }
+      return success(publicUser(found));
     }
 
     if (path === '/advocate/firm-advocates/' || path === '/individual/case-advocates/') {
@@ -395,13 +530,24 @@ export const standaloneApi = {
     if (path === '/case/') {
       // ORGANIZATION ISOLATION: Only return cases belonging to current user's organization
       const userOrg = user?.organization_id || user?.id;
-      const filteredCases = db.cases.filter((item) => 
-        !userOrg || 
-        item.organization_id === userOrg || 
-        item.client_id === user.id || 
-        item.advocate_id === user.id
+      const filteredCases = db.cases.filter(
+        (item) =>
+          !userOrg ||
+          item.organization_id === userOrg ||
+          item.client_id === user.id ||
+          item.advocate_id === user.id
       );
       return success({ results: filteredCases.map((item) => enrichCase(db, item)) });
+    }
+
+    // Single case by ID
+    if (/^\/case\/\d+$/.test(path)) {
+      const id = Number(path.split('/').filter(Boolean).pop());
+      const found = db.cases.find((item) => item.id === id);
+      if (!found) {
+        return failure('Case not found', 404);
+      }
+      return success(enrichCase(db, found));
     }
 
     if (path === '/case/individual-cases/') {
@@ -413,11 +559,18 @@ export const standaloneApi = {
 
     if (path === '/advocate/cases/') {
       const advocateCases = db.cases.filter((item) => !user || item.advocate_id === user.id);
-      return success({ cases_count: advocateCases.length, results: advocateCases.map((item) => enrichCase(db, item)) });
+      return success({
+        cases_count: advocateCases.length,
+        results: advocateCases.map((item) => enrichCase(db, item)),
+      });
     }
 
     if (path === '/advocate/clients/') {
-      const clientIds = new Set(db.cases.filter((item) => !user || item.advocate_id === user.id).map((item) => item.client_id));
+      const clientIds = new Set(
+        db.cases
+          .filter((item) => !user || item.advocate_id === user.id)
+          .map((item) => item.client_id)
+      );
       return success({
         clients_count: Array.from(clientIds).length,
         results: db.users.filter((item) => clientIds.has(item.id)).map(publicUser),
@@ -427,21 +580,20 @@ export const standaloneApi = {
     if (path === '/tasks/' || path === '/tasks') {
       // ORGANIZATION ISOLATION: Only return tasks assigned to current user or organization
       const userOrg = user?.organization_id || user?.id;
-      const filteredTasks = db.tasks.filter((task) => 
-        !userOrg || 
-        task.organization_id === userOrg || 
-        task.assigned_to === user.id
+      const filteredTasks = db.tasks.filter(
+        (task) => !userOrg || task.organization_id === userOrg || task.assigned_to === user.id
       );
       return success({ results: filteredTasks.map((task) => enrichTask(db, task)) });
     }
 
     if (path === '/document_management/api/documents/') {
       // ORGANIZATION ISOLATION: Only return documents owned by or shared with current user
-      const filteredDocs = db.documents.filter((doc) => 
-        !user || 
-        doc.owner === user.id || 
-        (doc.shared_with && doc.shared_with.includes(user.id)) ||
-        doc.organization_id === user?.organization_id
+      const filteredDocs = db.documents.filter(
+        (doc) =>
+          !user ||
+          doc.owner === user.id ||
+          (doc.shared_with && doc.shared_with.includes(user.id)) ||
+          doc.organization_id === user?.organization_id
       );
       return success({ results: filteredDocs.map((item) => enrichDocument(db, item)) });
     }
@@ -449,38 +601,69 @@ export const standaloneApi = {
     if (path.startsWith('/api/documents/')) {
       const id = Number(path.split('/').filter(Boolean).pop());
       const document = db.documents.find((item) => item.id === id);
-      if (!document) return failure('Document not found', 404);
+      if (!document) {
+        return failure('Document not found', 404);
+      }
       return success(enrichDocument(db, document));
     }
 
     if (path === '/clientcomm/api/clientcommunications/') {
       // ORGANIZATION ISOLATION: Only return communications created by current user
-      const filteredComms = db.communications.filter((comm) => 
-        !user || comm.created_by === user.id || comm.organization_id === user?.organization_id
+      const filteredComms = db.communications.filter(
+        (comm) =>
+          !user || comm.created_by === user.id || comm.organization_id === user?.organization_id
       );
-      return success({ results: [...filteredComms].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) });
+      return success({
+        results: [...filteredComms].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)),
+      });
     }
 
     if (path.startsWith('/clientcomm/api/clientcommunications/')) {
       const id = Number(path.split('/').filter(Boolean).pop());
       const item = db.communications.find((entry) => entry.id === id);
-      if (!item) return failure('Communication not found', 404);
+      if (!item) {
+        return failure('Communication not found', 404);
+      }
       return success(item);
     }
 
     if (path === '/api/invoices') {
       // ORGANIZATION ISOLATION: Only return invoices belonging to current user organization
       const userOrg = user?.organization_id || user?.id;
-      const filteredInvoices = db.invoices.filter((inv) => 
-        !userOrg || inv.organization_id === userOrg || inv.client_id === user.id
+      const filteredInvoices = db.invoices.filter(
+        (inv) => !userOrg || inv.organization_id === userOrg || inv.client_id === user.id
       );
       return success(filteredInvoices);
+    }
+
+    // Single invoice by ID
+    if (/^\/api\/invoices\/\d+$/.test(path)) {
+      const id = Number(path.split('/').filter(Boolean).pop());
+      const found = db.invoices.find((inv) => inv.id === id);
+      if (!found) {
+        return failure('Invoice not found', 404);
+      }
+      return success(found);
     }
 
     if (path.startsWith('/auth/user/')) {
       const id = Number(path.split('/').filter(Boolean).pop());
       const found = db.users.find((entry) => entry.id === id);
-      if (!found) return failure('User not found', 404);
+      if (!found) {
+        return failure('User not found', 404);
+      }
+      return success(publicUser(found));
+    }
+
+    if (path === '/auth/profile/') {
+      const user = currentUser();
+      if (!user) {
+        return failure('Unauthorized', 401);
+      }
+      const found = db.users.find((entry) => entry.id === user.id);
+      if (!found) {
+        return failure('User not found', 404);
+      }
       return success(publicUser(found));
     }
 
@@ -491,7 +674,9 @@ export const standaloneApi = {
     if (path.startsWith('/chats/room-info/')) {
       const roomName = path.split('/').filter(Boolean).pop();
       const room = db.chatRooms.find((entry) => entry.room_name === roomName);
-      if (!room) return failure('Room not found', 404);
+      if (!room) {
+        return failure('Room not found', 404);
+      }
       return success(room);
     }
 
@@ -504,6 +689,194 @@ export const standaloneApi = {
       );
     }
 
+    // Auth: User stats
+    if (path === '/users/stats/') {
+      const user = currentUser();
+      if (!user) {
+        return failure('Unauthorized', 401);
+      }
+      const userCases = db.cases.filter(
+        (item) => item.client_id === user.id || item.advocate_id === user.id
+      );
+      const userTasks = db.tasks.filter((task) => task.assigned_to === user.id);
+      const userDocuments = db.documents.filter((doc) => doc.owner === user.id);
+      return success({
+        totalCases: userCases.length,
+        activeCases: userCases.filter((c) => c.status === 'open' || c.status === 'pending').length,
+        totalTasks: userTasks.length,
+        pendingTasks: userTasks.filter((t) => !t.status).length,
+        totalDocuments: userDocuments.length,
+        sharedDocuments: userDocuments.filter((d) => d.shared_with && d.shared_with.length > 0)
+          .length,
+      });
+    }
+
+    // Reports: Financial
+    if (path === '/reports/financial/') {
+      const invoices = db.invoices.filter(
+        (inv) =>
+          !user || inv.organization_id === user?.organization_id || inv.client_id === user?.id
+      );
+      const summary = {
+        totalRevenue: invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0),
+        paidInvoices: invoices.filter((i) => i.status === 'paid').length,
+        pendingInvoices: invoices.filter((i) => i.status === 'pending').length,
+        overdueInvoices: invoices.filter((i) => i.status === 'overdue').length,
+        averageInvoiceValue: invoices.length
+          ? invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0) / invoices.length
+          : 0,
+      };
+      return success({ results: [summary] });
+    }
+
+    // Expenses: List
+    if (path === '/expenses/') {
+      const userOrg = user?.organization_id || user?.id;
+      const filtered =
+        db.expenses?.filter((exp) => !userOrg || exp.organization_id === userOrg) || [];
+      return success(filtered);
+    }
+
+    // Payroll: List (fallback)
+    if (path === '/payroll/') {
+      const userOrg = user?.organization_id || user?.id;
+      const filtered =
+        db.payroll_runs?.filter((pr) => !userOrg || pr.organization_id === userOrg) || [];
+      return success(filtered);
+    }
+
+    // HR: Employees (exclude individual/clients)
+    if (path === '/hr/employees/') {
+      const filtered = db.users.filter(
+        (item) =>
+          item.role === 'advocate' ||
+          item.role === 'firm' ||
+          item.role === 'employee' ||
+          item.role === 'admin'
+      );
+      return success({ results: filtered.map(publicUser) });
+    }
+
+    // Accounting Dashboard Summary (alias for /accounting/dashboard in standalone)
+    if (path === '/accounting/dashboard' || path === '/accounting/dashboard/summary/') {
+      const userOrg = user?.organization_id || user?.id;
+      const invoices = db.invoices.filter(
+        (inv) => !userOrg || inv.organization_id === userOrg || inv.client_id === user?.id
+      );
+      const expenses =
+        db.expenses?.filter((exp) => !userOrg || exp.organization_id === userOrg) || [];
+      const totalRevenue = invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0);
+      const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+      const netProfit = totalRevenue - totalExpenses;
+
+      // Counts
+      const pendingCount = invoices.filter((i) => i.status === 'pending').length;
+      const overdueCount = invoices.filter((i) => i.status === 'overdue').length;
+      const paidCount = invoices.filter((i) => i.status === 'paid').length;
+
+      // Monthly Revenue/Expenses
+      const monthNames = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      const monthlyMap = {};
+      const addToMonthly = (dateStr, amount, type) => {
+        let date;
+        if (dateStr.includes('T')) {
+          date = new Date(dateStr);
+        } else {
+          date = new Date(dateStr);
+        }
+        if (isNaN(date.getTime())) {
+          return;
+        }
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (!monthlyMap[key]) {
+          monthlyMap[key] = { month: monthNames[date.getMonth()], revenue: 0, expenses: 0 };
+        }
+        if (type === 'revenue') {
+          monthlyMap[key].revenue += amount;
+        } else {
+          monthlyMap[key].expenses += amount;
+        }
+      };
+      invoices.forEach((inv) =>
+        addToMonthly(
+          inv.date || inv.created_at || inv.$createdAt,
+          Number(inv.total_amount || 0),
+          'revenue'
+        )
+      );
+      expenses.forEach((exp) =>
+        addToMonthly(exp.date || exp.created_at, Number(exp.amount || 0), 'expenses')
+      );
+      const monthlyRevenue = Object.values(monthlyMap);
+
+      // Expense Categories
+      const categoryMap = {};
+      expenses.forEach((exp) => {
+        const cat = exp.category || 'Uncategorized';
+        categoryMap[cat] = (categoryMap[cat] || 0) + Number(exp.amount || 0);
+      });
+      const colors = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe'];
+      const expenseCategories = Object.entries(categoryMap).map(([name, value], idx) => ({
+        name,
+        value,
+        color: colors[idx % colors.length],
+      }));
+
+      // Recent Transactions
+      const transactions = [];
+      invoices.forEach((inv) => {
+        transactions.push({
+          id: inv.id,
+          date: (inv.date || inv.created_at || '').split('T')[0],
+          description: `Invoice #${inv.invoice_number || inv.id}`,
+          amount: Number(inv.total_amount || 0),
+          type: 'income',
+          status: inv.status,
+        });
+      });
+      expenses.forEach((exp) => {
+        transactions.push({
+          id: exp.id,
+          date: (exp.date || '').split('T')[0],
+          description: exp.title || 'Expense',
+          amount: Number(exp.amount || 0),
+          type: 'expense',
+          status: 'completed',
+        });
+      });
+      const recentTransactions = transactions
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 5);
+
+      return success({
+        totalRevenue,
+        totalExpenses,
+        netProfit,
+        pendingInvoices: pendingCount,
+        overdueInvoices: overdueCount,
+        paidInvoices: paidCount,
+        revenueGrowth: 0,
+        expenseGrowth: 0,
+        profitMargin: totalRevenue > 0 ? ((totalRevenue - totalExpenses) / totalRevenue) * 100 : 0,
+        monthlyRevenue,
+        expenseCategories,
+        recentTransactions,
+      });
+    }
+
     return failure(`GET ${path} is not implemented in standalone mode`, 404);
   },
   async post(url, payload = {}) {
@@ -512,10 +885,15 @@ export const standaloneApi = {
 
     if (path === '/auth/login/') {
       const found = db.users.find(
-        (user) => user.email.toLowerCase() === String(payload.email).toLowerCase() && user.password === payload.password
+        (user) =>
+          user.email.toLowerCase() === String(payload.email).toLowerCase() &&
+          user.password === payload.password
       );
       if (!found) {
-        return failure('Invalid email or password', 401, { status_code: 401, errors: { detail: ['Invalid credentials'] } });
+        return failure('Invalid email or password', 401, {
+          status_code: 401,
+          errors: { detail: ['Invalid credentials'] },
+        });
       }
       return success({
         id: found.id,
@@ -530,7 +908,9 @@ export const standaloneApi = {
     }
 
     if (path === '/auth/register/') {
-      const exists = db.users.some((user) => user.email.toLowerCase() === String(payload.email).toLowerCase());
+      const exists = db.users.some(
+        (user) => user.email.toLowerCase() === String(payload.email).toLowerCase()
+      );
       if (exists) {
         return failure('Registration failed', 400, {
           status_code: 400,
@@ -582,7 +962,30 @@ export const standaloneApi = {
     }
 
     if (path.startsWith('/auth/password-reset/')) {
-      return success({ detail: 'Password updated.' });
+      // Extract token from path: /auth/password-reset/{token}
+      const token = path.split('/').filter(Boolean).pop();
+      if (!token) {
+        return failure('Reset token is required', 400);
+      }
+      // Validate token exists in password reset requests
+      const resetRequest = db.passwordResetRequests?.find(
+        (req) => req.token === token && !req.used
+      );
+      if (!resetRequest) {
+        return failure('Invalid or expired reset token', 400);
+      }
+      // Mark token as used
+      resetRequest.used = true;
+      writeDb(db);
+      // Find user by email from payload
+      const userIndex = db.users.findIndex((u) => u.email === payload.email);
+      if (userIndex === -1) {
+        return failure('User not found', 404);
+      }
+      // Update password
+      db.users[userIndex].password = payload.password;
+      writeDb(db);
+      return success({ detail: 'Password updated successfully.' });
     }
 
     if (path === '/case/') {
@@ -628,8 +1031,13 @@ export const standaloneApi = {
         title: payload.get ? payload.get('title') : payload.title,
         description: payload.get ? payload.get('description') : payload.description,
         owner: Number(payload.get ? payload.get('owner') : payload.owner),
-        shared_with: payload.getAll ? payload.getAll('shared_with').map(Number) : payload.shared_with || [],
-        file: payload.get && payload.get('file')?.name ? `local://${payload.get('file').name}` : 'local://uploaded-document',
+        shared_with: payload.getAll
+          ? payload.getAll('shared_with').map(Number)
+          : payload.shared_with || [],
+        file:
+          payload.get && payload.get('file')?.name
+            ? `local://${payload.get('file').name}`
+            : 'local://uploaded-document',
         uploaded_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -693,7 +1101,11 @@ export const standaloneApi = {
     }
 
     if (path === '/billing/onboarding/') {
-      const created = { id: nextId(db.onboarding), ...payload, created_at: new Date().toISOString() };
+      const created = {
+        id: nextId(db.onboarding),
+        ...payload,
+        created_at: new Date().toISOString(),
+      };
       db.onboarding.push(created);
       writeDb(db);
       return success(created, 201);
@@ -718,16 +1130,254 @@ export const standaloneApi = {
     }
 
     if (path === '/chats/send-message/') {
+      // Support both JSON payload and FormData
+      let messageContent;
+      let room;
+      let senderId;
+      const attachments = [];
+
+      if (payload instanceof FormData) {
+        messageContent = payload.get('message');
+        room = payload.get('room');
+        senderId = Number(payload.get('sender_id'));
+        // Collect attachments
+        payload.forEach((value, key) => {
+          if (key === 'attachments') {
+            attachments.push({ name: value.name, size: value.size, type: value.type });
+          }
+        });
+      } else {
+        messageContent = payload.message;
+        room = payload.room;
+        senderId = Number(payload.sender_id);
+      }
+
       const created = {
         id: nextId(db.chatMessages),
-        room: payload.room,
-        sender: Number(payload.sender_id),
-        content: payload.message,
+        room: room,
+        sender: senderId,
+        content: messageContent,
         timestamp: new Date().toISOString(),
+        attachments: attachments.length > 0 ? attachments : undefined,
       };
       db.chatMessages.push(created);
       writeDb(db);
       return success(created, 201);
+    }
+
+    // Change Password
+    if (path === '/auth/change-password/') {
+      const user = currentUser();
+      if (!user) {
+        return failure('Unauthorized', 401);
+      }
+      const index = db.users.findIndex((item) => item.id === user.id);
+      if (index === -1) {
+        return failure('User not found', 404);
+      }
+      // Verify current password
+      if (db.users[index].password !== (payload.currentPassword || payload.current_password)) {
+        return failure('Current password is incorrect', 400);
+      }
+      // Update to new password (support both camelCase and snake_case)
+      const newPassword = payload.newPassword || payload.new_password;
+      db.users[index] = { ...db.users[index], password: newPassword };
+      writeDb(db);
+      return success({ detail: 'Password updated successfully.' });
+    }
+
+    // Create Expense
+    if (path === '/expenses/') {
+      const created = {
+        id: nextId(db.expenses),
+        ...payload,
+        amount: Number(payload.amount),
+        date: payload.date || new Date().toISOString().split('T')[0],
+        created_at: new Date().toISOString(),
+      };
+      db.expenses.push(created);
+      writeDb(db);
+      return success(created, 201);
+    }
+
+    // Create Payroll Run
+    if (path === '/payroll/') {
+      const created = {
+        id: nextId(db.payroll_runs),
+        ...payload,
+        total_amount: Number(payload.total_amount || 0),
+        period_start: payload.period_start || new Date().toISOString().split('T')[0],
+        period_end: payload.period_end || new Date().toISOString().split('T')[0],
+        created_at: new Date().toISOString(),
+      };
+      db.payroll_runs.push(created);
+      writeDb(db);
+      return success(created, 201);
+    }
+
+    // Create Employee (HR)
+    if (path === '/hr/employees/') {
+      const exists = db.users.some(
+        (user) => user.email.toLowerCase() === String(payload.email).toLowerCase()
+      );
+      if (exists) {
+        return failure('Employee already exists', 400);
+      }
+      const user = {
+        id: nextId(db.users),
+        username: payload.full_name || payload.email,
+        email: payload.email,
+        password: payload.password,
+        role: 'employee',
+        phone_number: payload.phone_number || '',
+        address: payload.address || '',
+        status: 'Active',
+        timezone: 'EAT',
+        department: payload.department || '',
+        position: payload.position || '',
+        salary: payload.salary || 0,
+        hire_date: payload.hire_date || new Date().toISOString().split('T')[0],
+      };
+      db.users.push(user);
+      writeDb(db);
+      return success(publicUser(user), 201);
+    }
+
+    // Send Employee Invite
+    if (path === '/hr/invites/') {
+      const exists = db.users.some(
+        (user) => user.email.toLowerCase() === String(payload.email).toLowerCase()
+      );
+      if (exists) {
+        return failure('Employee already exists', 400);
+      }
+      // In standalone mode, create a pending invite stored in localStorage
+      const invite = {
+        id: nextId(db.invites || []),
+        email: payload.email,
+        role: payload.role || 'employee',
+        department: payload.department || '',
+        invited_by: currentUser()?.id || 1,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      };
+      // Initialize invites array if not present
+      if (!db.invites) {
+        db.invites = [];
+      }
+      db.invites.push(invite);
+      writeDb(db);
+      // Simulate email sending (in production, send actual email)
+      return success({
+        message: `Invitation sent to ${payload.email}`,
+        invite,
+      });
+    }
+
+    // File Upload placeholder
+    if (path === '/api/upload/') {
+      return success({
+        success: true,
+        message: 'Upload endpoint - configure AppWrite Storage in production',
+      });
+    }
+
+    // Document generation
+    if (path === '/documents/generate/') {
+      const docType = payload.type || 'document';
+      const context = payload.context || {};
+
+      const filename = `${docType}_${new Date().toISOString().slice(0, 10)}.txt`;
+      const content = `
+${docType.toUpperCase()} - Generated by Reya
+========================================
+Date: ${new Date().toLocaleDateString()}
+
+Recipient: ${context.recipient || 'Client'}
+
+Dear ${context.recipient || 'Client'},
+
+This document was auto-generated by Reya AI Assistant in response to your request.
+
+${context.summary || 'Please review the contents carefully.'}
+
+Key Details:
+${Object.entries(context)
+  .filter(([k]) => !['recipient', 'summary'].includes(k))
+  .map(([k, v]) => `  • ${k}: ${v}`)
+  .join('\n')}
+
+This document is AI-generated and should be reviewed by a qualified legal professional before use.
+
+Sincerely,
+Reya AI Assistant - WakiliWorld
+`;
+
+      return success({
+        success: true,
+        filename: filename,
+        content: content,
+        page_count: 1,
+      });
+    }
+
+    // AI/Reya endpoints (placeholder)
+    if (path === '/ai/reya/query/') {
+      return success({
+        response: 'AI response placeholder - integrate AI service',
+        query: payload.query,
+      });
+    }
+
+    if (path === '/ai/reya/quick-action/') {
+      const action = payload.action || '';
+      if (action === 'drafting' || action === 'batch_draft' || action === 'generate_more') {
+        return success({
+          content: `I can help you draft standard legal documents. Which type would you like to generate?\n\nExamples: contracts, agreements, letters, notices, memos.`,
+          actions: [
+            {
+              label: 'Generate Contract',
+              icon: 'file',
+              generate: 'contract',
+              context: { type: 'contract' },
+            },
+            {
+              label: 'Generate Letter',
+              icon: 'file',
+              generate: 'letter',
+              context: { type: 'letter' },
+            },
+            { label: 'Generate NDA', icon: 'file', generate: 'nda', context: { type: 'nda' } },
+          ],
+          suggestions: [
+            { label: 'Contract', action: 'generate_contract' },
+            { label: 'Letter', action: 'generate_letter' },
+            { label: 'NDA', action: 'generate_nda' },
+          ],
+        });
+      }
+      return success({
+        content: `Quick action received: ${action}. I'm here to help with "${action}". What specific details would you like to include?`,
+        actions: [],
+        suggestions: [{ label: 'Tell me more', action: 'help' }],
+      });
+    }
+
+    // Document generation
+    if (path === '/documents/generate/') {
+      return success({
+        success: true,
+        message: 'Document generation - integrate template service',
+      });
+    }
+
+    if (path === '/documents/revoke-token/') {
+      return success({ success: true });
+    }
+
+    // Autofill validation
+    if (path === '/validate/autofill/') {
+      return success({ valid: true, suggestions: {} });
     }
 
     return failure(`POST ${path} is not implemented in standalone mode`, 404);
@@ -739,7 +1389,9 @@ export const standaloneApi = {
     if (path.startsWith('/case/')) {
       const id = Number(path.split('/').filter(Boolean).pop());
       const index = db.cases.findIndex((item) => item.id === id);
-      if (index === -1) return failure('Case not found', 404);
+      if (index === -1) {
+        return failure('Case not found', 404);
+      }
       db.cases[index] = {
         ...db.cases[index],
         ...payload,
@@ -753,7 +1405,9 @@ export const standaloneApi = {
     if (path.startsWith('/tasks/tasks/')) {
       const id = Number(path.split('/').filter(Boolean).slice(-1)[0]);
       const index = db.tasks.findIndex((item) => item.id === id);
-      if (index === -1) return failure('Task not found', 404);
+      if (index === -1) {
+        return failure('Task not found', 404);
+      }
       db.tasks[index] = {
         ...db.tasks[index],
         ...payload,
@@ -767,7 +1421,9 @@ export const standaloneApi = {
     if (path.startsWith('/api/documents/')) {
       const id = Number(path.split('/').filter(Boolean).pop());
       const index = db.documents.findIndex((item) => item.id === id);
-      if (index === -1) return failure('Document not found', 404);
+      if (index === -1) {
+        return failure('Document not found', 404);
+      }
       db.documents[index] = {
         ...db.documents[index],
         ...payload,
@@ -780,7 +1436,23 @@ export const standaloneApi = {
     if (path.startsWith('/individual/')) {
       const id = Number(path.split('/').filter(Boolean).pop());
       const index = db.users.findIndex((item) => item.id === id);
-      if (index === -1) return failure('User not found', 404);
+      if (index === -1) {
+        return failure('User not found', 404);
+      }
+      db.users[index] = { ...db.users[index], ...payload };
+      writeDb(db);
+      return success(publicUser(db.users[index]));
+    }
+
+    if (path === '/auth/profile/') {
+      const user = currentUser();
+      if (!user) {
+        return failure('Unauthorized', 401);
+      }
+      const index = db.users.findIndex((item) => item.id === user.id);
+      if (index === -1) {
+        return failure('User not found', 404);
+      }
       db.users[index] = { ...db.users[index], ...payload };
       writeDb(db);
       return success(publicUser(db.users[index]));
@@ -788,9 +1460,13 @@ export const standaloneApi = {
 
     if (path === '/user/communication-settings' || path === '/user/task-settings') {
       const user = currentUser();
-      if (!user) return failure('Unauthorized', 401);
+      if (!user) {
+        return failure('Unauthorized', 401);
+      }
       const index = db.users.findIndex((item) => item.id === user.id);
-      if (index === -1) return failure('User not found', 404);
+      if (index === -1) {
+        return failure('User not found', 404);
+      }
       db.users[index] = { ...db.users[index], ...payload };
       writeDb(db);
       return success(publicUser(db.users[index]));

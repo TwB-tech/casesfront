@@ -40,7 +40,7 @@ const CaseReports = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status) => {
-        let color = status === 'open' ? 'green' : status === 'closed' ? 'red' : 'orange';
+        const color = status === 'open' ? 'green' : status === 'closed' ? 'red' : 'orange';
         return <Tag color={color}>{status.toUpperCase()}</Tag>;
       },
     },

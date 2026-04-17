@@ -1,26 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Search, Filter, Clock, Star, CheckCircle2, Zap, 
-  Shield, Users, FileText, Calendar, Scale, DollarSign,
-  ArrowRight, MessageSquare, ExternalLink, Award, AlertCircle,
-  Building, Briefcase, MapPin
+import {
+  Search,
+  Filter,
+  Clock,
+  Star,
+  CheckCircle2,
+  Zap,
+  Users,
+  Scale,
+  MessageSquare,
+  Award,
+  Building,
+  Briefcase,
+  MapPin,
 } from 'lucide-react';
-import { Button, Rate, Tag, Badge, Tabs, Empty, Spin } from 'antd';
+import { Button, Tabs, Spin, message } from 'antd';
 import { useTheme } from '../contexts/ThemeContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import api from '../axiosConfig';
+import { useNavigate } from 'react-router-dom';
+/* eslint-disable no-console */
 
 const FirmsMarketplace = () => {
-  const { isFuturistic, themeConfig } = useTheme();
+  const { isFuturistic } = useTheme();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [firms, setFirms] = useState([]);
 
-  useEffect(() => {
-    fetchFirms();
-  }, []);
-
+  // Fetch function defined before useEffect to avoid use-before-define
   const fetchFirms = async () => {
     try {
       setLoading(true);
@@ -29,121 +38,16 @@ const FirmsMarketplace = () => {
       setFirms(response.data);
     } catch (error) {
       console.error('Error fetching firms:', error);
-      // Fallback to sample data if API fails
-      setFirms([
-        {
-          id: 1,
-          name: 'Hampton & Associates Law Firm',
-          avatar: 'HA',
-          rating: 4.9,
-          reviews: 234,
-          specialties: ['Corporate Law', 'M&A', 'Commercial Litigation', 'Regulatory Compliance'],
-          hourlyRate: 150,
-          availability: 'Available Now',
-          verified: true,
-          experience: '12 years',
-          responseTime: '< 30 min',
-          bio: 'Full-service corporate law firm with expertise in mergers & acquisitions, commercial litigation, and regulatory compliance. Serving clients across East Africa.',
-          completedProjects: 567,
-          location: 'Nairobi, Kenya',
-          advocatesCount: 15,
-          subscriptionStatus: 'active'
-        },
-        {
-          id: 2,
-          name: 'Mwangi & Kim Advocates',
-          avatar: 'MK',
-          rating: 4.8,
-          reviews: 189,
-          specialties: ['Real Estate', 'Property Law', 'Conveyancing', 'Land Disputes'],
-          hourlyRate: 120,
-          availability: 'Available Today',
-          verified: true,
-          experience: '8 years',
-          responseTime: '< 1 hour',
-          bio: 'Specialized real estate and property law firm with extensive experience in conveyancing, land transactions, and property dispute resolution.',
-          completedProjects: 423,
-          location: 'Nairobi, Kenya',
-          advocatesCount: 8,
-          subscriptionStatus: 'active'
-        },
-        {
-          id: 3,
-          name: 'Omondi Legal Partners',
-          avatar: 'OL',
-          rating: 4.9,
-          reviews: 156,
-          specialties: ['Family Law', 'Divorce', 'Child Custody', 'Estate Planning'],
-          hourlyRate: 100,
-          availability: 'Available Now',
-          verified: true,
-          experience: '10 years',
-          responseTime: '< 45 min',
-          bio: 'Compassionate family law practice specializing in divorce proceedings, child custody arrangements, and comprehensive estate planning services.',
-          completedProjects: 389,
-          location: 'Mombasa, Kenya',
-          advocatesCount: 6,
-          subscriptionStatus: 'active'
-        },
-        {
-          id: 4,
-          name: 'TechLaw Africa',
-          avatar: 'TL',
-          rating: 4.7,
-          reviews: 112,
-          specialties: ['Intellectual Property', 'Technology Law', 'Data Privacy', 'Fintech'],
-          hourlyRate: 180,
-          availability: 'Available Today',
-          verified: true,
-          experience: '6 years',
-          responseTime: '< 1 hour',
-          bio: 'Technology-focused law firm specializing in IP protection, data privacy compliance, fintech regulations, and digital transformation legal support.',
-          completedProjects: 298,
-          location: 'Nairobi, Kenya',
-          advocatesCount: 10,
-          subscriptionStatus: 'active'
-        },
-        {
-          id: 5,
-          name: 'Nairobi Criminal Defense Chambers',
-          avatar: 'NC',
-          rating: 4.9,
-          reviews: 201,
-          specialties: ['Criminal Law', 'White Collar Crime', 'Criminal Defense', 'Appeals'],
-          hourlyRate: 200,
-          availability: 'Available Now',
-          verified: true,
-          experience: '15 years',
-          responseTime: '< 15 min',
-          bio: 'Elite criminal defense practice with expertise in white collar crime, complex criminal litigation, and appellate advocacy. Available 24/7 for emergencies.',
-          completedProjects: 456,
-          location: 'Nairobi, Kenya',
-          advocatesCount: 12,
-          subscriptionStatus: 'active'
-        },
-        {
-          id: 6,
-          name: 'East Africa Commercial Chambers',
-          avatar: 'EA',
-          rating: 4.8,
-          reviews: 178,
-          specialties: ['Commercial Law', 'Arbitration', 'Mediation', 'Cross-Border Transactions'],
-          hourlyRate: 160,
-          availability: 'Available Today',
-          verified: true,
-          experience: '11 years',
-          responseTime: '< 1 hour',
-          bio: 'Regional commercial law experts specializing in cross-border transactions, international arbitration, and alternative dispute resolution across East Africa.',
-          completedProjects: 412,
-          location: 'Nairobi, Kenya',
-          advocatesCount: 18,
-          subscriptionStatus: 'active'
-        },
-      ]);
+      message.error('Failed to load law firms. Please try again later.');
+      setFirms([]);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchFirms();
+  }, []);
 
   const categories = [
     { key: 'all', label: 'All Practice Areas', icon: Briefcase, count: 42 },
@@ -157,7 +61,8 @@ const FirmsMarketplace = () => {
   const services = [
     {
       title: 'Corporate Advisory',
-      description: 'Comprehensive corporate legal support including structuring, compliance, and governance',
+      description:
+        'Comprehensive corporate legal support including structuring, compliance, and governance',
       icon: Building,
       avgRate: '$120-250/hr',
     },
@@ -193,15 +98,16 @@ const FirmsMarketplace = () => {
     },
   ];
 
-  const filteredFirms = firms.filter(firm => {
-    const matchesSearch = firm.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      firm.specialties.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
+  const filteredFirms = firms.filter((firm) => {
+    const matchesSearch =
+      firm.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      firm.specialties.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
       firm.location.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
   const handleContact = (firm) => {
-    window.location.href = `/chat-users?hire=${firm.id}&type=firm`;
+    navigate(`/chat-users?hire=${firm.id}&type=firm`);
   };
 
   const tabItems = [
@@ -210,12 +116,8 @@ const FirmsMarketplace = () => {
       label: 'All Law Firms',
       children: (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredFirms.map(firm => (
-            <FirmCard 
-              key={firm.id} 
-              firm={firm} 
-              onContact={() => handleContact(firm)}
-            />
+          {filteredFirms.map((firm) => (
+            <FirmCard key={firm.id} firm={firm} onContact={() => handleContact(firm)} />
           ))}
         </div>
       ),
@@ -231,13 +133,9 @@ const FirmsMarketplace = () => {
       children: (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredFirms
-            .filter(f => f.availability.includes('Now'))
-            .map(firm => (
-              <FirmCard 
-                key={firm.id} 
-                firm={firm} 
-                onContact={() => handleContact(firm)}
-              />
+            .filter((f) => f.availability.includes('Now'))
+            .map((firm) => (
+              <FirmCard key={firm.id} firm={firm} onContact={() => handleContact(firm)} />
             ))}
         </div>
       ),
@@ -248,13 +146,9 @@ const FirmsMarketplace = () => {
       children: (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredFirms
-            .filter(f => f.rating >= 4.8)
-            .map(firm => (
-              <FirmCard 
-                key={firm.id} 
-                firm={firm} 
-                onContact={() => handleContact(firm)}
-              />
+            .filter((f) => f.rating >= 4.8)
+            .map((firm) => (
+              <FirmCard key={firm.id} firm={firm} onContact={() => handleContact(firm)} />
             ))}
         </div>
       ),
@@ -264,24 +158,30 @@ const FirmsMarketplace = () => {
       label: 'Emergency Support',
       children: (
         <div className="text-center py-12">
-          <div className={`w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center ${
-            isFuturistic ? 'bg-danger/20' : 'bg-danger-50'
-          }`}>
+          <div
+            className={`w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center ${
+              isFuturistic ? 'bg-danger/20' : 'bg-danger-50'
+            }`}
+          >
             <Zap className={`w-10 h-10 ${isFuturistic ? 'text-danger' : 'text-danger-500'}`} />
           </div>
-          <h3 className={`text-2xl font-bold mb-2 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
+          <h3
+            className={`text-2xl font-bold mb-2 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+          >
             Need Urgent Legal Help?
           </h3>
-          <p className={`mb-6 max-w-md mx-auto ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}`}>
-            Our emergency law firm network can have qualified legal representation assigned to your matter within 2 hours. 
-            Available 24/7 for urgent legal matters.
+          <p
+            className={`mb-6 max-w-md mx-auto ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}`}
+          >
+            Our emergency law firm network can have qualified legal representation assigned to your
+            matter within 2 hours. Available 24/7 for urgent legal matters.
           </p>
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             size="large"
             className={isFuturistic ? 'futuristic-btn' : ''}
             style={{
-              background: isFuturistic ? themeConfig.accent : undefined,
+              background: isFuturistic ? '#6366f1' : undefined,
             }}
           >
             Request Emergency Support
@@ -302,67 +202,82 @@ const FirmsMarketplace = () => {
   return (
     <div className="min-h-screen">
       <Breadcrumbs />
-      
+
       {/* Hero Section */}
-      <div className={`relative overflow-hidden rounded-2xl mb-8 p-8 md:p-12 ${
-        isFuturistic 
-          ? 'bg-gradient-to-br from-cyber-surface via-cyber-bg to-cyber-card border border-cyber-border' 
-          : 'bg-gradient-to-br from-primary-50 to-white border border-primary-100'
-      }`}>
+      <div
+        className={`relative overflow-hidden rounded-2xl mb-8 p-8 md:p-12 ${
+          isFuturistic
+            ? 'bg-gradient-to-br from-cyber-surface via-cyber-bg to-cyber-card border border-cyber-border'
+            : 'bg-gradient-to-br from-primary-50 to-white border border-primary-100'
+        }`}
+      >
         {isFuturistic && (
           <>
             <div className="absolute top-0 right-0 w-96 h-96 bg-aurora-primary/10 rounded-full blur-3xl" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-aurora-secondary/10 rounded-full blur-3xl" />
           </>
         )}
-        
+
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
-            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-              isFuturistic 
-                ? 'bg-aurora-primary/20 text-aurora-primary border border-aurora-primary/30'
-                : 'bg-success-100 text-success-700'
-            }`}>
+            <div
+              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                isFuturistic
+                  ? 'bg-aurora-primary/20 text-aurora-primary border border-aurora-primary/30'
+                  : 'bg-success-100 text-success-700'
+              }`}
+            >
               Verified Law Firms
             </div>
             <div className="flex items-center gap-1 text-sm text-success-600">
               <span className="w-2 h-2 bg-success-500 rounded-full animate-pulse" />
-              {firms.filter(f => f.availability.includes('Now')).length} Firms Available Now
+              {firms.filter((f) => f.availability.includes('Now')).length} Firms Available Now
             </div>
           </div>
-          
-          <h1 className={`text-3xl md:text-4xl font-bold mb-4 ${
-            isFuturistic ? 'text-aurora-text' : 'text-primary-900'
-          }`}>
+
+          <h1
+            className={`text-3xl md:text-4xl font-bold mb-4 ${
+              isFuturistic ? 'text-aurora-text' : 'text-primary-900'
+            }`}
+          >
             Law Firm Directory
           </h1>
-          
-          <p className={`text-lg mb-6 max-w-2xl ${
-            isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'
-          }`}>
-            Connect with verified, subscribed law firms ready to handle your legal matters. 
-            All firms are pre-vetted and automatically listed upon WakiliWorld subscription.
+
+          <p
+            className={`text-lg mb-6 max-w-2xl ${
+              isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'
+            }`}
+          >
+            Connect with verified, subscribed law firms ready to handle your legal matters. All
+            firms are pre-vetted and automatically listed upon WakiliWorld subscription.
           </p>
-          
+
           {/* Search Bar */}
           <div className="flex flex-col sm:flex-row gap-4 max-w-xl">
-            <div className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl ${
-              isFuturistic 
-                ? 'bg-cyber-bg border border-cyber-border focus-within:border-aurora-primary'
-                : 'bg-white border border-neutral-200 shadow-sm'
-            }`}>
-              <Search className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-400'} size={20} />
+            <div
+              className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl ${
+                isFuturistic
+                  ? 'bg-cyber-bg border border-cyber-border focus-within:border-aurora-primary'
+                  : 'bg-white border border-neutral-200 shadow-sm'
+              }`}
+            >
+              <Search
+                className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-400'}
+                size={20}
+              />
               <input
                 type="text"
                 placeholder="Search by firm name, location, or practice area..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={`flex-1 bg-transparent outline-none ${
-                  isFuturistic ? 'text-aurora-text placeholder:text-aurora-muted' : 'text-neutral-800'
+                  isFuturistic
+                    ? 'text-aurora-text placeholder:text-aurora-muted'
+                    : 'text-neutral-800'
                 }`}
               />
             </div>
-            <Button 
+            <Button
               size="large"
               icon={<Filter size={16} />}
               className={isFuturistic ? 'border-cyber-border' : ''}
@@ -381,20 +296,27 @@ const FirmsMarketplace = () => {
           { label: 'Average Rating', value: '4.8/5', icon: Star },
           { label: 'Response Time', value: '< 1 hour', icon: Clock },
         ].map((stat, idx) => (
-          <div 
+          <div
             key={idx}
             className={`p-6 rounded-xl ${
-              isFuturistic 
-                ? 'bg-cyber-card border border-cyber-border' 
+              isFuturistic
+                ? 'bg-cyber-card border border-cyber-border'
                 : 'bg-white border border-neutral-200 shadow-sm'
             }`}
           >
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${
-              isFuturistic ? 'bg-aurora-primary/20' : 'bg-primary-50'
-            }`}>
-              <stat.icon className={isFuturistic ? 'text-aurora-primary' : 'text-primary-600'} size={20} />
+            <div
+              className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${
+                isFuturistic ? 'bg-aurora-primary/20' : 'bg-primary-50'
+              }`}
+            >
+              <stat.icon
+                className={isFuturistic ? 'text-aurora-primary' : 'text-primary-600'}
+                size={20}
+              />
             </div>
-            <div className={`text-2xl font-bold ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
+            <div
+              className={`text-2xl font-bold ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+            >
               {stat.value}
             </div>
             <div className={`text-sm ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
@@ -408,12 +330,16 @@ const FirmsMarketplace = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Sidebar - Categories */}
         <div className="lg:col-span-1">
-          <div className={`sticky top-24 p-6 rounded-xl ${
-            isFuturistic 
-              ? 'bg-cyber-card border border-cyber-border' 
-              : 'bg-white border border-neutral-200 shadow-sm'
-          }`}>
-            <h3 className={`font-semibold mb-4 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
+          <div
+            className={`sticky top-24 p-6 rounded-xl ${
+              isFuturistic
+                ? 'bg-cyber-card border border-cyber-border'
+                : 'bg-white border border-neutral-200 shadow-sm'
+            }`}
+          >
+            <h3
+              className={`font-semibold mb-4 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+            >
               Practice Areas
             </h3>
             <div className="space-y-2">
@@ -435,27 +361,35 @@ const FirmsMarketplace = () => {
                     <cat.icon size={18} />
                     <span className="text-sm font-medium">{cat.label}</span>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    isFuturistic ? 'bg-cyber-bg' : 'bg-neutral-100'
-                  }`}>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${
+                      isFuturistic ? 'bg-cyber-bg' : 'bg-neutral-100'
+                    }`}
+                  >
                     {cat.count}
                   </span>
                 </button>
               ))}
             </div>
 
-            <div className={`mt-6 pt-6 border-t ${isFuturistic ? 'border-cyber-border' : 'border-neutral-200'}`}>
-              <h4 className={`font-medium mb-3 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
+            <div
+              className={`mt-6 pt-6 border-t ${isFuturistic ? 'border-cyber-border' : 'border-neutral-200'}`}
+            >
+              <h4
+                className={`font-medium mb-3 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+              >
                 Need Specialized Counsel?
               </h4>
-              <p className={`text-sm mb-4 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+              <p
+                className={`text-sm mb-4 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
+              >
                 Describe your specific legal needs and we will match you with the right law firm.
               </p>
-              <Button 
-                block 
+              <Button
+                block
                 className={isFuturistic ? 'futuristic-btn' : ''}
                 style={{
-                  background: isFuturistic ? themeConfig.accent : undefined,
+                  background: isFuturistic ? '#6366f1' : undefined,
                 }}
               >
                 Post a Legal Request
@@ -466,9 +400,13 @@ const FirmsMarketplace = () => {
 
         {/* Main Content - Law Firms */}
         <div className="lg:col-span-3">
-          <Tabs 
+          <Tabs
             items={tabItems}
-            activeKey={activeTab === 'all' || !categories.find(c => c.key === activeTab) ? 'all' : activeTab}
+            activeKey={
+              activeTab === 'all' || !categories.find((c) => c.key === activeTab)
+                ? 'all'
+                : activeTab
+            }
             onChange={setActiveTab}
             className={isFuturistic ? 'firms-tabs' : ''}
           />
@@ -476,42 +414,57 @@ const FirmsMarketplace = () => {
       </div>
 
       {/* Services Section */}
-      <div className={`mt-12 p-8 rounded-2xl ${
-        isFuturistic 
-          ? 'bg-cyber-surface border border-cyber-border' 
-          : 'bg-neutral-50 border border-neutral-200'
-      }`}>
+      <div
+        className={`mt-12 p-8 rounded-2xl ${
+          isFuturistic
+            ? 'bg-cyber-surface border border-cyber-border'
+            : 'bg-neutral-50 border border-neutral-200'
+        }`}
+      >
         <div className="text-center mb-8">
-          <h2 className={`text-2xl font-bold mb-2 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
+          <h2
+            className={`text-2xl font-bold mb-2 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+          >
             Legal Services Available
           </h2>
           <p className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}>
             Expert legal representation across all practice areas
           </p>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {services.map((service, idx) => (
-            <div 
+            <div
               key={idx}
               className={`p-6 rounded-xl transition-all hover:-translate-y-1 ${
-                isFuturistic 
-                  ? 'bg-cyber-card border border-cyber-border hover:border-aurora-primary/50 hover:shadow-glow-sm' 
+                isFuturistic
+                  ? 'bg-cyber-card border border-cyber-border hover:border-aurora-primary/50 hover:shadow-glow-sm'
                   : 'bg-white border border-neutral-200 hover:shadow-lg hover:border-primary-200'
               }`}
             >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
-                isFuturistic ? 'bg-aurora-primary/20' : 'bg-primary-50'
-              }`}>
-                <service.icon className={isFuturistic ? 'text-aurora-primary' : 'text-primary-600'} size={24} />
+              <div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
+                  isFuturistic ? 'bg-aurora-primary/20' : 'bg-primary-50'
+                }`}
+              >
+                <service.icon
+                  className={isFuturistic ? 'text-aurora-primary' : 'text-primary-600'}
+                  size={24}
+                />
               </div>
-              <h3 className={`font-semibold mb-2 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
+              <h3
+                className={`font-semibold mb-2 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+              >
                 {service.title}
               </h3>
-              <p className={`text-sm mb-4 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+              <p
+                className={`text-sm mb-4 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
+              >
                 {service.description}
               </p>
-              <div className={`text-sm font-medium ${isFuturistic ? 'text-aurora-primary' : 'text-primary-600'}`}>
+              <div
+                className={`text-sm font-medium ${isFuturistic ? 'text-aurora-primary' : 'text-primary-600'}`}
+              >
                 {service.avgRate}
               </div>
             </div>
@@ -520,32 +473,37 @@ const FirmsMarketplace = () => {
       </div>
 
       {/* CTA Section */}
-      <div className={`mt-12 p-8 md:p-12 rounded-2xl text-center ${
-        isFuturistic 
-          ? 'bg-gradient-to-r from-aurora-primary/20 to-aurora-secondary/20 border border-aurora-primary/30' 
-          : 'bg-gradient-to-r from-primary-800 to-primary-900 text-white'
-      }`}>
+      <div
+        className={`mt-12 p-8 md:p-12 rounded-2xl text-center ${
+          isFuturistic
+            ? 'bg-gradient-to-r from-aurora-primary/20 to-aurora-secondary/20 border border-aurora-primary/30'
+            : 'bg-gradient-to-r from-primary-800 to-primary-900 text-white'
+        }`}
+      >
         <h2 className="text-2xl md:text-3xl font-bold mb-4">
           Looking for Professional Legal Representation?
         </h2>
-        <p className={`text-lg mb-8 max-w-2xl mx-auto ${
-          isFuturistic ? 'text-aurora-muted' : 'text-white/80'
-        }`}>
-          Get instant access to verified, subscribed law firms. All firms are automatically listed upon WakiliWorld subscription.
+        <p
+          className={`text-lg mb-8 max-w-2xl mx-auto ${
+            isFuturistic ? 'text-aurora-muted' : 'text-white/80'
+          }`}
+        >
+          Get instant access to verified, subscribed law firms. All firms are automatically listed
+          upon WakiliWorld subscription.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             size="large"
             className={isFuturistic ? 'futuristic-btn' : ''}
             style={{
               background: isFuturistic ? undefined : 'white',
-              color: isFuturistic ? undefined : themeConfig.accent || '#1890ff',
+              color: isFuturistic ? undefined : '#1890ff',
             }}
           >
             Find a Law Firm
           </Button>
-          <Button 
+          <Button
             size="large"
             ghost={!isFuturistic}
             className={isFuturistic ? 'border-aurora-primary text-aurora-primary' : ''}
@@ -559,38 +517,46 @@ const FirmsMarketplace = () => {
 };
 
 const FirmCard = ({ firm, onContact }) => {
-  const { isFuturistic, themeConfig } = useTheme();
+  const { isFuturistic } = useTheme();
 
   return (
-    <div className={`rounded-xl overflow-hidden transition-all hover:-translate-y-1 ${
-      isFuturistic 
-        ? 'bg-cyber-card border border-cyber-border hover:border-aurora-primary/50 hover:shadow-glow-sm' 
-        : 'bg-white border border-neutral-200 shadow-sm hover:shadow-lg'
-    }`}>
+    <div
+      className={`rounded-xl overflow-hidden transition-all hover:-translate-y-1 ${
+        isFuturistic
+          ? 'bg-cyber-card border border-cyber-border hover:border-aurora-primary/50 hover:shadow-glow-sm'
+          : 'bg-white border border-neutral-200 shadow-sm hover:shadow-lg'
+      }`}
+    >
       <div className="p-6">
         <div className="flex items-start gap-4 mb-4">
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg ${
-            isFuturistic 
-              ? 'bg-gradient-to-br from-aurora-primary to-aurora-secondary text-white'
-              : 'bg-primary-100 text-primary-800'
-          }`}>
+          <div
+            className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg ${
+              isFuturistic
+                ? 'bg-gradient-to-br from-aurora-primary to-aurora-secondary text-white'
+                : 'bg-primary-100 text-primary-800'
+            }`}
+          >
             {firm.avatar}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className={`font-semibold truncate ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
+              <h3
+                className={`font-semibold truncate ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+              >
                 {firm.name}
               </h3>
-              {firm.verified && (
-                <CheckCircle2 className="w-4 h-4 text-success-500 flex-shrink-0" />
-              )}
+              {firm.verified && <CheckCircle2 className="w-4 h-4 text-success-500 flex-shrink-0" />}
             </div>
             <div className="flex items-center gap-2 mt-1">
               <Star className="w-4 h-4 text-warning-500 fill-warning-500" />
-              <span className={`text-sm font-medium ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}>
+              <span
+                className={`text-sm font-medium ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}
+              >
                 {firm.rating}
               </span>
-              <span className={`text-sm ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+              <span
+                className={`text-sm ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
+              >
                 ({firm.reviews} reviews)
               </span>
             </div>
@@ -603,16 +569,18 @@ const FirmCard = ({ firm, onContact }) => {
           </div>
         </div>
 
-        <p className={`text-sm mb-4 line-clamp-2 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}`}>
+        <p
+          className={`text-sm mb-4 line-clamp-2 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}`}
+        >
           {firm.bio}
         </p>
 
         <div className="flex flex-wrap gap-2 mb-4">
           {firm.specialties.slice(0, 3).map((specialty, idx) => (
-            <span 
+            <span
               key={idx}
               className={`px-2 py-1 rounded text-xs font-medium ${
-                isFuturistic 
+                isFuturistic
                   ? 'bg-aurora-primary/10 text-aurora-primary'
                   : 'bg-primary-50 text-primary-700'
               }`}
@@ -621,17 +589,21 @@ const FirmCard = ({ firm, onContact }) => {
             </span>
           ))}
           {firm.specialties.length > 3 && (
-            <span className={`px-2 py-1 rounded text-xs font-medium ${
-              isFuturistic ? 'bg-cyber-bg text-aurora-muted' : 'bg-neutral-100 text-neutral-600'
-            }`}>
+            <span
+              className={`px-2 py-1 rounded text-xs font-medium ${
+                isFuturistic ? 'bg-cyber-bg text-aurora-muted' : 'bg-neutral-100 text-neutral-600'
+              }`}
+            >
               +{firm.specialties.length - 3} more
             </span>
           )}
         </div>
 
-        <div className={`grid grid-cols-2 gap-3 mb-4 text-sm ${
-          isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'
-        }`}>
+        <div
+          className={`grid grid-cols-2 gap-3 mb-4 text-sm ${
+            isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'
+          }`}
+        >
           <div className="flex items-center gap-2">
             <Users size={14} />
             <span>{firm.advocatesCount} advocates</span>
@@ -642,11 +614,15 @@ const FirmCard = ({ firm, onContact }) => {
           </div>
         </div>
 
-        <div className={`flex items-center justify-between pt-4 border-t ${
-          isFuturistic ? 'border-cyber-border' : 'border-neutral-200'
-        }`}>
+        <div
+          className={`flex items-center justify-between pt-4 border-t ${
+            isFuturistic ? 'border-cyber-border' : 'border-neutral-200'
+          }`}
+        >
           <div>
-            <div className={`text-lg font-bold ${isFuturistic ? 'text-aurora-primary' : 'text-primary-700'}`}>
+            <div
+              className={`text-lg font-bold ${isFuturistic ? 'text-aurora-primary' : 'text-primary-700'}`}
+            >
               ${firm.hourlyRate}/hr
             </div>
             <div className="flex items-center gap-1 text-xs">
@@ -657,7 +633,7 @@ const FirmCard = ({ firm, onContact }) => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button 
+            <Button
               size="small"
               icon={<MessageSquare size={14} />}
               className={isFuturistic ? 'border-cyber-border' : ''}
@@ -665,12 +641,12 @@ const FirmCard = ({ firm, onContact }) => {
             >
               Contact
             </Button>
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               size="small"
               className={isFuturistic ? 'futuristic-btn' : ''}
               style={{
-                background: isFuturistic ? undefined : themeConfig.accent,
+                background: isFuturistic ? undefined : '#1890ff',
               }}
               onClick={onContact}
             >

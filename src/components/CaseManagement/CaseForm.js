@@ -10,7 +10,7 @@ const { Option } = Select;
 function CaseForm() {
   const [users, setUsers] = useState([]);
   const [courts, setCourts] = useState([]);
-  const [caseNumber, setCaseNumber] = useState(null);
+  const [caseNumber] = useState(() => Math.floor(Math.random() * 2147483648));
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
@@ -44,15 +44,9 @@ function CaseForm() {
         start_date: moment(editCase.start_date),
         end_date: editCase.end_date ? moment(editCase.end_date) : null,
       });
-    } else {
-      generateCaseNumber();
     }
+    // No need to generate case number; it's generated via lazy state init
   }, [form, isEditing, editCase]);
-
-  const generateCaseNumber = () => {
-    const randomCaseNumber = Math.floor(Math.random() * 2147483648);
-    setCaseNumber(randomCaseNumber);
-  };
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -60,14 +54,11 @@ function CaseForm() {
       values.start_date = values.start_date.format('YYYY-MM-DD');
       values.end_date = values.end_date ? values.end_date.format('YYYY-MM-DD') : null;
 
-      let response;
       if (isEditing) {
-        // Update the case if editing
-        response = await axiosInstance.put(`/case/${editCase.id}/`, values);
+        await axiosInstance.put(`/case/${editCase.id}/`, values);
       } else {
-        // Create a new case
         values.case_number = caseNumber;
-        response = await axiosInstance.post('/case/', values);
+        await axiosInstance.post('/case/', values);
       }
 
       form.resetFields();
@@ -91,9 +82,21 @@ function CaseForm() {
     <div style={{ padding: '20px', maxWidth: '800px', margin: 'auto' }}>
       <Card style={{ boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', borderRadius: '20px' }}>
         <Tooltip title="Back to cases">
-          <ArrowLeftOutlined onClick={handleBackClick} style={{ marginBottom: '20px', fontSize: "18px", color: "blue", border: "1px solid grey", borderRadius: "50%", padding: "10px" }} />
+          <ArrowLeftOutlined
+            onClick={handleBackClick}
+            style={{
+              marginBottom: '20px',
+              fontSize: '18px',
+              color: 'blue',
+              border: '1px solid grey',
+              borderRadius: '50%',
+              padding: '10px',
+            }}
+          />
         </Tooltip>
-        <h1 style={{ textAlign: 'center', marginBottom: '40px' }}>{isEditing ? 'Edit Case' : 'Add New Case'}</h1>
+        <h1 style={{ textAlign: 'center', marginBottom: '40px' }}>
+          {isEditing ? 'Edit Case' : 'Add New Case'}
+        </h1>
         <Form
           form={form}
           name="caseForm"
@@ -105,10 +108,7 @@ function CaseForm() {
         >
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                label="Case Number"
-                name="case_number"
-              >
+              <Form.Item label="Case Number" name="case_number">
                 <Input value={caseNumber} readOnly placeholder={caseNumber} />
               </Form.Item>
             </Col>
@@ -134,7 +134,7 @@ function CaseForm() {
 
           <Row gutter={16}>
             <Col span={12}>
-            <Form.Item
+              <Form.Item
                 label="Advocate"
                 name="individual"
                 rules={[{ required: true, message: 'Please select the advocate!' }]}
@@ -147,12 +147,16 @@ function CaseForm() {
                     option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }
                 >
-                  {users.map(user => <Option key={user.id} value={user.id}>{user.username}</Option>)}
+                  {users.map((user) => (
+                    <Option key={user.id} value={user.id}>
+                      {user.username}
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
-            <Form.Item
+              <Form.Item
                 label="Court"
                 name="court"
                 rules={[{ required: true, message: 'Please select the court!' }]}
@@ -165,7 +169,11 @@ function CaseForm() {
                     option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }
                 >
-                  {courts.map(court => <Option key={court.id} value={court.id}>{court.name}</Option>)}
+                  {courts.map((court) => (
+                    <Option key={court.id} value={court.id}>
+                      {court.name}
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
@@ -198,10 +206,7 @@ function CaseForm() {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                label="Deadline"
-                name="end_date"
-              >
+              <Form.Item label="Deadline" name="end_date">
                 <DatePicker style={{ width: '100%' }} />
               </Form.Item>
             </Col>

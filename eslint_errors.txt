@@ -1,0 +1,33 @@
+﻿
+C:\Users\user\Casesfront\src\contexts\authContext.js
+  166:21  error  Empty block statement  no-empty
+
+C:\Users\user\Casesfront\src\setupTests.js
+   6:10  error  'jest' is not defined        no-undef
+  10:18  error  'jest' is not defined        no-undef
+  11:21  error  'jest' is not defined        no-undef
+  12:23  error  'jest' is not defined        no-undef
+  13:26  error  'jest' is not defined        no-undef
+  14:20  error  'jest' is not defined        no-undef
+  19:25  error  'jest' is not defined        no-undef
+  20:12  error  'jest' is not defined        no-undef
+  21:14  error  'jest' is not defined        no-undef
+  22:15  error  'jest' is not defined        no-undef
+  27:12  error  'jest' is not defined        no-undef
+  28:12  error  'jest' is not defined        no-undef
+  29:15  error  'jest' is not defined        no-undef
+  30:10  error  'jest' is not defined        no-undef
+  36:12  error  'jest' is not defined        no-undef
+  37:12  error  'jest' is not defined        no-undef
+  38:15  error  'jest' is not defined        no-undef
+  39:10  error  'jest' is not defined        no-undef
+  44:1   error  'beforeEach' is not defined  no-undef
+  45:23  error  'jest' is not defined        no-undef
+  49:18  error  'jest' is not defined        no-undef
+  50:21  error  'jest' is not defined        no-undef
+  51:23  error  'jest' is not defined        no-undef
+  52:26  error  'jest' is not defined        no-undef
+  53:20  error  'jest' is not defined        no-undef
+
+Γ£û 26 problems (26 errors, 0 warnings)
+

@@ -1,13 +1,19 @@
-import { Client, Account, Databases, Storage, Realtime } from 'appwrite';
+import { Client, Account, Databases, Storage, Realtime, Query } from 'appwrite';
 
-const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
-const APPWRITE_PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID;
+const APPWRITE_ENDPOINT = process.env.REACT_APP_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+const APPWRITE_PROJECT_ID = process.env.REACT_APP_APPWRITE_PROJECT_ID;
+
+// Validate configuration at module load
+if (!APPWRITE_PROJECT_ID) {
+  throw new Error(
+    'AppWrite configuration error: REACT_APP_APPWRITE_PROJECT_ID is not set. ' +
+      'Set it in your .env file or environment variables.'
+  );
+}
 
 // Initialize AppWrite Client
 const client = new Client();
-client
-  .setEndpoint(APPWRITE_ENDPOINT)
-  .setProject(APPWRITE_PROJECT_ID);
+client.setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
 
 // Initialize Services
 export const account = new Account(client);
@@ -16,7 +22,7 @@ export const storage = new Storage(client);
 export const realtime = new Realtime(client);
 
 // Database IDs
-export const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'main';
+export const DATABASE_ID = process.env.REACT_APP_APPWRITE_DATABASE_ID || 'main';
 
 // Collection IDs
 export const COLLECTIONS = {

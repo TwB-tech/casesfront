@@ -1,17 +1,41 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Button, Radio, Row, Col, Avatar, Space, Tag, Card, Input, Select, message, Skeleton, Pagination, Statistic } from 'antd';
+import {
+  Table,
+  Button,
+  Radio,
+  Row,
+  Col,
+  Avatar,
+  Space,
+  Tag,
+  Card,
+  Input,
+  Select,
+  Tooltip,
+  message,
+  Skeleton,
+  Pagination,
+  Statistic,
+} from 'antd';
 import CaseCard from './CaseCard';
 import { useNavigate } from 'react-router-dom';
-import { UserOutlined, PlusOutlined, SearchOutlined, FileTextOutlined, CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import {
+  UserOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  FileTextOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  MessageOutlined,
+} from '@ant-design/icons';
 import axiosInstance from '../../axiosConfig';
 import { useMediaQuery } from 'react-responsive';
 import { useTheme } from '../../contexts/ThemeContext';
 import moment from 'moment';
 
-
 const CaseList = () => {
   const navigate = useNavigate();
-  const { isFuturistic, themeConfig } = useTheme();
+  const { isFuturistic } = useTheme();
   const [order, setOrder] = useState('ascend');
   const [orderBy, setOrderBy] = useState('case_number');
   const [cases, setCases] = useState([]);
@@ -20,18 +44,17 @@ const CaseList = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All'); 
+  const [statusFilter, setStatusFilter] = useState('All');
   const [loading, setLoading] = useState(true);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh] = useState(true);
 
   const isSmallScreen = useMediaQuery({ maxWidth: 768 });
-  const isMediumScreen = useMediaQuery({ maxWidth: 1024 });
 
-   // Retrieve viewMode from sessionStorage or default to 'table'
-   const initialViewMode = sessionStorage.getItem('viewMode') || 'table';
-   const [viewMode, setViewMode] = useState(initialViewMode);
+  // Retrieve viewMode from sessionStorage or default to 'table'
+  const initialViewMode = sessionStorage.getItem('viewMode') || 'table';
+  const [viewMode, setViewMode] = useState(initialViewMode);
 
-   useEffect(() => {
+  useEffect(() => {
     // Automatically switch to card view on small screens
     if (isSmallScreen) {
       setViewMode('cards');
@@ -39,19 +62,18 @@ const CaseList = () => {
       setViewMode(initialViewMode);
     }
   }, [isSmallScreen, initialViewMode]);
- 
-   useEffect(() => {
-     // Update sessionStorage whenever viewMode changes
-     sessionStorage.setItem('viewMode', viewMode);
-   }, [viewMode]);
 
+  useEffect(() => {
+    // Update sessionStorage whenever viewMode changes
+    sessionStorage.setItem('viewMode', viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     const fetchCases = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
         const response = await axiosInstance.get('/case/');
-        const data = response.data.results
+        const data = response.data.results;
         setCases(data);
       } catch (error) {
         console.error('Error fetching cases:', error);
@@ -70,14 +92,15 @@ const CaseList = () => {
     }
   }, [autoRefresh]);
 
-
   const handleRequestSort = (pagination, filters, sorter) => {
     setOrder(sorter.order);
     setOrderBy(sorter.field);
   };
 
   const filterCasesByDate = (cases) => {
-    if (!startDate && !endDate) return cases;
+    if (!startDate && !endDate) {
+      return cases;
+    }
 
     return cases.filter((caseItem) => {
       const caseStartDate = new Date(caseItem.start_date);
@@ -99,38 +122,50 @@ const CaseList = () => {
   };
 
   const filterCasesBySearch = (cases) => {
-    if (!searchQuery) return cases;
+    if (!searchQuery) {
+      return cases;
+    }
 
     return cases.filter((caseItem) =>
       Object.values(caseItem).some(
-        (value) =>
-          value &&
-          value
-            .toString()
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase())
+        (value) => value && value.toString().toLowerCase().includes(searchQuery.toLowerCase())
       )
     );
   };
 
   const filterCasesByStatus = (cases) => {
-    if (statusFilter === 'All') return cases;
+    if (statusFilter === 'All') {
+      return cases;
+    }
 
     return cases.filter((caseItem) => caseItem.status === statusFilter.toLowerCase());
   };
 
-  const filteredCases = useMemo(() => 
-    filterCasesByStatus(filterCasesBySearch(filterCasesByDate(cases))),
-    [cases, searchQuery, statusFilter, startDate, endDate]
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const filteredCases = useMemo(
+    () => filterCasesByStatus(filterCasesBySearch(filterCasesByDate(cases))),
+    [
+      cases,
+      searchQuery,
+      statusFilter,
+      startDate,
+      endDate,
+      filterCasesByDate,
+      filterCasesBySearch,
+      filterCasesByStatus,
+    ]
   );
 
   // Calculate statistics for dashboard-style cards
-  const stats = useMemo(() => ({
-    total: cases.length,
-    open: cases.filter(c => c.status === 'open').length,
-    pending: cases.filter(c => c.status === 'pending').length,
-    closed: cases.filter(c => c.status === 'closed').length,
-  }), [cases]);
+  const stats = useMemo(
+    () => ({
+      total: cases.length,
+      open: cases.filter((c) => c.status === 'open').length,
+      pending: cases.filter((c) => c.status === 'pending').length,
+      closed: cases.filter((c) => c.status === 'closed').length,
+    }),
+    [cases]
+  );
 
   // Paginated cases
   const paginatedCases = useMemo(() => {
@@ -146,7 +181,9 @@ const CaseList = () => {
       key: 'case_number',
       sorter: (a, b) => a.case_number.toString().localeCompare(b.case_number.toString()),
       sortOrder: orderBy === 'case_number' && order,
-      render: (num) => <span style={{ fontWeight: 600, color: isFuturistic ? '#6366f1' : '#3b82f6' }}>{num}</span>,
+      render: (num) => (
+        <span style={{ fontWeight: 600, color: isFuturistic ? '#6366f1' : '#3b82f6' }}>{num}</span>
+      ),
     },
     {
       title: 'Client',
@@ -165,7 +202,9 @@ const CaseList = () => {
       key: 'title',
       sorter: (a, b) => a.title.localeCompare(b.title),
       sortOrder: orderBy === 'title' && order,
-      render: (title) => <span style={{ color: isFuturistic ? '#e2e8f0' : '#475569' }}>{title}</span>,
+      render: (title) => (
+        <span style={{ color: isFuturistic ? '#e2e8f0' : '#475569' }}>{title}</span>
+      ),
     },
     {
       title: 'Court',
@@ -173,7 +212,8 @@ const CaseList = () => {
       key: 'court_name',
       sorter: (a, b) => (a.court_name || '').localeCompare(b.court_name || ''),
       sortOrder: orderBy === 'court_name' && order,
-      render: (court) => court ? <Tag color="purple">{court}</Tag> : <span style={{ color: '#94a3b8' }}>-</span>,
+      render: (court) =>
+        court ? <Tag color="purple">{court}</Tag> : <span style={{ color: '#94a3b8' }}>-</span>,
     },
     {
       title: 'Status',
@@ -185,10 +225,10 @@ const CaseList = () => {
             status === 'open'
               ? 'blue'
               : status === 'closed'
-              ? 'green'
-              : status === 'pending'
-              ? 'gold'
-              : 'red'
+                ? 'green'
+                : status === 'pending'
+                  ? 'gold'
+                  : 'red'
           }
           style={{ borderRadius: '20px', padding: '4px 12px', fontWeight: 500 }}
         >
@@ -209,14 +249,33 @@ const CaseList = () => {
         const isUrgent = daysLeft <= 7 && daysLeft >= 0;
         const isOverdue = daysLeft < 0;
         return (
-          <span style={{ 
-            color: isOverdue ? '#ef4444' : isUrgent ? '#f59e0b' : '#64748b',
-            fontWeight: isUrgent || isOverdue ? 600 : 400
-          }}>
+          <span
+            style={{
+              color: isOverdue ? '#ef4444' : isUrgent ? '#f59e0b' : '#64748b',
+              fontWeight: isUrgent || isOverdue ? 600 : 400,
+            }}
+          >
             {moment(date).format('MMM DD')}
           </span>
         );
       },
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Tooltip title="Case Chat">
+          <Button
+            size="small"
+            type="text"
+            icon={<MessageOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/chats/case_${record.id}`);
+            }}
+          />
+        </Tooltip>
+      ),
     },
   ];
 
@@ -229,82 +288,108 @@ const CaseList = () => {
   };
 
   return (
-    <div style={{ 
-      padding: isSmallScreen ? '16px' : '24px', 
-      marginTop: isSmallScreen ? '60px' : '0',
-      background: isFuturistic ? '#12121a' : '#f8fafc',
-      minHeight: '100vh'
-    }}>
+    <div
+      style={{
+        padding: isSmallScreen ? '16px' : '24px',
+        marginTop: isSmallScreen ? '60px' : '0',
+        background: isFuturistic ? '#12121a' : '#f8fafc',
+        minHeight: '100vh',
+      }}
+    >
       {/* Statistics Cards - Dashboard Style */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={12} sm={6}>
-          <Card 
+          <Card
             className={isFuturistic ? 'hover-glow' : ''}
-            style={{ 
-              borderRadius: "12px", 
+            style={{
+              borderRadius: '12px',
               background: isFuturistic ? '#1a1a24' : '#ffffff',
               border: isFuturistic ? '1px solid #2a2a3a' : 'none',
-              boxShadow: isFuturistic ? '0 4px 12px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.06)'
-            }} 
+              boxShadow: isFuturistic ? '0 4px 12px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.06)',
+            }}
             hoverable
           >
-            <Statistic 
-              title={<span style={{ color: isFuturistic ? '#94a3b8' : '#64748b', fontSize: '12px' }}>Total Cases</span>} 
-              value={stats.total} 
-              valueStyle={{ color: isFuturistic ? '#f8fafc' : '#1e293b', fontWeight: 700, fontSize: '24px' }}
-              prefix={<FileTextOutlined style={{ color: isFuturistic ? '#6366f1' : '#3b82f6', marginRight: '8px' }} />}
+            <Statistic
+              title={
+                <span style={{ color: isFuturistic ? '#94a3b8' : '#64748b', fontSize: '12px' }}>
+                  Total Cases
+                </span>
+              }
+              value={stats.total}
+              valueStyle={{
+                color: isFuturistic ? '#f8fafc' : '#1e293b',
+                fontWeight: 700,
+                fontSize: '24px',
+              }}
+              prefix={
+                <FileTextOutlined
+                  style={{ color: isFuturistic ? '#6366f1' : '#3b82f6', marginRight: '8px' }}
+                />
+              }
             />
           </Card>
         </Col>
         <Col xs={12} sm={6}>
-          <Card 
+          <Card
             className={isFuturistic ? 'hover-glow' : ''}
-            style={{ 
-              borderRadius: "12px", 
+            style={{
+              borderRadius: '12px',
               background: isFuturistic ? '#1a1a24' : '#ffffff',
-              border: isFuturistic ? '1px solid #2a2a3a' : 'none'
-            }} 
+              border: isFuturistic ? '1px solid #2a2a3a' : 'none',
+            }}
             hoverable
           >
-            <Statistic 
-              title={<span style={{ color: isFuturistic ? '#94a3b8' : '#64748b', fontSize: '12px' }}>Open</span>} 
-              value={stats.open} 
+            <Statistic
+              title={
+                <span style={{ color: isFuturistic ? '#94a3b8' : '#64748b', fontSize: '12px' }}>
+                  Open
+                </span>
+              }
+              value={stats.open}
               valueStyle={{ color: '#3b82f6', fontWeight: 700, fontSize: '24px' }}
               prefix={<ClockCircleOutlined style={{ marginRight: '8px' }} />}
             />
           </Card>
         </Col>
         <Col xs={12} sm={6}>
-          <Card 
+          <Card
             className={isFuturistic ? 'hover-glow' : ''}
-            style={{ 
-              borderRadius: "12px", 
+            style={{
+              borderRadius: '12px',
               background: isFuturistic ? '#1a1a24' : '#ffffff',
-              border: isFuturistic ? '1px solid #2a2a3a' : 'none'
-            }} 
+              border: isFuturistic ? '1px solid #2a2a3a' : 'none',
+            }}
             hoverable
           >
-            <Statistic 
-              title={<span style={{ color: isFuturistic ? '#94a3b8' : '#64748b', fontSize: '12px' }}>Pending</span>} 
-              value={stats.pending} 
+            <Statistic
+              title={
+                <span style={{ color: isFuturistic ? '#94a3b8' : '#64748b', fontSize: '12px' }}>
+                  Pending
+                </span>
+              }
+              value={stats.pending}
               valueStyle={{ color: '#f59e0b', fontWeight: 700, fontSize: '24px' }}
               prefix={<ClockCircleOutlined style={{ marginRight: '8px' }} />}
             />
           </Card>
         </Col>
         <Col xs={12} sm={6}>
-          <Card 
+          <Card
             className={isFuturistic ? 'hover-glow' : ''}
-            style={{ 
-              borderRadius: "12px", 
+            style={{
+              borderRadius: '12px',
               background: isFuturistic ? '#1a1a24' : '#ffffff',
-              border: isFuturistic ? '1px solid #2a2a3a' : 'none'
-            }} 
+              border: isFuturistic ? '1px solid #2a2a3a' : 'none',
+            }}
             hoverable
           >
-            <Statistic 
-              title={<span style={{ color: isFuturistic ? '#94a3b8' : '#64748b', fontSize: '12px' }}>Closed</span>} 
-              value={stats.closed} 
+            <Statistic
+              title={
+                <span style={{ color: isFuturistic ? '#94a3b8' : '#64748b', fontSize: '12px' }}>
+                  Closed
+                </span>
+              }
+              value={stats.closed}
               valueStyle={{ color: '#22c55e', fontWeight: 700, fontSize: '24px' }}
               prefix={<CheckCircleOutlined style={{ marginRight: '8px' }} />}
             />
@@ -313,26 +398,30 @@ const CaseList = () => {
       </Row>
 
       {/* Main Content Card */}
-      <Card style={{ 
-        borderRadius: '16px', 
-        background: isFuturistic ? '#1a1a24' : '#ffffff',
-        border: isFuturistic ? '1px solid #2a2a3a' : 'none',
-        boxShadow: isFuturistic ? '0 4px 12px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.06)'
-      }}>
+      <Card
+        style={{
+          borderRadius: '16px',
+          background: isFuturistic ? '#1a1a24' : '#ffffff',
+          border: isFuturistic ? '1px solid #2a2a3a' : 'none',
+          boxShadow: isFuturistic ? '0 4px 12px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.06)',
+        }}
+      >
         {/* Header */}
-        <Row 
-          align="middle" 
-          justify="space-between" 
+        <Row
+          align="middle"
+          justify="space-between"
           gutter={[16, 16]}
           style={{ marginBottom: '24px', flexWrap: 'wrap' }}
         >
           <Col>
-            <h1 style={{ 
-              fontSize: isSmallScreen ? '20px' : '24px', 
-              fontWeight: 700,
-              margin: 0,
-              color: isFuturistic ? '#f8fafc' : '#1e293b'
-            }}>
+            <h1
+              style={{
+                fontSize: isSmallScreen ? '20px' : '24px',
+                fontWeight: 700,
+                margin: 0,
+                color: isFuturistic ? '#f8fafc' : '#1e293b',
+              }}
+            >
               CASE MANAGEMENT
             </h1>
             <p style={{ color: '#64748b', margin: '4px 0 0 0', fontSize: '14px' }}>
@@ -340,16 +429,16 @@ const CaseList = () => {
             </p>
           </Col>
           <Col>
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               icon={<PlusOutlined />}
               size="large"
               onClick={handleNewCaseClick}
-              style={{ 
+              style={{
                 borderRadius: '10px',
                 background: isFuturistic ? '#6366f1' : '#3b82f6',
                 border: 'none',
-                fontWeight: 600
+                fontWeight: 600,
               }}
             >
               New Case
@@ -370,9 +459,9 @@ const CaseList = () => {
                   setCurrentPage(1);
                 }}
                 size="large"
-                style={{ 
+                style={{
                   borderRadius: '10px',
-                  width: '100%'
+                  width: '100%',
                 }}
                 allowClear
               />
@@ -457,10 +546,12 @@ const CaseList = () => {
           </div>
         ) : filteredCases.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <FileTextOutlined style={{ fontSize: '64px', color: '#cbd5e1', marginBottom: '16px' }} />
+            <FileTextOutlined
+              style={{ fontSize: '64px', color: '#cbd5e1', marginBottom: '16px' }}
+            />
             <h3 style={{ color: '#64748b', marginBottom: '8px' }}>No cases found</h3>
             <p style={{ color: '#94a3b8' }}>
-              {searchQuery || startDate || endDate || statusFilter !== 'All' 
+              {searchQuery || startDate || endDate || statusFilter !== 'All'
                 ? 'Try adjusting your filters or search query'
                 : 'Create your first case to get started'}
             </p>
@@ -472,7 +563,7 @@ const CaseList = () => {
             rowKey="id"
             onRow={(record) => ({
               onClick: () => handleRowClick(record),
-              style: { cursor: 'pointer' }
+              style: { cursor: 'pointer' },
             })}
             onChange={handleRequestSort}
             pagination={false}
@@ -482,10 +573,7 @@ const CaseList = () => {
           <Row gutter={[16, 16]}>
             {paginatedCases.map((caseInfo) => (
               <Col xs={24} sm={12} lg={8} xl={6} key={caseInfo.id}>
-                <CaseCard
-                  caseInfo={caseInfo}
-                  onClick={() => handleRowClick(caseInfo)}
-                />
+                <CaseCard caseInfo={caseInfo} onClick={() => handleRowClick(caseInfo)} />
               </Col>
             ))}
           </Row>
@@ -493,13 +581,15 @@ const CaseList = () => {
 
         {/* Pagination */}
         {filteredCases.length > 0 && (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: isSmallScreen ? 'center' : 'flex-end',
-            marginTop: '24px',
-            paddingTop: '16px',
-            borderTop: '1px solid #e2e8f0'
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: isSmallScreen ? 'center' : 'flex-end',
+              marginTop: '24px',
+              paddingTop: '16px',
+              borderTop: '1px solid #e2e8f0',
+            }}
+          >
             <Pagination
               current={currentPage}
               pageSize={entriesPerPage}

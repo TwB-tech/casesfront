@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Button, Card, Select, DatePicker, Row, Col, Tooltip, notification } from 'antd';
+import {
+  Form,
+  Input,
+  Button,
+  Card,
+  Select,
+  DatePicker,
+  Row,
+  Col,
+  Tooltip,
+  notification,
+} from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import axiosInstance from '../../axiosConfig';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -10,6 +21,7 @@ const { Option } = Select;
 function TaskForm() {
   const [users, setUsers] = useState([]);
   const [cases, setCases] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,17 +72,17 @@ function TaskForm() {
   }, [isEditing, editTask, form, location.state]);
 
   const onFinish = async (values) => {
+    setLoading(true);
     try {
-      values.deadline = values.deadline.format('YYYY-MM-DD HH:mm:ss'); 
-      let response;
+      values.deadline = values.deadline.format('YYYY-MM-DD HH:mm:ss');
       if (isEditing) {
-        response = await axiosInstance.put(`tasks/tasks/${editTask.id}/`, values);
+        await axiosInstance.put(`tasks/tasks/${editTask.id}/`, values);
         notification.success({
           message: 'Success',
           description: 'Task updated successfully!',
         });
       } else {
-        response = await axiosInstance.post('tasks/create/', values);
+        await axiosInstance.post('tasks/create/', values);
         notification.success({
           message: 'Success',
           description: 'Task created successfully!',
@@ -83,10 +95,12 @@ function TaskForm() {
         message: 'Error',
         description: 'Failed to save task. Please try again.',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const onFinishFailed = (errorInfo) => {
+  const onFinishFailed = (_errorInfo) => {
     notification.error({
       message: 'Form Incomplete',
       description: 'Please fill in the required task fields before saving.',
@@ -94,16 +108,28 @@ function TaskForm() {
   };
 
   const handleBackClick = () => {
-    navigate(-1); 
+    navigate(-1);
   };
 
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: 'auto' }}>
       <Card style={{ boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', borderRadius: '20px' }}>
         <Tooltip title="Back to tasks">
-          <ArrowLeftOutlined onClick={handleBackClick} style={{ marginBottom: '20px', fontSize: '18px', color: 'blue', border: '1px solid grey', borderRadius: '50%', padding: '10px' }} />
+          <ArrowLeftOutlined
+            onClick={handleBackClick}
+            style={{
+              marginBottom: '20px',
+              fontSize: '18px',
+              color: 'blue',
+              border: '1px solid grey',
+              borderRadius: '50%',
+              padding: '10px',
+            }}
+          />
         </Tooltip>
-        <h1 style={{ textAlign: 'center', marginBottom: '40px' }}>{isEditing ? 'Editing Task' : 'Add New Task'}</h1>
+        <h1 style={{ textAlign: 'center', marginBottom: '40px' }}>
+          {isEditing ? 'Editing Task' : 'Add New Task'}
+        </h1>
         <Form
           form={form}
           name="taskForm"
@@ -142,7 +168,11 @@ function TaskForm() {
                 rules={[{ required: true, message: 'Please select the user!' }]}
               >
                 <Select>
-                  {users.map(user => <Option key={user.id} value={user.id}>{user.username}</Option>)}
+                  {users.map((user) => (
+                    <Option key={user.id} value={user.id}>
+                      {user.username}
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
@@ -153,7 +183,11 @@ function TaskForm() {
                 rules={[{ required: true, message: 'Please select the case!' }]}
               >
                 <Select>
-                  {cases.map(c => <Option key={c.id} value={c.id}>{c.title}</Option>)}
+                  {cases.map((c) => (
+                    <Option key={c.id} value={c.id}>
+                      {c.title}
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
@@ -186,10 +220,7 @@ function TaskForm() {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                label="Status"
-                name="status"
-              >
+              <Form.Item label="Status" name="status">
                 <Select>
                   <Option value={true}>Completed</Option>
                   <Option value={false}>Pending</Option>
@@ -199,7 +230,7 @@ function TaskForm() {
           </Row>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
+            <Button type="primary" htmlType="submit" style={{ width: '100%' }} loading={loading}>
               {isEditing ? 'Update' : 'Submit'}
             </Button>
           </Form.Item>

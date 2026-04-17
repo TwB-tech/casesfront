@@ -1,23 +1,42 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Table, Button, Tooltip, Dropdown, Menu, Card, Input, Row, Col, Tag, Avatar, Skeleton, Pagination } from 'antd';
-import { UploadOutlined, DownloadOutlined, EyeOutlined, EditOutlined, FileOutlined, SearchOutlined, FileTextOutlined } from '@ant-design/icons';
+import {
+  Table,
+  Button,
+  Tooltip,
+  Card,
+  Input,
+  Row,
+  Col,
+  Tag,
+  Avatar,
+  Skeleton,
+  Pagination,
+  message,
+} from 'antd';
+import {
+  UploadOutlined,
+  DownloadOutlined,
+  EyeOutlined,
+  FileOutlined,
+  SearchOutlined,
+  FileTextOutlined,
+} from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../axiosConfig';
 import { useMediaQuery } from 'react-responsive';
 import { useTheme } from '../../contexts/ThemeContext';
 import moment from 'moment';
 
-
 function DocumentList() {
-    const navigate = useNavigate();
-    const { isFuturistic, themeConfig } = useTheme();
-    const isSmallScreen = useMediaQuery({ maxWidth: 768 });
-    
-    const [documents, setDocuments] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [entriesPerPage, setEntriesPerPage] = useState(10);
-    const [currentPage, setCurrentPage] = useState(1);
+  const navigate = useNavigate();
+  const { isFuturistic } = useTheme();
+  const isSmallScreen = useMediaQuery({ maxWidth: 768 });
+
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [entriesPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -29,12 +48,8 @@ function DocumentList() {
         setLoading(false);
       } catch (error) {
         console.error('Error fetching documents:', error);
-        // Fallback sample data
-        setDocuments([
-          { id: 1, title: 'Case Docket - Smith vs Jones', description: 'Full case documentation including evidence', owner: 'John Doe', uploaded_at: new Date().toISOString() },
-          { id: 2, title: 'Client Contract - Acme Corp', description: 'Signed service agreement', owner: 'Sarah Miller', uploaded_at: new Date().toISOString() },
-          { id: 3, title: 'Evidence Photos', description: 'Scene photos and documentation', owner: 'Mike Johnson', uploaded_at: new Date().toISOString() },
-        ]);
+        message.error('Failed to load documents. Please try again.');
+        setDocuments([]);
         setLoading(false);
       }
     };
@@ -42,40 +57,21 @@ function DocumentList() {
     fetchDocuments();
   }, []);
 
-
   const handleUploadClick = () => {
     navigate('/new-document');
   };
 
-  const handleFileChange = async (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      try {
-        const response = await axiosInstance.post('/api/upload/', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        // Refresh documents list
-        const fetchResponse = await axiosInstance.get('/document_management/api/documents/');
-        setDocuments(fetchResponse.data.results);
-      } catch (error) {
-        console.error('Error uploading file:', error);
-      }
-    }
-  };
-
   // Filter documents by search query
   const filteredDocuments = useMemo(() => {
-    if (!searchQuery) return documents;
-    
-    return documents.filter(doc =>
-      doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.owner?.toLowerCase().includes(searchQuery.toLowerCase())
+    if (!searchQuery) {
+      return documents;
+    }
+
+    return documents.filter(
+      (doc) =>
+        doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doc.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doc.owner?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [documents, searchQuery]);
 
@@ -91,20 +87,22 @@ function DocumentList() {
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
-      render: (title, record) => (
+      render: (title, _record) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Avatar 
-            icon={<FileTextOutlined />} 
-            style={{ 
+          <Avatar
+            icon={<FileTextOutlined />}
+            style={{
               background: isFuturistic ? '#6366f1' : '#3b82f6',
-              borderRadius: '8px'
+              borderRadius: '8px',
             }}
             size={36}
           />
-          <span style={{ 
-            fontWeight: 500,
-            color: isFuturistic ? '#f8fafc' : '#1e293b'
-          }}>
+          <span
+            style={{
+              fontWeight: 500,
+              color: isFuturistic ? '#f8fafc' : '#1e293b',
+            }}
+          >
             {title}
           </span>
         </div>
@@ -127,98 +125,100 @@ function DocumentList() {
       dataIndex: 'uploaded_at',
       key: 'uploaded_at',
       render: (date) => (
-        <span style={{ color: '#64748b' }}>
-          {moment(date).format('MMM DD, YYYY')}
-        </span>
+        <span style={{ color: '#64748b' }}>{moment(date).format('MMM DD, YYYY')}</span>
       ),
     },
     {
-        title: 'Action',
-        key: 'action',
-        render: (text, record) => (
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <Tooltip title="View">
-              <Link to={`/documents-details/${record.id}`}>
-                <Button type="text" icon={<EyeOutlined />} size="small" />
-              </Link>
-            </Tooltip>
-            <Tooltip title="Download">
-              <Button
-                type="text"
-                href={record.file}
-                download
-                target="_blank"
-                icon={<DownloadOutlined />}
-                size="small"
-              />
-            </Tooltip>
-          </div>
-        ),
-      },
-    ];
+      title: 'Action',
+      key: 'action',
+      render: (text, record) => (
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Tooltip title="View">
+            <Link to={`/documents-details/${record.id}`}>
+              <Button type="text" icon={<EyeOutlined />} size="small" />
+            </Link>
+          </Tooltip>
+          <Tooltip title="Download">
+            <Button
+              type="text"
+              href={record.file}
+              download
+              target="_blank"
+              icon={<DownloadOutlined />}
+              size="small"
+            />
+          </Tooltip>
+        </div>
+      ),
+    },
+  ];
 
   // Card view for mobile
   const renderDocumentCards = () => (
     <Row gutter={[12, 12]} style={{ marginTop: '16px' }}>
       {paginatedDocuments.map((doc) => (
         <Col xs={24} sm={12} md={8} lg={6} key={doc.id}>
-          <Card 
+          <Card
             hoverable
             onClick={() => navigate(`/documents-details/${doc.id}`)}
-            style={{ 
+            style={{
               borderRadius: '12px',
               background: isFuturistic ? '#1a1a24' : '#ffffff',
               border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
-              cursor: 'pointer'
+              cursor: 'pointer',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <Avatar 
-                icon={<FileTextOutlined />} 
-                style={{ 
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}
+            >
+              <Avatar
+                icon={<FileTextOutlined />}
+                style={{
                   background: isFuturistic ? '#6366f1' : '#3b82f6',
-                  borderRadius: '8px'
+                  borderRadius: '8px',
                 }}
                 size={40}
               />
               <div>
-                <h4 style={{ 
-                  margin: 0, 
-                  fontWeight: 600,
-                  color: isFuturistic ? '#f8fafc' : '#1e293b'
-                }}>
+                <h4
+                  style={{
+                    margin: 0,
+                    fontWeight: 600,
+                    color: isFuturistic ? '#f8fafc' : '#1e293b',
+                  }}
+                >
                   {doc.title}
                 </h4>
-                <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
-                  {doc.owner}
-                </p>
+                <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>{doc.owner}</p>
               </div>
             </div>
-            
+
             {doc.description && (
-              <p style={{ 
-                margin: '0 0 12px 0', 
-                fontSize: '13px', 
-                color: '#64748b',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden'
-              }}>
+              <p
+                style={{
+                  margin: '0 0 12px 0',
+                  fontSize: '13px',
+                  color: '#64748b',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
                 {doc.description}
               </p>
             )}
-            
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '12px', color: '#94a3b8' }}>
                 {moment(doc.uploaded_at).format('MMM DD')}
               </span>
               <div style={{ display: 'flex', gap: '4px' }}>
                 <Button type="text" size="small" icon={<EyeOutlined />} />
-                <Button 
-                  type="text" 
-                  size="small" 
-                  icon={<DownloadOutlined />} 
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<DownloadOutlined />}
                   href={doc.file}
                   download
                   target="_blank"
@@ -232,35 +232,43 @@ function DocumentList() {
   );
 
   return (
-    <div style={{ 
-      padding: isSmallScreen ? '16px' : '24px',
-      marginTop: isSmallScreen ? '60px' : '0',
-      background: isFuturistic ? '#12121a' : '#f8fafc',
-      minHeight: '100vh'
-    }}>
-      <Card style={{ 
-        borderRadius: '16px', 
-        background: isFuturistic ? '#1a1a24' : '#ffffff',
-        border: isFuturistic ? '1px solid #2a2a3a' : 'none',
-        boxShadow: isFuturistic ? '0 4px 12px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.06)'
-      }}>
+    <div
+      style={{
+        padding: isSmallScreen ? '16px' : '24px',
+        marginTop: isSmallScreen ? '60px' : '0',
+        background: isFuturistic ? '#12121a' : '#f8fafc',
+        minHeight: '100vh',
+      }}
+    >
+      <Card
+        style={{
+          borderRadius: '16px',
+          background: isFuturistic ? '#1a1a24' : '#ffffff',
+          border: isFuturistic ? '1px solid #2a2a3a' : 'none',
+          boxShadow: isFuturistic ? '0 4px 12px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.06)',
+        }}
+      >
         {/* Header */}
-        <Row 
-          align="middle" 
-          justify="space-between" 
+        <Row
+          align="middle"
+          justify="space-between"
           gutter={[16, 16]}
           style={{ marginBottom: '24px', flexWrap: 'wrap' }}
         >
           <Col>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <FileOutlined style={{ fontSize: '28px', color: isFuturistic ? '#6366f1' : '#3b82f6' }} />
+              <FileOutlined
+                style={{ fontSize: '28px', color: isFuturistic ? '#6366f1' : '#3b82f6' }}
+              />
               <div>
-                <h1 style={{ 
-                  fontSize: isSmallScreen ? '20px' : '24px', 
-                  fontWeight: 700,
-                  margin: 0,
-                  color: isFuturistic ? '#f8fafc' : '#1e293b'
-                }}>
+                <h1
+                  style={{
+                    fontSize: isSmallScreen ? '20px' : '24px',
+                    fontWeight: 700,
+                    margin: 0,
+                    color: isFuturistic ? '#f8fafc' : '#1e293b',
+                  }}
+                >
                   DOCUMENTS
                 </h1>
                 <p style={{ color: '#64748b', margin: '4px 0 0 0', fontSize: '14px' }}>
@@ -270,16 +278,16 @@ function DocumentList() {
             </div>
           </Col>
           <Col>
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               icon={<UploadOutlined />}
               size="large"
               onClick={handleUploadClick}
-              style={{ 
+              style={{
                 borderRadius: '10px',
                 background: isFuturistic ? '#6366f1' : '#3b82f6',
                 border: 'none',
-                fontWeight: 600
+                fontWeight: 600,
               }}
             >
               Upload Document
@@ -298,9 +306,9 @@ function DocumentList() {
               setCurrentPage(1);
             }}
             size="large"
-            style={{ 
+            style={{
               borderRadius: '10px',
-              width: '100%'
+              width: '100%',
             }}
             allowClear
           />
@@ -313,10 +321,14 @@ function DocumentList() {
           </div>
         ) : filteredDocuments.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <FileTextOutlined style={{ fontSize: '64px', color: '#cbd5e1', marginBottom: '16px' }} />
+            <FileTextOutlined
+              style={{ fontSize: '64px', color: '#cbd5e1', marginBottom: '16px' }}
+            />
             <h3 style={{ color: '#64748b', marginBottom: '8px' }}>No documents found</h3>
             <p style={{ color: '#94a3b8' }}>
-              {searchQuery ? 'Try adjusting your search' : 'Upload your first document to get started'}
+              {searchQuery
+                ? 'Try adjusting your search'
+                : 'Upload your first document to get started'}
             </p>
           </div>
         ) : isSmallScreen ? (
@@ -328,7 +340,7 @@ function DocumentList() {
             rowKey="id"
             onRow={(record) => ({
               onClick: () => navigate(`/documents-details/${record.id}`),
-              style: { cursor: 'pointer' }
+              style: { cursor: 'pointer' },
             })}
             pagination={false}
             scroll={{ x: 'max-content' }}
@@ -337,13 +349,15 @@ function DocumentList() {
 
         {/* Pagination */}
         {filteredDocuments.length > 0 && (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: isSmallScreen ? 'center' : 'flex-end',
-            marginTop: '24px',
-            paddingTop: '16px',
-            borderTop: '1px solid #e2e8f0'
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: isSmallScreen ? 'center' : 'flex-end',
+              marginTop: '24px',
+              paddingTop: '16px',
+              borderTop: '1px solid #e2e8f0',
+            }}
+          >
             <Pagination
               current={currentPage}
               pageSize={entriesPerPage}

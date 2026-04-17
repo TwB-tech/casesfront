@@ -24,7 +24,6 @@ const ActionButton = styled(Button)`
 
 const TaskList = () => {
   const [tasks, setTasks] = useState([]);
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [filteredTasks, setFilteredTasks] = useState([]);
   const [previewTask, setPreviewTask] = useState(null);
@@ -50,23 +49,21 @@ const TaskList = () => {
     };
     fetchData();
   }, []);
-  
+
   const columns = [
     {
       title: 'Task Name',
       dataIndex: 'title',
       key: 'title',
       sorter: (a, b) => a.title.localeCompare(b.title),
-      render: (text, record) => (
-        <a onClick={() => showTaskPreview(record)}>{text}</a>
-      ),
+      render: (text, record) => <a onClick={() => showTaskPreview(record)}>{text}</a>,
     },
     {
       title: 'Assignee',
       dataIndex: 'assigned_to',
       key: 'assigned_to',
       sorter: (a, b) => (a.assigned_to_name || '').localeCompare(b.assigned_to_name || ''),
-      render: (_, record) => record.assigned_to_name || 'Unassigned',  
+      render: (_, record) => record.assigned_to_name || 'Unassigned',
     },
     {
       title: 'Status',
@@ -78,7 +75,7 @@ const TaskList = () => {
       ],
       onFilter: (value, record) => record.status === value,
       render: (status) => {
-        let color = status ? 'green' : 'volcano';
+        const color = status ? 'green' : 'volcano';
         return <Tag color={color}>{status ? 'Completed' : 'Pending'}</Tag>;
       },
     },
@@ -88,10 +85,16 @@ const TaskList = () => {
       key: 'deadline',
       sorter: (a, b) => new Date(a.deadline) - new Date(b.deadline),
       render: (deadline) => {
-        if (!deadline) return 'No due date';
+        if (!deadline) {
+          return 'No due date';
+        }
         const date = new Date(deadline);
-        const formattedDate = date.toLocaleDateString('en-GB'); 
-        const formattedTime = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }); 
+        const formattedDate = date.toLocaleDateString('en-GB');
+        const formattedTime = date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
         return `${formattedDate} ${formattedTime}`;
       },
     },
@@ -106,16 +109,11 @@ const TaskList = () => {
       ],
       onFilter: (value, record) => record.priority === value,
       render: (priority) => {
-        let color = priority === 'high' ? 'red' : priority === 'medium' ? 'orange' : 'blue';
+        const color = priority === 'high' ? 'red' : priority === 'medium' ? 'orange' : 'blue';
         return <Tag color={color}>{priority.charAt(0).toUpperCase() + priority.slice(1)}</Tag>;
       },
     },
-  ];  
-
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (selectedRowKeys) => setSelectedRowKeys(selectedRowKeys),
-  };
+  ];
 
   const onSearch = (value) => {
     setSearchText(value);
@@ -155,9 +153,9 @@ const TaskList = () => {
       }
       await axiosInstance.delete(`/tasks/tasks/${taskId}/`); // Adjust endpoint as needed
 
-      const updatedTasks = tasks.filter(task => task.id !== taskId);
+      const updatedTasks = tasks.filter((task) => task.id !== taskId);
       setTasks(updatedTasks);
-      setFilteredTasks(filteredTasks.filter(task => task.id !== taskId));
+      setFilteredTasks(filteredTasks.filter((task) => task.id !== taskId));
 
       message.success('Task deleted successfully');
       setIsPreviewVisible(false);
@@ -168,7 +166,7 @@ const TaskList = () => {
   };
 
   return (
-    <div style={{ padding: '24px', marginTop:"10px"  }}>
+    <div style={{ padding: '24px', marginTop: '10px' }}>
       <Title level={2}>Task List</Title>
       <StyledSpace wrap>
         <Input
@@ -189,8 +187,8 @@ const TaskList = () => {
           </ActionButton>
         </Tooltip> */}
         <Tooltip title="Add a new task">
-          <ActionButton 
-            type="primary" 
+          <ActionButton
+            type="primary"
             icon={<PlusOutlined />}
             onClick={() => navigate('/tasks/create/')}
           >
@@ -201,12 +199,12 @@ const TaskList = () => {
       <StyledTable
         // rowSelection={rowSelection}
         columns={columns}
-        dataSource={Array.isArray(filteredTasks) ? filteredTasks : []}  
+        dataSource={Array.isArray(filteredTasks) ? filteredTasks : []}
         rowKey="id"
         pagination={{ pageSize: 10 }}
         onRow={(record) => ({
           onClick: () => showTaskPreview(record),
-          style: { cursor: 'pointer' }
+          style: { cursor: 'pointer' },
         })}
         style={{ overflowX: 'auto', cursor: 'pointer' }}
         scroll={{ x: 'max-content' }}

@@ -1,53 +1,10 @@
 import React from 'react';
-import { Dropdown } from 'antd';
-import { useTheme, THEMES, THEME_CONFIG } from '../../contexts/ThemeContext';
-import {
-  SettingOutlined,
-  SunOutlined,
-  ExperimentOutlined,
-} from '@ant-design/icons';
+
+import { useTheme, THEMES } from '../../contexts/ThemeContext';
+import { SunOutlined, ExperimentOutlined } from '@ant-design/icons';
 
 const ThemeSwitcher = ({ compact = false }) => {
-  const { theme, toggleTheme, themeConfig } = useTheme();
-
-  const items = [
-    {
-      key: THEMES.CLASSIC,
-      label: (
-        <div className="flex items-center gap-3 py-1">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-800 to-primary-600 border-2 border-transparent" />
-          <div>
-            <div className="font-medium text-sm">Classic Legal</div>
-            <div className="text-xs text-neutral-500">Traditional professional</div>
-          </div>
-          {theme === THEMES.CLASSIC && (
-            <div className="ml-2 w-2 h-2 rounded-full bg-success-500" />
-          )}
-        </div>
-      ),
-    },
-    {
-      key: THEMES.FUTURISTIC,
-      label: (
-        <div className="flex items-center gap-3 py-1">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-aurora-primary to-aurora-secondary border-2 border-transparent" />
-          <div>
-            <div className="font-medium text-sm">Futuristic Legal</div>
-            <div className="text-xs text-neutral-500">Modern dark interface</div>
-          </div>
-          {theme === THEMES.FUTURISTIC && (
-            <div className="ml-2 w-2 h-2 rounded-full bg-success-500" />
-          )}
-        </div>
-      ),
-    },
-  ];
-
-  const handleMenuClick = ({ key }) => {
-    if (key !== theme) {
-      toggleTheme();
-    }
-  };
+  const { theme, toggleTheme } = useTheme();
 
   if (compact) {
     return (
@@ -76,7 +33,9 @@ const ThemeSwitcher = ({ compact = false }) => {
               : 'text-neutral-600 dark:text-aurora-muted hover:text-neutral-900 dark:hover:text-aurora-text'
           }`}
         >
-          <div className={`w-5 h-5 rounded-full ${theme === THEMES.CLASSIC ? '' : 'opacity-50'} bg-gradient-to-br from-primary-800 to-primary-600`} />
+          <div
+            className={`w-5 h-5 rounded-full ${theme === THEMES.CLASSIC ? '' : 'opacity-50'} bg-gradient-to-br from-primary-800 to-primary-600`}
+          />
           <span className="hidden sm:inline">Classic</span>
         </button>
         <button
@@ -87,7 +46,9 @@ const ThemeSwitcher = ({ compact = false }) => {
               : 'text-neutral-600 dark:text-aurora-muted hover:text-neutral-900 dark:hover:text-aurora-text'
           }`}
         >
-          <div className={`w-5 h-5 rounded-full ${theme === THEMES.FUTURISTIC ? '' : 'opacity-50'} bg-gradient-to-br from-aurora-primary to-aurora-secondary`} />
+          <div
+            className={`w-5 h-5 rounded-full ${theme === THEMES.FUTURISTIC ? '' : 'opacity-50'} bg-gradient-to-br from-aurora-primary to-aurora-secondary`}
+          />
           <span className="hidden sm:inline">Futuristic</span>
         </button>
       </div>

@@ -8,7 +8,7 @@ const { Title } = Typography;
 const TaskPreview = ({ task, visible, onClose, onDelete }) => {
   const navigate = useNavigate();
 
-  if (!task) return null;
+  if (!task) {return null;}
 
   const formattedDueDate = task.deadline ? new Date(task.deadline).toLocaleDateString() : 'No due date';
 

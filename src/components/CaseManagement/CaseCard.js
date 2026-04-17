@@ -50,13 +50,13 @@ import { useTheme } from '../../contexts/ThemeContext';
 import moment from 'moment';
 
 function CaseCard({ caseInfo, onClick }) {
-  const { isFuturistic, themeConfig } = useTheme();
-  
+  const { isFuturistic } = useTheme();
+
   const statusColors = {
     open: 'blue',
     closed: 'green',
     pending: 'gold',
-    default: 'red'
+    default: 'red',
   };
 
   const statusColor = statusColors[caseInfo.status] || statusColors.default;
@@ -72,47 +72,49 @@ function CaseCard({ caseInfo, onClick }) {
       className={isFuturistic ? 'hover-glow' : ''}
       style={{
         borderRadius: '12px',
-        boxShadow: isFuturistic 
-          ? '0 4px 12px rgba(0, 0, 0, 0.2)' 
-          : '0 2px 8px rgba(0, 0, 0, 0.06)',
+        boxShadow: isFuturistic ? '0 4px 12px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.06)',
         background: isFuturistic ? '#1a1a24' : '#ffffff',
         border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
         height: '100%',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
       }}
       bodyStyle={{ padding: '16px', flex: 1 }}
       onClick={onClick}
     >
       {/* Header with Avatar and Title */}
       <Space align="start" style={{ marginBottom: '12px', width: '100%' }}>
-        <Avatar 
-          src={caseInfo.profile} 
-          icon={!caseInfo.profile && <UserOutlined />} 
+        <Avatar
+          src={caseInfo.profile}
+          icon={!caseInfo.profile && <UserOutlined />}
           alt={caseInfo.name}
           size={40}
           style={{ flexShrink: 0 }}
         />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h4 style={{ 
-            margin: 0, 
-            fontWeight: 600,
-            fontSize: '15px',
-            color: isFuturistic ? '#f8fafc' : '#1e293b',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
+          <h4
+            style={{
+              margin: 0,
+              fontWeight: 600,
+              fontSize: '15px',
+              color: isFuturistic ? '#f8fafc' : '#1e293b',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
             {caseInfo.title}
           </h4>
-          <p style={{ 
-            margin: '2px 0 0 0', 
-            fontSize: '12px', 
-            color: '#64748b',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
+          <p
+            style={{
+              margin: '2px 0 0 0',
+              fontSize: '12px',
+              color: '#64748b',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
             #{caseInfo.case_number}
           </p>
         </div>
@@ -120,14 +122,14 @@ function CaseCard({ caseInfo, onClick }) {
 
       {/* Status Tag */}
       <div style={{ marginBottom: '12px' }}>
-        <Tag 
+        <Tag
           color={statusColor}
-          style={{ 
-            borderRadius: '20px', 
-            padding: '4px 12px', 
+          style={{
+            borderRadius: '20px',
+            padding: '4px 12px',
             fontWeight: 600,
             textTransform: 'uppercase',
-            fontSize: '11px'
+            fontSize: '11px',
           }}
         >
           {caseInfo.status}
@@ -135,40 +137,50 @@ function CaseCard({ caseInfo, onClick }) {
       </div>
 
       {/* Client */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        marginBottom: '8px',
-        gap: '8px'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          marginBottom: '8px',
+          gap: '8px',
+        }}
+      >
         <UserOutlined style={{ color: '#3b82f6', fontSize: '14px' }} />
-        <span style={{ 
-          fontSize: '13px', 
-          color: isFuturistic ? '#e2e8f0' : '#475569',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
-        }}>
+        <span
+          style={{
+            fontSize: '13px',
+            color: isFuturistic ? '#e2e8f0' : '#475569',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
           {caseInfo.name}
         </span>
       </div>
 
       {/* Deadline */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        marginBottom: '8px',
-        gap: '8px'
-      }}>
-        <CalendarOutlined style={{ 
-          color: isOverdue ? '#ef4444' : isUrgent ? '#f59e0b' : '#fbbf24', 
-          fontSize: '14px' 
-        }} />
-        <span style={{ 
-          fontSize: '13px', 
-          color: isOverdue ? '#ef4444' : isUrgent ? '#f59e0b' : '#64748b',
-          fontWeight: isUrgent || isOverdue ? 600 : 400
-        }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          marginBottom: '8px',
+          gap: '8px',
+        }}
+      >
+        <CalendarOutlined
+          style={{
+            color: isOverdue ? '#ef4444' : isUrgent ? '#f59e0b' : '#fbbf24',
+            fontSize: '14px',
+          }}
+        />
+        <span
+          style={{
+            fontSize: '13px',
+            color: isOverdue ? '#ef4444' : isUrgent ? '#f59e0b' : '#64748b',
+            fontWeight: isUrgent || isOverdue ? 600 : 400,
+          }}
+        >
           {moment(caseInfo.end_date).format('MMM DD, YYYY')}
           {isOverdue && ' • Overdue'}
           {isUrgent && !isOverdue && ' • Urgent'}
@@ -176,24 +188,28 @@ function CaseCard({ caseInfo, onClick }) {
       </div>
 
       {/* Description */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'flex-start', 
-        gap: '8px',
-        marginTop: 'auto',
-        paddingTop: '8px'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '8px',
+          marginTop: 'auto',
+          paddingTop: '8px',
+        }}
+      >
         <InfoCircleOutlined style={{ color: '#22c55e', fontSize: '14px', marginTop: '2px' }} />
-        <p style={{ 
-          margin: 0, 
-          fontSize: '12px', 
-          color: '#64748b',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
-          lineHeight: 1.4
-        }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: '12px',
+            color: '#64748b',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            lineHeight: 1.4,
+          }}
+        >
           {caseInfo.description}
         </p>
       </div>

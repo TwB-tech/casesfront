@@ -14,11 +14,16 @@ const InvoiceDetails = () => {
   const [invoice, setInvoice] = React.useState(state?.invoice || null);
 
   React.useEffect(() => {
-    if (invoice) return;
-    axiosInstance.get('/api/invoices').then((response) => {
-      const found = response.data.find((item) => String(item.id) === String(id));
-      setInvoice(found || null);
-    });
+    if (invoice) {return;}
+    const fetchInvoice = async () => {
+      try {
+        const response = await axiosInstance.get(`/api/invoices/${id}/`);
+        setInvoice(response.data);
+      } catch (error) {
+        console.error('Error fetching invoice:', error);
+      }
+    };
+    fetchInvoice();
   }, [id, invoice]);
 
   if (!invoice) {

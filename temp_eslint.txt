@@ -1,0 +1,51 @@
+node.exe : 
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+<--- Last few GCs --->
+
+[576:000002372381D000]    18260 ms: Scavenge (during sweeping) 133.4 (198.6) -> 79.5 (205.4) MB, pooled: 0.0 MB, 26.23 / 0.01 ms (average mu = 0.989, current mu = 0.989) allocation failure; 
+[576:000002372381D000]    18988 ms: Scavenge (during sweeping) 141.6 (207.0) -> 85.6 (209.8) MB, pooled: 0.0 MB, 24.23 / 0.01 ms (average mu = 0.989, current mu = 0.989) allocation failure; 
+
+FATAL ERROR: Zone Allocation failed - process out of memory
+----- Native stack trace -----
+
+
+<--- Last few GCs --->
+
+[576:000002372381D000]    18260 ms: Scavenge (during sweeping) 133.4 (198.6) -> 79.5 (205.4) MB, pooled: 0.0 MB, 26.23 / 0.01 ms (average mu = 0.989, current mu = 0.989) allocation failure; 
+[576:000002372381D000]    18988 ms: Scavenge (during sweeping) 141.6 (207.0) -> 85.6 (209.8) MB, pooled: 0.0 MB, 24.23 / 0.01 ms (average mu = 0.989, current mu = 0.989) allocation failure; 
+
+FATAL ERROR: Zone Allocation failed - process out of memory
+----- Native stack trace -----
+
+
+<--- Last few GCs --->
+
+[576:000002372381D000]    18260 ms: Scavenge (during sweeping) 133.4 (198.6) -> 79.5 (205.4) MB, pooled: 0.0 MB, 26.23 / 0.01 ms (average mu = 0.989, current mu = 0.989) allocation failure; 
+[576:000002372381D000]    18988 ms: Scavenge (during sweeping) 141.6 (207.0) -> 85.6 (209.8) MB, pooled: 0.0 MB, 24.23 / 0.01 ms (average mu = 0.989, current mu = 0.989) allocation failure; 
+
+FATAL ERROR: Zone Allocation failed - process out of memory
+----- Native stack trace -----
+
+ 1: 00007FF75C3B9706 void __cdecl node::OnFatalError(char const * __ptr64,char const * __ptr64)+1318
+ 2: 00007FF75CF594C7 public: class v8::MaybeLocal<class v8::Object> __cdecl v8::Function::NewInstance(class v8::Local<class v8::Context>,int,class v8::Local<class v8::Value> * __ptr64 const)const __ptr64+423
+ 1: 00007FF75C3B9706 public: class v8::MaybeLocal<class v8::Object> __cdecl v8::Function::NewInstance(class v8::Local<class v8::Context>,int,class v8::Local<class v8::Value> * __ptr64 const)const __ptr64+1318
+ 3: 00007FF75C918883 public: class v8::Isolate * __ptr64 __cdecl v8::SnapshotCreator::GetIsolate(void) __ptr64+57619
+ 4: 00007FF75C7F56DD X509_STORE_set_check_issued+771677
+ 5: 00007FF75C7F541B X509_STORE_set_check_issued+770971
+ 6: 00007FF75C7F01CD X509_STORE_set_check_issued+749901
+ 7: 00007FF75C7EE7DE X509_STORE_set_check_issued+743262
+ 8: 00007FF75C7EBD87 X509_STORE_set_check_issued+732423
+ 9: 00007FF75CEE6DBF public: static class v8::internal::WritableJumpTablePair __cdecl v8::internal::ThreadIsolation::LookupJumpTableAllocations(unsigned __int64,unsigned __int64,unsigned __int64,unsigned __int64)+232575
+10: 00007FF75C7ED732 X509_STORE_set_check_issued+738994
+11: 00007FF75D7DCA2F public: virtual void __cdecl v8::platform::DefaultJobHandle::UpdatePriority(enum v8::TaskPriority) __ptr64+591
+12: 00007FF75C3033EE public: virtual class std::optional<int> __cdecl v8::base::VirtualAddressSubspace::ActiveMemoryProtectionKey(void) __ptr64+34638
+13: 00007FF75CFAFE16 uv_thread_detach+150
+14: 00007FF75E51AFB3 public: void __cdecl v8::platform::DelayedTaskQueue::Terminate(void) __ptr64+10596675
+15: 00007FFF4CD17374 
+16: 00007FFF4E8DCC91 RtlUserThreadStart+33
+

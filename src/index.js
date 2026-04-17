@@ -1,12 +1,25 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import intitializeAnalytics from './analytics';
 import { AuthProvider } from './contexts/authContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { initializeSentry } from './config/sentry';
+
+// Initialize Sentry first (before any other errors)
+initializeSentry();
+
+// Global error handler
+window.addEventListener('error', (event) => {
+  console.error('Global error caught:', event.error);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+});
 
 // Initializing Google Analytics in the application
 intitializeAnalytics();

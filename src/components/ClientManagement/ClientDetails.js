@@ -14,26 +14,31 @@ const ClientDetails = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [client, setClient] = useState(state?.client || null);
 
-  useEffect(() => {
-    const fetchCases = async () => {
-      try {
-        const response = await axiosInstance.get(`/case/individual-cases/`);
-        setCases(response.data);
-      } catch (error) {
-        console.error('Error fetching cases:', error);
-      }
-    };
+   useEffect(() => {
+     const fetchCases = async () => {
+       try {
+         const response = await axiosInstance.get(`/case/individual-cases/`);
+         const allCases = response.data.results || response.data || [];
+         // Filter cases to only those belonging to this client
+         const clientCases = allCases.filter(c => Number(c.client_id) === Number(id));
+         setCases(clientCases);
+       } catch (error) {
+         console.error('Error fetching cases:', error);
+       }
+     };
 
-    fetchCases();
-  }, []);
+     fetchCases();
+   }, [id]);
 
-  useEffect(() => {
-    if (client) return;
-    axiosInstance.get('/client/').then((response) => {
-      const found = (response.data.results || []).find((entry) => String(entry.id) === String(id));
-      setClient(found || null);
-    });
-  }, [client, id]);
+   useEffect(() => {
+     if (client) {return;}
+     axiosInstance.get(`/client/${id}/`).then((response) => {
+       setClient(response.data || null);
+     }).catch(error => {
+       console.error('Error fetching client:', error);
+       setClient(null);
+     });
+   }, [client, id]);
 
   const columns = [
     {

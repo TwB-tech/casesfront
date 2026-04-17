@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Upload, Select, Card, Tooltip } from 'antd';
+import { Form, Input, Button, Upload, Select, Card, Tooltip, notification } from 'antd';
 import { UploadOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import axiosInstance from '../../axiosConfig';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ const { Option } = Select;
 function NewDocument() {
   const [file, setFile] = useState(null);
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,7 +19,7 @@ function NewDocument() {
         const response = await axiosInstance.get(`/individual/`);
         setUsers(response.data.results);
       } catch (error) {
-        console.error('Error fetching cases:', error);
+        console.error('Error fetching users:', error);
       }
     };
 
@@ -26,10 +27,11 @@ function NewDocument() {
   }, []);
 
   const onFinish = async (values) => {
+    setLoading(true);
     const formData = new FormData();
     formData.append('title', values.title);
     formData.append('description', values.description);
-    formData.append('file', file); // Ensure this is the file object
+    if (file) {formData.append('file', file);}
     formData.append('owner', values.owner);
     (values.shared_with || []).forEach(user => formData.append('shared_with', user));
   
@@ -39,9 +41,15 @@ function NewDocument() {
           'Content-Type': 'multipart/form-data',
         },
       });
-      navigate('/documents'); // Navigate back to the document list
+      navigate('/documents');
     } catch (error) {
       console.error('Error uploading document:', error);
+      notification.error({
+        message: 'Upload Failed',
+        description: 'Could not upload document. Please try again.'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -127,7 +135,7 @@ function NewDocument() {
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
+            <Button type="primary" htmlType="submit" style={{ width: '100%' }} loading={loading}>
               Submit
             </Button>
           </Form.Item>
