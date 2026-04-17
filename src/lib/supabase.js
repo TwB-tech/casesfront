@@ -76,7 +76,9 @@ export const auth = {
       email,
       password,
     });
-    if (error) {throw error;}
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
@@ -87,29 +89,37 @@ export const auth = {
       email_confirm: true,
       user_metadata: { username, role: 'individual' },
     });
-    if (error) {throw error;}
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
   async get() {
     const { data, error } = await supabase.auth.getUser();
-    if (error) {throw error;}
+    if (error) {
+      throw error;
+    }
     return data.user;
   },
 
   async updatePrefs(userId, prefs) {
     const { error } = await supabase.auth.admin.updateUserById(userId, { user_metadata: prefs });
-    if (error) {throw error;}
+    if (error) {
+      throw error;
+    }
   },
 
-  async updatePassword(newPassword, currentPassword) {
+  async updatePassword(newPassword) {
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });
-    if (error) {throw error;}
+    if (error) {
+      throw error;
+    }
   },
 
-  async updateRecovery(token, newPassword) {
+  async updateRecovery(newPassword) {
     // Supabase handles password reset via recovery flow
     // This is a simplified implementation
     console.warn('Password reset token verification not fully implemented - use Supabase recovery');
@@ -118,7 +128,9 @@ export const auth = {
 
   async deleteSession() {
     const { error } = await supabase.auth.signOut();
-    if (error) {throw error;}
+    if (error) {
+      throw error;
+    }
   },
 };
 
