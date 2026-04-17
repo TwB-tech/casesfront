@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Table,
   Button,
@@ -97,63 +97,62 @@ const CaseList = () => {
     setOrderBy(sorter.field);
   };
 
-  const filterCasesByDate = (cases) => {
-    if (!startDate && !endDate) {
-      return cases;
-    }
-
-    return cases.filter((caseItem) => {
-      const caseStartDate = new Date(caseItem.start_date);
-      const caseEndDate = new Date(caseItem.end_date);
-      const filterStartDate = startDate ? new Date(startDate) : null;
-      const filterEndDate = endDate ? new Date(endDate) : null;
-
-      if (filterStartDate && filterEndDate) {
-        return caseStartDate >= filterStartDate && caseEndDate <= filterEndDate;
+  const filterCasesByDate = useCallback(
+    (cases) => {
+      if (!startDate && !endDate) {
+        return cases;
       }
-      if (filterStartDate) {
-        return caseStartDate >= filterStartDate;
+
+      return cases.filter((caseItem) => {
+        const caseStartDate = new Date(caseItem.start_date);
+        const caseEndDate = new Date(caseItem.end_date);
+        const filterStartDate = startDate ? new Date(startDate) : null;
+        const filterEndDate = endDate ? new Date(endDate) : null;
+
+        if (filterStartDate && filterEndDate) {
+          return caseStartDate >= filterStartDate && caseEndDate <= filterEndDate;
+        }
+        if (filterStartDate) {
+          return caseStartDate >= filterStartDate;
+        }
+        if (filterEndDate) {
+          return caseEndDate <= filterEndDate;
+        }
+        return true;
+      });
+    },
+    [startDate, endDate]
+  );
+
+  const filterCasesBySearch = useCallback(
+    (cases) => {
+      if (!searchQuery) {
+        return cases;
       }
-      if (filterEndDate) {
-        return caseEndDate <= filterEndDate;
+
+      return cases.filter((caseItem) =>
+        Object.values(caseItem).some(
+          (value) => value && value.toString().toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    },
+    [searchQuery]
+  );
+
+  const filterCasesByStatus = useCallback(
+    (cases) => {
+      if (statusFilter === 'All') {
+        return cases;
       }
-      return true;
-    });
-  };
 
-  const filterCasesBySearch = (cases) => {
-    if (!searchQuery) {
-      return cases;
-    }
+      return cases.filter((caseItem) => caseItem.status === statusFilter.toLowerCase());
+    },
+    [statusFilter]
+  );
 
-    return cases.filter((caseItem) =>
-      Object.values(caseItem).some(
-        (value) => value && value.toString().toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    );
-  };
-
-  const filterCasesByStatus = (cases) => {
-    if (statusFilter === 'All') {
-      return cases;
-    }
-
-    return cases.filter((caseItem) => caseItem.status === statusFilter.toLowerCase());
-  };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const filteredCases = useMemo(
     () => filterCasesByStatus(filterCasesBySearch(filterCasesByDate(cases))),
-    [
-      cases,
-      searchQuery,
-      statusFilter,
-      startDate,
-      endDate,
-      filterCasesByDate,
-      filterCasesBySearch,
-      filterCasesByStatus,
-    ]
+    [cases, filterCasesByDate, filterCasesBySearch, filterCasesByStatus]
   );
 
   // Calculate statistics for dashboard-style cards
