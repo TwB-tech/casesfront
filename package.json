@@ -9,9 +9,9 @@
     "@radix-ui/react-slot": "^1.1.0",
     "@sentry/react": "^8.55.1",
     "@sentry/tracing": "^7.120.4",
+    "@supabase/supabase-js": "^2.103.3",
     "antd": "5.20.5",
     "aos": "2.3.4",
-    "appwrite": "^24.1.1",
     "axios": "^1.15.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -28,6 +28,7 @@
     "react-router-dom": "^6.30.3",
     "recharts": "2.12.7",
     "styled-components": "6.1.13",
+    "supabase": "^2.45.0",
     "tailwind-merge": "^2.5.2",
     "web-vitals": "^2.1.4"
   },

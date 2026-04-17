@@ -26,7 +26,7 @@ module.exports = async function (context) {
     '.svg': 'image/svg+xml',
     '.ico': 'image/x-icon',
     '.txt': 'text/plain',
-    '.map': 'application/json'
+    '.map': 'application/json',
   };
 
   try {
@@ -47,9 +47,15 @@ module.exports = async function (context) {
         res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
         // HSTS - only in production
         if (process.env.NODE_ENV === 'production') {
-          res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+          res.setHeader(
+            'Strict-Transport-Security',
+            'max-age=31536000; includeSubDomains; preload'
+          );
         }
-        res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://cloud.appwrite.io https://*.appwrite.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self';");
+        res.setHeader(
+          'Content-Security-Policy',
+          "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+        );
         res.send(content);
         return;
       }
@@ -66,7 +72,7 @@ module.exports = async function (context) {
       const nonce = require('crypto').randomBytes(16).toString('hex');
       indexContent = indexContent.replace(
         /<head>/i,
-        `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://cloud.appwrite.io https://*.appwrite.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"><meta name="csrf-token" content="${nonce}">`
+        `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"><meta name="csrf-token" content="${nonce}">`
       );
     }
 
@@ -81,7 +87,6 @@ module.exports = async function (context) {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     }
     res.send(indexContent);
-
   } catch (error) {
     res.statusCode = 500;
     res.send(`Error: ${error.message}`);

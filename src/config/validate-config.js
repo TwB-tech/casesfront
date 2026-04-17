@@ -1,9 +1,9 @@
 /**
- * AppWrite Configuration Validation Script
+ * Database Configuration Validation Script
  * Run with: node src/config/validate-config.js
  *
  * Validates that all required environment variables are set
- * for AppWrite production deployment.
+ * for Supabase or standalone mode.
  */
 
 const fs = require('fs');
@@ -15,7 +15,7 @@ function validateConfig() {
   const warnings = [];
   const success = [];
 
-  console.log('🔍 Validating AppWrite Configuration\n');
+  console.log('🔍 Validating Database Configuration\n');
 
   // Check if .env exists
   if (!fs.existsSync(envPath)) {
@@ -41,42 +41,40 @@ function validateConfig() {
     }
   });
 
-  // Check required variables
-  const required = [
-    'REACT_APP_USE_APPWRITE',
-    'REACT_APP_APPWRITE_ENDPOINT',
-    'REACT_APP_APPWRITE_PROJECT_ID',
-    'REACT_APP_APPWRITE_DATABASE_ID',
-  ];
+  // Check database mode
+  const dbMode = envVars['REACT_APP_DATABASE_MODE'] || 'standalone';
 
-  console.log('Required Environment Variables:\n');
+  console.log(
+    'Database Mode:',
+    dbMode === 'supabase' ? 'Supabase (PostgreSQL)' : 'Standalone (localStorage mock)\n'
+  );
 
-  required.forEach((key) => {
-    const value = envVars[key];
-    if (!value) {
-      errors.push(key);
-      console.log(`  ✗ ${key}: Missing`);
-    } else {
-      if (key === 'REACT_APP_USE_APPWRITE') {
-        if (value === 'true') {
-          success.push(key);
-          console.log(`  ✓ ${key}: ${value} (Production Mode)`);
-        } else {
-          warnings.push(key);
-          console.log(`  ⚠ ${key}: ${value} (Standalone Mode - No database)`);
-        }
+  if (dbMode === 'supabase') {
+    const requiredSupabase = ['REACT_APP_SUPABASE_URL', 'REACT_APP_SUPABASE_ANON_KEY'];
+
+    console.log('Supabase Required Variables:\n');
+    requiredSupabase.forEach((key) => {
+      const value = envVars[key];
+      if (!value) {
+        errors.push(key);
+        console.log(`  ✗ ${key}: Missing`);
       } else {
         success.push(key);
         console.log(`  ✓ ${key}: Set`);
       }
+    });
+
+    if (envVars.REACT_APP_SUPABASE_URL && !envVars.REACT_APP_SUPABASE_URL.includes('supabase.co')) {
+      warnings.push('REACT_APP_SUPABASE_URL should be a valid Supabase URL');
+      console.log(`  ⚠ REACT_APP_SUPABASE_URL: Does not look like a Supabase URL`);
     }
-  });
+  } else {
+    console.log('  ℹ Standalone mode - no external database required');
+  }
 
-  // Check security settings
+  // Security settings
   console.log('\nSecurity Settings:\n');
-
   const securityVars = ['REACT_APP_SESSION_COOKIE_SECURE', 'REACT_APP_SESSION_COOKIE_SAMESITE'];
-
   securityVars.forEach((key) => {
     const value = envVars[key];
     if (value) {
@@ -105,17 +103,16 @@ function validateConfig() {
     console.log();
   }
 
-  if (envVars.REACT_APP_USE_APPWRITE === 'true') {
-    console.log('✅ Configuration is valid for PRODUCTION mode');
-    console.log('\nAppWrite will be used as the backend.');
-    console.log('Make sure you have:');
-    console.log('  1. Created all collections (see appwrite_setup.md)');
-    console.log('  2. Set up proper security permissions');
-    console.log('  3. Enabled storage bucket for documents');
+  if (dbMode === 'supabase') {
+    console.log('✅ Configuration is valid for Supabase production mode');
+    console.log('\nNext steps:');
+    console.log('  1. Create database tables in Supabase (run supabase-schema.sql)');
+    console.log('  2. Set up Row Level Security (RLS) policies if needed');
+    console.log('  3. Configure Supabase Auth for user management');
   } else {
-    console.log('✅ Configuration is valid for STANDALONE mode');
+    console.log('✅ Configuration is valid for Standalone mode');
     console.log('\nApp will use localStorage for data storage.');
-    console.log('Set REACT_APP_USE_APPWRITE=true to enable AppWrite.');
+    console.log('Set REACT_APP_DATABASE_MODE=supabase to enable Supabase.');
   }
 
   console.log('\n' + '='.repeat(50) + '\n');

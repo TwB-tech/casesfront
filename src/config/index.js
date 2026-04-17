@@ -3,15 +3,16 @@
  * Centralized config for feature flags and environment settings
  */
 
-// AppWrite integration flag - reads from environment variable
-// Must be set as REACT_APP_USE_APPWRITE in .env file
-export const USE_APPWRITE = process.env.REACT_APP_USE_APPWRITE === 'true';
+// Database mode flag: 'supabase' | 'standalone' (localStorage mock)
+// Set REACT_APP_DATABASE_MODE in .env (default: 'standalone' for demo)
+const dbMode = process.env.REACT_APP_DATABASE_MODE || 'standalone';
+export const USE_SUPABASE = dbMode === 'supabase';
+export const USE_STANDALONE = dbMode === 'standalone';
 
-// AppWrite Configuration
-export const APPWRITE_CONFIG = {
-  ENDPOINT: process.env.REACT_APP_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1',
-  PROJECT_ID: process.env.REACT_APP_APPWRITE_PROJECT_ID,
-  DATABASE_ID: process.env.REACT_APP_APPWRITE_DATABASE_ID || 'main',
+// Supabase Configuration
+export const SUPABASE_CONFIG = {
+  URL: process.env.REACT_APP_SUPABASE_URL,
+  ANON_KEY: process.env.REACT_APP_SUPABASE_ANON_KEY,
 };
 
 // Security Configuration
@@ -33,8 +34,10 @@ export const FEATURES = {
 export const validateConfig = () => {
   const errors = [];
 
-  if (USE_APPWRITE && !APPWRITE_CONFIG.PROJECT_ID) {
-    errors.push('REACT_APP_APPWRITE_PROJECT_ID is required when USE_APPWRITE=true');
+  if (USE_SUPABASE && (!SUPABASE_CONFIG.URL || !SUPABASE_CONFIG.ANON_KEY)) {
+    errors.push(
+      'REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY are required when DATABASE_MODE=supabase'
+    );
   }
 
   if (errors.length > 0) {
@@ -53,8 +56,9 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export default {
-  USE_APPWRITE,
-  APPWRITE_CONFIG,
+  USE_SUPABASE,
+  USE_STANDALONE,
+  SUPABASE_CONFIG,
   SECURITY_CONFIG,
   FEATURES,
 };
