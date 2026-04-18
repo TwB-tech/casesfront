@@ -1,1 +1,0 @@
-import{i as e,n as t,o as n,r,s as i}from"./PieChart-DL9zY9ZO.js";var a=t({chartName:`BarChart`,GraphicalChild:i,defaultTooltipEventType:`axis`,validateTooltipEventTypes:[`axis`,`item`],axisComponents:[{axisType:`xAxis`,AxisComp:e},{axisType:`yAxis`,AxisComp:r}],formatAxisMap:n});export{a as t};

@@ -137,7 +137,6 @@ function AppContent() {
               padding: isMobile ? '16px' : '24px',
               flexGrow: 1,
               transition: 'margin-left 0.2s, background 0.3s ease',
-              background: '#000000',
               minHeight: 'calc(100vh - 64px)',
             }}
           >

@@ -1,5 +1,10 @@
 const DB_KEY = 'wakiliworld.frontend.db.v1';
 import DOMPurify from 'dompurify';
+import {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  generateVerificationToken,
+} from './emailService';
 
 const delay = (ms = 120) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -34,6 +39,7 @@ const seedDb = () => ({
       clientCommunication: true,
       taskManagement: true,
       deadlineNotifications: true,
+      email_verified: true,
     },
     {
       id: 2,
@@ -57,6 +63,7 @@ const seedDb = () => ({
       clientCommunication: true,
       taskManagement: true,
       deadlineNotifications: true,
+      email_verified: true,
     },
     {
       id: 3,
@@ -80,6 +87,7 @@ const seedDb = () => ({
       clientCommunication: false,
       taskManagement: true,
       deadlineNotifications: true,
+      email_verified: true,
     },
     {
       id: 4,
@@ -103,6 +111,7 @@ const seedDb = () => ({
       clientCommunication: true,
       taskManagement: true,
       deadlineNotifications: true,
+      email_verified: true,
     },
     {
       id: 5,
@@ -126,6 +135,31 @@ const seedDb = () => ({
       clientCommunication: false,
       taskManagement: true,
       deadlineNotifications: true,
+      email_verified: true,
+    },
+    {
+      id: 6,
+      username: 'Tony Brands',
+      email: 'tony@techwithbrands.com',
+      password: 'Full888*',
+      role: 'administrator',
+      phone_number: '+254700000006',
+      alternative_phone_number: '+254711000006',
+      id_number: '62345678',
+      passport_number: 'F1234567',
+      date_of_birth: '1985-04-15',
+      gender: 'Male',
+      address: 'Nairobi, Kenya',
+      nationality: 'Kenyan',
+      occupation: 'CEO',
+      marital_status: 'Married',
+      status: 'Active',
+      timezone: 'EAT',
+      messaging: true,
+      clientCommunication: true,
+      taskManagement: true,
+      deadlineNotifications: true,
+      email_verified: true,
     },
   ],
   courts: [
@@ -668,6 +702,26 @@ export const standaloneApi = {
     }
 
     if (path.startsWith('/auth/email-verify/')) {
+      // Extract token from query params via path: /auth/email-verify/?token=TOKEN
+      const params = new URLSearchParams(path.split('?')[1] || '');
+      const token = params.get('token');
+      if (!token) {
+        return failure('Verification failed', 400, { message: 'No verification token provided' });
+      }
+
+      // Find user by verification token
+      const userIndex = db.users.findIndex((u) => u.verification_token === token);
+      if (userIndex === -1) {
+        return failure('Verification failed', 400, {
+          message: 'Invalid or expired verification token',
+        });
+      }
+
+      // Mark email as verified
+      db.users[userIndex].email_verified = true;
+      db.users[userIndex].verification_token = null;
+      writeDb(db);
+
       return success({ detail: 'Email verified successfully.' });
     }
 
@@ -877,6 +931,15 @@ export const standaloneApi = {
       });
     }
 
+    // Admin: List all users (admin only)
+    if (path === '/admin/users/') {
+      const adminUser = currentUser();
+      if (!adminUser || !['admin', 'administrator'].includes(adminUser.role)) {
+        return failure('Forbidden: Admin access required', 403);
+      }
+      return success({ results: db.users.map(publicUser) });
+    }
+
     return failure(`GET ${path} is not implemented in standalone mode`, 404);
   },
   async post(url, payload = {}) {
@@ -918,6 +981,7 @@ export const standaloneApi = {
         });
       }
 
+      const verificationToken = generateVerificationToken();
       const user = {
         id: nextId(db.users),
         username: payload.username || payload.email,
@@ -940,9 +1004,17 @@ export const standaloneApi = {
         clientCommunication: true,
         taskManagement: true,
         deadlineNotifications: true,
+        email_verified: false,
+        verification_token: verificationToken,
       };
       db.users.push(user);
       writeDb(db);
+
+      // Send verification email asynchronously (non-blocking)
+      sendVerificationEmail({ ...user, verification_token: verificationToken }).catch((err) =>
+        console.error('Failed to send verification email:', err)
+      );
+
       return success(publicUser(user), 201);
     }
 
@@ -958,6 +1030,13 @@ export const standaloneApi = {
         created_at: new Date().toISOString(),
       });
       writeDb(db);
+
+      // Send password reset email asynchronously
+      const lastToken = db.passwordResetRequests[db.passwordResetRequests.length - 1].token;
+      sendPasswordResetEmail(payload.email, lastToken).catch((err) =>
+        console.error('Failed to send reset email:', err)
+      );
+
       return success({ detail: 'Reset instructions generated.' });
     }
 
@@ -973,6 +1052,13 @@ export const standaloneApi = {
       );
       if (!resetRequest) {
         return failure('Invalid or expired reset token', 400);
+      }
+      // Check token expiry (24 hours)
+      const created = new Date(resetRequest.created_at);
+      const now = new Date();
+      const hoursPassed = (now - created) / (1000 * 60 * 60);
+      if (hoursPassed > 24) {
+        return failure('Reset token has expired', 400);
       }
       // Mark token as used
       resetRequest.used = true;
@@ -1223,6 +1309,7 @@ export const standaloneApi = {
       if (exists) {
         return failure('Employee already exists', 400);
       }
+      const verificationToken = generateVerificationToken();
       const user = {
         id: nextId(db.users),
         username: payload.full_name || payload.email,
@@ -1237,9 +1324,17 @@ export const standaloneApi = {
         position: payload.position || '',
         salary: payload.salary || 0,
         hire_date: payload.hire_date || new Date().toISOString().split('T')[0],
+        email_verified: false,
+        verification_token: verificationToken,
       };
       db.users.push(user);
       writeDb(db);
+
+      // Send verification email asynchronously
+      sendVerificationEmail({ ...user, verification_token: verificationToken }).catch((err) =>
+        console.error('Failed to send verification email:', err)
+      );
+
       return success(publicUser(user), 201);
     }
 

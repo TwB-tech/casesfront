@@ -1,7 +1,7 @@
 import DOMPurify from 'dompurify';
 import { USE_SUPABASE } from './config';
 import supabaseApi from './lib/supabaseApi';
-// import { standaloneApi } from './lib/standaloneApi';
+import { standaloneApi } from './lib/standaloneApi';
 
 // Sanitization helper (kept for compatibility but Supabase handles most)
 const sanitizeResponse = (value) => {
@@ -77,20 +77,55 @@ const sanitizeApiResponse = (response) => {
   return response;
 };
 
-// Determine mode: Supabase or Standalone (localStorage mock)
+// Hybrid API with automatic Supabase → standalone fallback on network errors
+const createHybridApi = (primary, fallback) => {
+  const isNetworkError = (error) => {
+    // No response object = network/connectivity error
+    if (!error.response) return true;
+    // Server errors (5xx) - Supabase may be down
+    if (error.response.status >= 500) return true;
+    // Connection errors typically have specific messages
+    const msg = error.message?.toLowerCase() || '';
+    if (msg.includes('network') || msg.includes('failed to fetch') || msg.includes('econnrefused'))
+      return true;
+    return false;
+  };
+
+  const wrap = (method) => async (path, payload) => {
+    try {
+      const result = await primary[method](path, payload);
+      return sanitizeApiResponse(result);
+    } catch (error) {
+      if (isNetworkError(error)) {
+        console.warn(`Supabase ${method}(${path}) failed:`, error.message);
+        console.info('Falling back to standalone API');
+        const fallbackResult = await fallback[method](path, payload);
+        return sanitizeApiResponse(fallbackResult);
+      }
+      // Auth errors (401, 403) or client errors - don't fallback
+      throw error;
+    }
+  };
+
+  return {
+    get: wrap('get'),
+    post: wrap('post'),
+    put: wrap('put'),
+    delete: wrap('delete'),
+  };
+};
+
+// Determine mode: Supabase-only, Standalone-only, or Hybrid fallback
 let apiInstance;
 
 if (USE_SUPABASE) {
-  // Use Supabase API implementation
-  apiInstance = supabaseApi;
+  // Use Supabase with automatic fallback to standalone on network failures
+  console.info('Initializing hybrid API: Supabase primary, standalone fallback');
+  apiInstance = createHybridApi(supabaseApi, standaloneApi);
 } else {
-  // Fallback to dummy API for now
-  apiInstance = {
-    get: () => Promise.resolve({ data: [] }),
-    post: () => Promise.resolve({ data: {} }),
-    put: () => Promise.resolve({ data: {} }),
-    delete: () => Promise.resolve({ data: {} }),
-  };
+  // Pure standalone mode (no Supabase)
+  console.info('Initializing standalone API (DATABASE_MODE=standalone)');
+  apiInstance = standaloneApi;
 }
 
 export default apiInstance;

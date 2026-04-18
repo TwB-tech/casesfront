@@ -571,6 +571,32 @@ export const supabaseApi = {
       return success(data);
     }
 
+    // Admin: List all users (admin only)
+    if (path === 'admin/users') {
+      const currentUser = JSON.parse(localStorage.getItem('userInfo') || '{}');
+      const userRole = (currentUser.role || '').toLowerCase();
+      if (!currentUser.id || (userRole !== 'admin' && userRole !== 'administrator')) {
+        throw Object.assign(new Error('Forbidden'), {
+          response: { status: 403, data: { message: 'Admin access required' } },
+        });
+      }
+      const { data, error } = await supabase
+        .from(TABLES.USERS)
+        .select('id, name, username, email, role, status, created_at');
+      if (error) {
+        throw error;
+      }
+      const results = data.map((u) => ({
+        id: u.id,
+        username: u.username || u.name || u.email,
+        email: u.email,
+        role: u.user_metadata?.role || u.role || 'individual',
+        status: u.status || 'Active',
+        created_at: u.created_at,
+      }));
+      return success({ results });
+    }
+
     return failure(`GET ${path} not implemented`, 404);
   },
 
