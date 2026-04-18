@@ -103,9 +103,14 @@ function Home() {
   const fetchCases = async () => {
     try {
       const response = await axiosInstance.get('/advocate/cases/');
-      setCases(response.data);
+      const data = response.data || {};
+      setCases({
+        cases_count: data.cases_count || 0,
+        results: Array.isArray(data.results) ? data.results : [],
+      });
     } catch (error) {
       console.error('Error fetching cases:', error);
+      setCases({ cases_count: 0, results: [] });
     } finally {
       setLoadingCases(false);
     }
@@ -114,10 +119,14 @@ function Home() {
   const fetchClients = async () => {
     try {
       const response = await axiosInstance.get('/advocate/clients/');
-      const data = await response.data;
-      setClients(data);
+      const data = response.data || {};
+      setClients({
+        clients_count: data.clients_count || 0,
+        results: Array.isArray(data.results) ? data.results : [],
+      });
     } catch (error) {
       console.error('Error fetching clients:', error);
+      setClients({ clients_count: 0, results: [] });
     } finally {
       setLoadingClients(false);
     }
@@ -126,10 +135,11 @@ function Home() {
   const fetchTasks = async () => {
     try {
       const response = await axiosInstance.get('/tasks/');
-      const data = await response.data.results;
-      setTasks(data);
+      const data = response.data?.results ?? [];
+      setTasks(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching tasks:', error);
+      setTasks([]);
     } finally {
       setLoadingTasks(false);
     }
@@ -568,7 +578,7 @@ function Home() {
                   dataKey="value"
                   label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                 >
-                  {dataPie1.map((entry, index) => (
+                  {(dataPie1 || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS1[index % COLORS1.length]} />
                   ))}
                 </Pie>
@@ -614,7 +624,7 @@ function Home() {
                   dataKey="value"
                   label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                 >
-                  {dataPie2.map((entry, index) => (
+                  {(dataPie2 || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS2[index % COLORS2.length]} />
                   ))}
                 </Pie>
@@ -757,8 +767,8 @@ function Home() {
                   }}
                 >
                   <h3 style={{ margin: 0, fontWeight: 600, color: '#102a43' }}>Priority Tasks</h3>
-                  <Tag color={tasks.filter((t) => !t.status).length > 5 ? 'red' : 'green'}>
-                    {tasks.filter((t) => !t.status).length} pending
+                  <Tag color={(tasks || []).filter((t) => !t.status).length > 5 ? 'red' : 'green'}>
+                    {(tasks || []).filter((t) => !t.status).length} pending
                   </Tag>
                 </div>
                 {loadingTasks ? (
@@ -766,7 +776,7 @@ function Home() {
                 ) : (
                   <>
                     <Table
-                      dataSource={tasks.slice((currentPage - 1) * 3, currentPage * 3)}
+                      dataSource={(tasks || []).slice((currentPage - 1) * 3, currentPage * 3)}
                       columns={columns}
                       pagination={false}
                       size="small"
@@ -777,7 +787,7 @@ function Home() {
                       <Pagination
                         current={currentPage}
                         pageSize={3}
-                        total={tasks.length}
+                        total={(tasks || []).length}
                         onChange={(page) => setCurrentPage(page)}
                         size="small"
                       />
@@ -809,7 +819,7 @@ function Home() {
             <h3>Upcoming Events</h3>
             <List
               itemLayout="horizontal"
-              dataSource={tasks}
+              dataSource={tasks || []}
               renderItem={(item) => (
                 <List.Item>
                   <List.Item.Meta

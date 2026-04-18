@@ -43,7 +43,7 @@ const Navbar = () => {
   ];
 
   const userMenu = (
-    <Menu style={{ background: '#000000', border: '1px solid #333' }}>
+    <Menu theme="dark" style={{ background: '#000000', border: '1px solid #333' }}>
       <div className="text-center mb-4" style={{ padding: '13px' }}>
         <h2 style={{ color: '#ffffff', marginBottom: '10px' }}>{user?.username}</h2>
         <p style={{ color: '#888' }}>{user?.email}</p>
@@ -130,7 +130,7 @@ const Navbar = () => {
         {isMobile && (
           <Dropdown
             overlay={
-              <Menu style={{ background: '#000', border: '1px solid #333' }}>
+              <Menu theme="dark" style={{ background: '#000', border: '1px solid #333' }}>
                 {menuItems.map((item) => (
                   <Menu.Item key={item.key} onClick={() => navigate(item.path)}>
                     {item.label}
