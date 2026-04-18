@@ -19,8 +19,6 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.SUPABASE_ANON_KEY': JSON.stringify(env.SUPABASE_ANON_KEY || ''),
       'import.meta.env.SENTRY_DSN': JSON.stringify(env.SENTRY_DSN || ''),
       'import.meta.env.GA_ID': JSON.stringify(env.GA_ID || ''),
-      'import.meta.env.GROQ_API_KEY': JSON.stringify(env.GROQ_API_KEY || ''),
-      'import.meta.env.ZAI_API_KEY': JSON.stringify(env.ZAI_API_KEY || ''),
     },
   };
 });
