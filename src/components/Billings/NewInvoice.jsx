@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, DatePicker, InputNumber, Row, Col, Divider, message } from 'antd';
+import { useCurrency } from "../contexts/CurrencyContext";
+import { formatCurrency } from "../utils/currency";
 import axiosInstance from '../../axiosConfig';
 import moment from 'moment';
 
@@ -229,3 +231,6 @@ const NewInvoice = () => {
 };
 
 export default NewInvoice;
+
+
+

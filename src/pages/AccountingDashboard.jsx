@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   DollarSign,
   TrendingUp,
@@ -11,6 +11,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Card, Statistic, Progress, Tag, Table, Button, message } from 'antd';
+import { useCurrency } from "../contexts/CurrencyContext";
 import { useTheme } from '../contexts/ThemeContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import {
@@ -25,11 +26,14 @@ import {
   Pie,
   Cell,
 } from 'recharts';
+import { useCurrency } from "../contexts/CurrencyContext";
+import { formatCurrency } from "../utils/currency";
 import axiosInstance from '../axiosConfig';
 import { useNavigate } from 'react-router-dom';
 
 const AccountingDashboard = () => {
   const { isFuturistic } = useTheme();
+  const { currency } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
 
@@ -473,3 +477,6 @@ const AccountingDashboard = () => {
 };
 
 export default AccountingDashboard;
+
+
+

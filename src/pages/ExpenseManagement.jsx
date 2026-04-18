@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   DollarSign,
   Plus,
@@ -23,9 +23,12 @@ import {
   Tag as AntTag,
   message,
 } from 'antd';
+import { useCurrency } from "../contexts/CurrencyContext";
 import { useTheme } from '../contexts/ThemeContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import axiosInstance from '../axiosConfig';
+import { formatCurrency } from '../utils/currency';
 /* eslint-disable no-console */
 
 const { Option } = Select;
@@ -33,6 +36,8 @@ const { TextArea } = Input;
 
 const ExpenseManagement = () => {
   const { isFuturistic } = useTheme();
+  const { currency } = useCurrency();
+  const { currency } = useCurrency();
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -90,7 +95,7 @@ const ExpenseManagement = () => {
       title: 'Amount',
       dataIndex: 'amount',
       key: 'amount',
-      render: (amount) => <span className="font-semibold">${amount.toLocaleString()}</span>,
+      render: (amount) => <span className="font-semibold">{formatCurrency(amount, currency)}</span>,
       sorter: (a, b) => a.amount - b.amount,
     },
     {
@@ -274,7 +279,10 @@ const ExpenseManagement = () => {
               <p
                 className={`text-2xl font-bold ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
               >
-                ${expenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
+                {formatCurrency(
+                  expenses.reduce((sum, e) => sum + e.amount, 0),
+                  currency
+                )}
               </p>
             </div>
           </div>
@@ -351,7 +359,10 @@ const ExpenseManagement = () => {
               <p
                 className={`text-2xl font-bold ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
               >
-                {expenses.length}
+                {formatCurrency(
+                  expenses.reduce((sum, e) => sum + e.amount, 0),
+                  currency
+                )}
               </p>
             </div>
           </div>
@@ -443,3 +454,6 @@ const ExpenseManagement = () => {
 };
 
 export default ExpenseManagement;
+
+
+

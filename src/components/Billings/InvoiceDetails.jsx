@@ -1,9 +1,12 @@
-import React from 'react';
+﻿import React from 'react';
 import { Button, Card, Tag } from 'antd';
 import { Printer, ArrowLeft, Download, CheckCircle, Clock } from 'lucide-react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useCurrency } from "../contexts/CurrencyContext";
 import { useTheme } from '../../contexts/ThemeContext';
 import Breadcrumbs from '../ui/Breadcrumbs';
+import { useCurrency } from "../contexts/CurrencyContext";
+import { formatCurrency } from "../utils/currency";
 import axiosInstance from '../../axiosConfig';
 
 const InvoiceDetails = () => {
@@ -233,3 +236,6 @@ const InvoiceDetails = () => {
 };
 
 export default InvoiceDetails;
+
+
+

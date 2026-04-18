@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   Users,
   UserPlus,
@@ -27,8 +27,11 @@ import {
   message,
   Tabs,
 } from 'antd';
+import { useCurrency } from "../contexts/CurrencyContext";
 import { useTheme } from '../contexts/ThemeContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
+import { useCurrency } from "../contexts/CurrencyContext";
+import { formatCurrency } from "../utils/currency";
 import axiosInstance from '../axiosConfig';
 /* eslint-disable no-console */
 
@@ -36,6 +39,7 @@ const { Option } = Select;
 
 const HRManagement = () => {
   const { isFuturistic } = useTheme();
+  const { currency } = useCurrency();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -508,7 +512,7 @@ const HRManagement = () => {
                             <p
                               className={`text-sm m-0 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
                             >
-                              {emp.currentLeave?.type || 'Annual Leave'} •{' '}
+                              {emp.currentLeave?.type || 'Annual Leave'} â€¢{' '}
                               {emp.currentLeave?.daysRemaining || 0} days remaining
                             </p>
                           </div>
@@ -775,3 +779,6 @@ const HRManagement = () => {
 };
 
 export default HRManagement;
+
+
+

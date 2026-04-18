@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Download, TrendingUp, TrendingDown, DollarSign, Users } from 'lucide-react';
 import { Card, Button, DatePicker, Select, Table, Tag, Statistic, message } from 'antd';
+import { useCurrency } from "../contexts/CurrencyContext";
 import { useTheme } from '../contexts/ThemeContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import {
@@ -15,6 +16,8 @@ import {
   Pie,
   Cell,
 } from 'recharts';
+import { useCurrency } from "../contexts/CurrencyContext";
+import { formatCurrency } from "../utils/currency";
 import axiosInstance from '../axiosConfig';
 import { useNavigate } from 'react-router-dom';
 /* eslint-disable no-console */
@@ -24,6 +27,7 @@ const { Option } = Select;
 
 const FinancialReports = () => {
   const { isFuturistic } = useTheme();
+  const { currency } = useCurrency();
   const navigate = useNavigate();
   const [reportData, setReportData] = useState(null);
 
@@ -344,3 +348,6 @@ const FinancialReports = () => {
 };
 
 export default FinancialReports;
+
+
+

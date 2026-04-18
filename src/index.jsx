@@ -7,6 +7,7 @@ import reportWebVitals from './reportWebVitals';
 import intitializeAnalytics from './analytics';
 import { AuthProvider } from './contexts/authContext.jsx';
 import ThemeProvider from './contexts/ThemeContext.jsx';
+import { CurrencyProvider } from './contexts/CurrencyContext.jsx';
 import { initializeSentry } from './config/sentry';
 
 initializeSentry();
@@ -26,7 +27,9 @@ root.render(
   <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
     <AuthProvider>
       <ThemeProvider>
-        <App />
+        <CurrencyProvider>
+          <App />
+        </CurrencyProvider>
       </ThemeProvider>
     </AuthProvider>
   </BrowserRouter>
