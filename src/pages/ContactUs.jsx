@@ -48,13 +48,13 @@ const ContactUsForm = () => {
   const contactInfo = [
     {
       icon: EnvironmentOutlined,
-      title: 'Head Office',
+      title: 'Our Office',
       lines: ['WakiliWorld Ltd.', 'Nairobi, Kenya'],
       highlight: false,
     },
     {
       icon: PhoneOutlined,
-      title: 'Phone',
+      title: 'Call us',
       lines: ['+254 791 472 688'],
       highlight: true,
     },
@@ -66,8 +66,8 @@ const ContactUsForm = () => {
     },
     {
       icon: ClockCircleOutlined,
-      title: 'Support Hours',
-      lines: ['Monday - Friday: 8:00 AM - 8:00 PM EAT', 'Saturday: 9:00 AM - 5:00 PM EAT'],
+      title: "When we're available",
+      lines: ['Mon–Fri: 8 AM – 8 PM EAT', 'Sat: 9 AM – 5 PM EAT'],
       highlight: false,
     },
   ];
@@ -95,14 +95,15 @@ const ContactUsForm = () => {
           className={`mb-4 ${isFuturistic ? 'text-aurora-text' : 'text-primary-900'}`}
           style={{ fontSize: '42px', fontWeight: 700 }}
         >
-          Get in Touch
+          We're here to help
         </Title>
         <Text
           className={`text-lg block max-w-xl mx-auto ${
             isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'
           }`}
         >
-          Have questions? Need help? Our team is here for you. We typically respond within 24 hours.
+          Got questions? Need support? Just say hello — we'd love to hear from you. We typically
+          respond within a few hours.
         </Text>
       </div>
 
@@ -129,11 +130,11 @@ const ContactUsForm = () => {
                   level={3}
                   className={`mb-2 ${isFuturistic ? 'text-aurora-text' : 'text-primary-900'}`}
                 >
-                  Message Ready
+                  Message sent!
                 </Title>
                 <Text className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}>
-                  Your email client should open with the pre-filled message. If it does not open,
-                  please email us directly at admin@techwithbrands.com
+                  Your email client is open with the message ready to go. If nothing happened, you
+                  can also reach us directly at admin@techwithbrands.com — we're here to help.
                 </Text>
                 <div className="mt-6">
                   <Button
@@ -222,7 +223,7 @@ const ContactUsForm = () => {
                 >
                   <Input.TextArea
                     rows={5}
-                    placeholder="How can we help you?"
+                    placeholder="Tell us what you need..."
                     size="large"
                     style={inputStyle}
                     className={isFuturistic ? 'futuristic-input' : ''}
@@ -265,7 +266,7 @@ const ContactUsForm = () => {
               level={3}
               className={`mb-8 ${isFuturistic ? 'text-aurora-text' : 'text-primary-900'}`}
             >
-              Contact Information
+              Ways to reach us
             </Title>
 
             <div className="space-y-8">

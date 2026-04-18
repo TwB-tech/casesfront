@@ -1,42 +1,37 @@
 import * as Sentry from '@sentry/react';
 
 export const initializeSentry = () => {
-  if (import.meta.env.DEV || !import.meta.env.REACT_APP_SENTRY_DSN) {
+  const dsn =
+    import.meta.env.SENTRY_DSN ||
+    import.meta.env.VITE_SENTRY_DSN ||
+    import.meta.env.REACT_APP_SENTRY_DSN;
+
+  if (!dsn || import.meta.env.DEV) {
     return;
   }
 
   Sentry.init({
-    dsn: import.meta.env.REACT_APP_SENTRY_DSN,
-    tracesSampleRate: 0.1, // 10% of transactions for performance monitoring
+    dsn,
+    tracesSampleRate: 0.1,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
     integrations: [
-      Sentry.browserTracingIntegration({
-        tracingOrigins: ['localhost', /^\//],
-      }),
       Sentry.replayIntegration({
         maskAllText: true,
         blockAllMedia: true,
       }),
     ],
-    beforeSend(event, _hint) {
-      // Sanitize sensitive data before sending
+    beforeSend(event) {
       if (event.request) {
         delete event.request.cookies;
         delete event.request.headers;
       }
-
-      // Remove PII from user context
       if (event.user) {
         delete event.user.email;
         delete event.user.ip_address;
       }
-
       return event;
     },
-    denyUrls: [
-      // Don't send errors from these URLs
-      /^\/api\/auth\/login/,
-      /^\/api\/auth\/register/,
-    ],
   });
 };
 

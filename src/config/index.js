@@ -4,16 +4,24 @@
  */
 
 // Database mode flag: 'supabase' | 'standalone' (localStorage mock)
-// Supports both REACT_APP_* (CRA) and plain vars (Vercel style)
 const dbMode =
-  import.meta.env.REACT_APP_DATABASE_MODE || import.meta.env.DATABASE_MODE || 'standalone';
+  import.meta.env.DATABASE_MODE ||
+  import.meta.env.VITE_DATABASE_MODE ||
+  import.meta.env.REACT_APP_DATABASE_MODE ||
+  'standalone';
 export const USE_SUPABASE = dbMode === 'supabase';
 export const USE_STANDALONE = dbMode === 'standalone';
 
-// Supabase Configuration - supports both prefixed and non-prefixed env vars
+// Supabase Configuration - prioritizes plain env vars (no VITE_ prefix)
 export const SUPABASE_CONFIG = {
-  URL: import.meta.env.SUPABASE_URL || import.meta.env.REACT_APP_SUPABASE_URL,
-  ANON_KEY: import.meta.env.SUPABASE_ANON_KEY || import.meta.env.REACT_APP_SUPABASE_ANON_KEY,
+  URL:
+    import.meta.env.SUPABASE_URL ||
+    import.meta.env.VITE_SUPABASE_URL ||
+    import.meta.env.REACT_APP_SUPABASE_URL,
+  ANON_KEY:
+    import.meta.env.SUPABASE_ANON_KEY ||
+    import.meta.env.VITE_SUPABASE_ANON_KEY ||
+    import.meta.env.REACT_APP_SUPABASE_ANON_KEY,
 };
 
 // Security Configuration (kept for compatibility)

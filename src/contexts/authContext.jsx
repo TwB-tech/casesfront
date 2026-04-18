@@ -166,8 +166,8 @@ const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await axiosInstance.post('/auth/logout/');
-    } catch (error) {
-      void error;
+    } catch {
+      // Ignore logout errors - user is logging out anyway
     }
     localStorage.removeItem('userInfo');
     localStorage.removeItem('accessToken');

@@ -11,7 +11,7 @@ import { Layout, Skeleton } from 'antd';
 import ProtectedRoute, { AccountingRoute, HRRoute } from './utils/ProtectedRoute';
 import ReactGA from 'react-ga4';
 import ReyaAssistant from './components/Reya/ReyaAssistant';
-import { useTheme } from './contexts/ThemeContext';
+import { useTheme } from './contexts/ThemeContext.jsx';
 import Breadcrumbs from './components/ui/Breadcrumbs';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -45,6 +45,9 @@ const Profile = lazy(() => import('./pages/Profile'));
 const AboutPage = lazy(() => import('./pages/About'));
 const ContactUsPage = lazy(() => import('./pages/ContactUs'));
 const Pricing = lazy(() => import('./pages/Pricing'));
+const Features = lazy(() => import('./pages/Features'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
 const OnboardingRequest = lazy(() => import('./components/OnboardingRequest'));
 const FirmsMarketplace = lazy(() => import('./pages/FirmsMarketplace'));
 const AccountingDashboard = lazy(() => import('./pages/AccountingDashboard'));
@@ -106,6 +109,9 @@ function AppContent() {
     '/password-reset-success',
     '/verify-email',
     '/pricing',
+    '/features',
+    '/privacy',
+    '/terms',
     '/firms',
     '*',
   ];
@@ -131,9 +137,7 @@ function AppContent() {
               padding: isMobile ? '16px' : '24px',
               flexGrow: 1,
               transition: 'margin-left 0.2s, background 0.3s ease',
-              background: isFuturistic
-                ? 'linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0f0f18 100%)'
-                : 'linear-gradient(106.5deg, #f8fafc 0%, #f1f5f9 100%)',
+              background: '#000000',
               minHeight: 'calc(100vh - 64px)',
             }}
           >
@@ -371,6 +375,9 @@ function AppContent() {
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/contact" element={<ContactUsPage />} />
                     <Route path="/pricing" element={<Pricing />} />
+                    <Route path="/features" element={<Features />} />
+                    <Route path="/privacy" element={<Privacy />} />
+                    <Route path="/terms" element={<Terms />} />
                     <Route path="/onboarding" element={<OnboardingRequest />} />
                     <Route path="/firms" element={<FirmsMarketplace />} />
                     <Route
@@ -423,8 +430,8 @@ function AppContent() {
         </Layout>
       </Layout>
 
-      {/* Reya AI Assistant - Only show for authenticated users */}
-      {isAuthenticated && <ReyaAssistant />}
+      {/* Reya AI Assistant - Show for all users (limited for guests) */}
+      <ReyaAssistant />
     </>
   );
 }

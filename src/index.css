@@ -3,18 +3,29 @@
 :root {
   --sidebar-bg: #001529;
   --sidebar-text: #ffffff;
-  --navbar-bg: #ffffff;
-  --body-bg: #f0f4f8;
-  --card-bg: #ffffff;
-  --accent-color: #1890ff;
-  --scrollbar-track: #f1f1f1;
-  --scrollbar-thumb: #829ab1;
+  --navbar-bg: #000000;
+  --body-bg: #000000;
+  --card-bg: #0d0d0d;
+  --accent-color: #8b5cf6;
+  --scrollbar-track: #1a1a1a;
+  --scrollbar-thumb: #404040;
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background: #000000;
+}
+
+#root {
+  width: 100%;
 }
 
 html {
@@ -31,11 +42,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--body-bg);
-  color: #1a1a1a;
-  transition:
-    background 0.3s ease,
-    color 0.3s ease;
+  background: #000000;
+  color: #ffffff;
 }
 
 code {

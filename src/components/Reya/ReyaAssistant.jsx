@@ -25,6 +25,11 @@ import useAuth from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../axiosConfig';
+import {
+  queryReaya as aiQuery,
+  quickAction as aiQuickAction,
+  ACTIVE_PROVIDER,
+} from '../../lib/reyaAiService';
 
 const ActionButton = ({ action, onClick, isFuturistic }) => {
   const getIcon = (iconName) => {
@@ -171,14 +176,20 @@ const ReyaAssistant = ({ context: _ = 'dashboard' }) => {
   const initialMessage = {
     id: 1,
     type: 'assistant',
-    content: `Greetings ${user?.username || 'Counsel'}. I am Reya, your intelligent legal assistant.\n\nI am connected to your practice management system with real-time access to ${cases.length} active cases, ${tasks.filter((t) => !t.status).length} pending tasks, and ${deadlines.length} upcoming deadlines.\n\nI can help you automate workflows, draft documents, delegate work, and provide strategic insights.\n\nWhat would you like assistance with today?`,
+    content: user
+      ? `Hi ${user?.username?.split(' ')[0] || 'there'}! I'm Reya. I can see you have ${cases.length} active cases and ${tasks.filter((t) => !t.status).length} pending tasks. How can I help you today?`
+      : `Hey! I'm Reya 👋. I'm your AI assistant for WakiliWorld. I can show you around or help you get started. What would you like to do?`,
     actions: [],
-    suggestions: [
-      { label: 'What are my priorities today?', action: 'priorities' },
-      { label: 'I am overwhelmed with work', action: 'overwhelmed' },
-      { label: 'Need law firm support', action: 'firms' },
-      { label: 'Create a new case', action: 'new_case' },
-    ],
+    suggestions: user
+      ? [
+          { label: 'Show my priorities', action: 'priorities' },
+          { label: 'I need help now', action: 'overwhelmed' },
+          { label: 'Find law firm support', action: 'firms' },
+        ]
+      : [
+          { label: 'See features', action: 'features' },
+          { label: 'Start free trial →', action: 'gentle_signup' },
+        ],
   };
 
   useEffect(() => {
@@ -196,80 +207,46 @@ const ReyaAssistant = ({ context: _ = 'dashboard' }) => {
   };
 
   const handleSend = async () => {
-    if (!input.trim()) {
-      return;
-    }
+    if (!input.trim()) return;
 
     const userMessage = input;
     setInput('');
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        type: 'user',
-        content: userMessage,
-      },
-    ]);
+    setMessages((prev) => [...prev, { id: Date.now(), type: 'user', content: userMessage }]);
 
     setIsTyping(true);
 
     try {
-      // Secure AI query with security headers
-      const requestId = crypto.randomUUID();
-      const aiResponse = await axiosInstance.post(
-        '/ai/reya/query/',
-        {
-          message: userMessage,
-          context: {
-            cases_count: cases.length,
-            clients_count: clients.length,
-            invoices_count: invoices.length,
-            pending_tasks: tasks.filter((t) => !t.status).length,
-            upcoming_deadlines: deadlines.length,
-            user_role: user?.role,
-            user_id: user?.id,
-          },
-          timestamp: Date.now(),
-          request_id: requestId,
-        },
-        {
-          headers: {
-            'X-Request-ID': requestId,
-            'X-Secure-Context': 'ai-assistant',
-            'X-User-Role': user?.role || 'user',
-          },
-          timeout: 15000,
-        }
-      );
+      // Use the new AI service (ZAI > Groq > fallback)
+      const aiResponse = await aiQuery(userMessage, {
+        cases_count: cases.length,
+        clients_count: clients.length,
+        invoices_count: invoices.length,
+        pending_tasks: tasks.filter((t) => !t.status).length,
+        upcoming_deadlines: deadlines.length,
+        user_role: user?.role,
+        user_id: user?.id,
+        is_authenticated: !!user,
+      });
 
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now() + 1,
           type: 'assistant',
-          content: aiResponse.data.content,
-          actions: aiResponse.data.actions || [],
-          suggestions: aiResponse.data.suggestions || [],
-          confidential: aiResponse.data.confidential || false,
+          ...aiResponse,
         },
       ]);
     } catch (error) {
-      // Fallback to contextual responses with graceful degradation
-      const fallbackResponse = getContextualResponse(userMessage);
-
+      // Final fallback: simple contextual response (minimal wordiness)
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now() + 1,
           type: 'assistant',
-          content:
-            fallbackResponse.content +
-            (error.response?.status === 401
-              ? '\n\n⚠️ AI features limited. Please refresh your session.'
-              : ''),
-          actions: fallbackResponse.actions,
-          suggestions: fallbackResponse.suggestions,
+          content: getSimpleFallback(userMessage),
+          actions: [],
+          suggestions: [],
         },
       ]);
     } finally {
@@ -292,44 +269,31 @@ const ReyaAssistant = ({ context: _ = 'dashboard' }) => {
     setIsTyping(true);
 
     try {
-      // Quick actions use optimized endpoint
-      const requestId = crypto.randomUUID();
-      const aiResponse = await axiosInstance.post(
-        '/ai/reya/quick-action/',
-        {
-          action: actionType.action || actionType,
-          context: {
-            cases: cases.length,
-            pending_tasks: tasks.filter((t) => !t.status).length,
-          },
-          request_id: requestId,
-        },
-        { timeout: 8000 }
-      );
+      const aiResponse = await aiQuickAction(actionType.action || actionType, {
+        cases: cases.length,
+        pending_tasks: tasks.filter((t) => !t.status).length,
+        is_authenticated: !!user,
+      });
 
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now() + 1,
           type: 'assistant',
-          content: aiResponse.data.content,
-          actions: aiResponse.data.actions || [],
-          suggestions: aiResponse.data.suggestions || [],
+          ...aiResponse,
         },
       ]);
     } catch (error) {
-      // Fallback to contextual response
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      const response = getContextualResponse(userQuery);
-
+      // Minimal fallback for quick actions
+      await new Promise((resolve) => setTimeout(resolve, 400));
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now() + 1,
           type: 'assistant',
-          content: response.content,
-          actions: response.actions,
-          suggestions: response.suggestions,
+          content: `Got it. Let me help with "${userQuery}". What specifics should I include?`,
+          actions: [],
+          suggestions: [],
         },
       ]);
     } finally {
@@ -337,9 +301,150 @@ const ReyaAssistant = ({ context: _ = 'dashboard' }) => {
     }
   };
 
+  // Concise fallback when AI services are unavailable
+  const getSimpleFallback = (query) => {
+    const q = query.toLowerCase();
+    if (q.includes('case') || q.includes('matter'))
+      return 'You can view all cases in the Cases section, or create a new one. Need me to open it?';
+    if (q.includes('document') || q.includes('draft'))
+      return 'I can draft letters, contracts, and more. What type do you need?';
+    if (q.includes('deadline') || q.includes('calendar'))
+      return 'Check your calendar for upcoming deadlines. Want me to list urgent ones?';
+    if (q.includes('client'))
+      return 'All your clients are in the Clients section. Need to add a new one?';
+    if (q.includes('invoice') || q.includes('billing'))
+      return 'Invoices are in the Billing section. I can help create one.';
+    if (q.includes('task') || q.includes('todo'))
+      return 'You have pending tasks in the Tasks list. Want me to show them?';
+    if (q.includes('firm') || q.includes('support'))
+      return 'Browse our law firm marketplace for on-demand help.';
+    if (q.includes('help') || q.includes('what can you'))
+      return 'I can manage cases, draft docs, track deadlines, handle billing, and connect you with firms. What first?';
+    return "I'm here to help. Try asking about cases, documents, deadlines, clients, or billing.";
+  };
+
   const getContextualResponse = (query) => {
     const lowerQuery = query.toLowerCase();
 
+    // Guest flows: conversational, conversion-oriented
+    if (!user) {
+      // Direct "do/act/help" queries
+      if (lowerQuery.includes('do') || lowerQuery.includes('act') || lowerQuery.includes('help')) {
+        return {
+          content: `Hey! I'm Reya 👋. I can show you what WakiliWorld can do, or if you're ready, I can set up a free account so you can try it all right now.
+
+What would you like?`,
+          actions: [],
+          suggestions: [
+            { label: 'Show me features', action: 'features' },
+            { label: 'Create free account →', action: 'gentle_signup' },
+          ],
+        };
+      }
+
+      // Features inquiry
+      if (
+        lowerQuery.includes('feature') ||
+        lowerQuery.includes('can you') ||
+        lowerQuery.includes('able to')
+      ) {
+        return {
+          content: `I'm your AI legal assistant. Here's what I can do:
+
+• Draft legal documents in seconds  
+• Track cases and deadlines automatically  
+• Manage clients and communications  
+• Connect you with law firms when you need backup  
+• Handle invoicing and billing  
+
+Want to try these live? Signing up takes 2 minutes and you get a free 7‑day trial.`,
+          actions: [],
+          suggestions: [
+            { label: 'Start free trial →', action: 'gentle_signup' },
+            { label: 'How much does it cost?', action: 'pricing_question' },
+          ],
+        };
+      }
+
+      // Pricing question
+      if (
+        lowerQuery.includes('price') ||
+        lowerQuery.includes('cost') ||
+        lowerQuery.includes('pricing')
+      ) {
+        return {
+          content: `Simple and flexible:
+
+**Free Trial** — 7 days, full access, no card required  
+**Solo** — $29/month for independent lawyers  
+**Firm** — $89/month for small teams (up to 10 users)  
+**Enterprise** — custom pricing  
+
+Every plan includes me — your AI assistant. Try it free for a week?`,
+          actions: [],
+          suggestions: [
+            { label: 'Sign up →', action: 'gentle_signup' },
+            { label: 'Compare plans', action: 'pricing' },
+          ],
+        };
+      }
+
+      // Sign‑up / register
+      if (
+        lowerQuery.includes('sign up') ||
+        lowerQuery.includes('register') ||
+        lowerQuery.includes('join') ||
+        lowerQuery.includes('create account')
+      ) {
+        return {
+          content: `I'd love to have you on board! With our free 7‑day trial you get:
+
+✅ Full access to all features  
+✅ No credit card needed to start  
+✅ Cancel anytime  
+
+Ready to give it a try?`,
+          actions: [],
+          suggestions: [
+            { label: 'Create account →', action: 'signup' },
+            { label: 'What features are included?', action: 'features' },
+          ],
+        };
+      }
+
+      // Law firm / support / delegate
+      if (
+        lowerQuery.includes('firm') ||
+        lowerQuery.includes('lawyer') ||
+        lowerQuery.includes('support') ||
+        lowerQuery.includes('delegate')
+      ) {
+        return {
+          content: `Our network connects you with verified law firms ready to help. Post a request and get responses within an hour. You only pay for completed work — no monthly fees.
+
+To access the firm marketplace, you need a WakiliWorld account. Want to sign up?`,
+          actions: [],
+          suggestions: [
+            { label: 'Sign up to browse firms', action: 'gentle_signup' },
+            { label: 'How does it work?', action: 'firm_info' },
+          ],
+        };
+      }
+
+      // Fallback for any other guest query
+      return {
+        content: `I can help you explore WakiliWorld. The best experience comes with a free account — you get full access for 7 days, no card needed.
+
+Want to start a trial?`,
+        actions: [],
+        suggestions: [
+          { label: 'Start free trial →', action: 'gentle_signup' },
+          { label: 'What can you do?', action: 'features' },
+        ],
+      };
+    }
+
+    // Authenticated user flows (existing logic)
     if (
       lowerQuery.includes('priority') ||
       lowerQuery.includes('today') ||

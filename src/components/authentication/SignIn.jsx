@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { message } from 'antd';
 import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { useTheme } from '../../contexts/ThemeContext';
+import Logo from '../../assets/LogoNoBg.png';
 
 function SignIn() {
   const [formData, setFormData] = useState({
@@ -57,7 +58,7 @@ function SignIn() {
         >
           <Link to="/" className="inline-block mb-6">
             <img
-              src={require('../../assets/LogoNoBg.png').default}
+              src={Logo}
               alt="WakiliWorld Logo"
               style={{ maxHeight: '60px', maxWidth: '60px' }}
             />

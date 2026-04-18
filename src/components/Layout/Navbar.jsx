@@ -5,14 +5,11 @@ import {
   MenuOutlined,
   LogoutOutlined,
   HomeOutlined,
-  BellOutlined,
-  MessageOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
 import Logo from '../../assets/LogoNoBg.png';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
-import { useTheme, THEMES } from '../../contexts/ThemeContext';
 
 const Navbar = () => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -21,7 +18,6 @@ const Navbar = () => {
   );
   const navigate = useNavigate();
   const { logout, user } = useAuth();
-  const { theme, toggleTheme, isFuturistic, themeConfig } = useTheme();
 
   useEffect(() => {
     const handleResize = () => {
@@ -38,272 +34,117 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  const handleNav = (path) => {
-    navigate(path);
-    setDropdownVisible(false);
-  };
-
-  const menu = (
-    <Menu className={isFuturistic ? 'futuristic-dropdown' : ''}>
-      <Menu.Item key="home" onClick={() => handleNav('/')}>
-        Home
-      </Menu.Item>
-      <Menu.Item key="features" onClick={() => handleNav('/#features')}>
-        Features
-      </Menu.Item>
-      <Menu.Item key="pricing" onClick={() => handleNav('/pricing')}>
-        Pricing
-      </Menu.Item>
-      <Menu.Item key="firms" onClick={() => handleNav('/firms')}>
-        Law Firms
-      </Menu.Item>
-      <Menu.Item key="about" onClick={() => handleNav('/about')}>
-        About
-      </Menu.Item>
-      <Menu.Item key="contact" onClick={() => handleNav('/contact')}>
-        Contact Us
-      </Menu.Item>
-    </Menu>
-  );
+  const menuItems = [
+    { key: 'features', label: 'Features', path: '/features' },
+    { key: 'firms', label: 'Find Firms', path: '/firms' },
+    { key: 'pricing', label: 'Pricing', path: '/pricing' },
+    { key: 'about', label: 'About', path: '/about' },
+    { key: 'contact', label: 'Contact', path: '/contact' },
+  ];
 
   const userMenu = (
-    <Menu style={{ padding: '13px' }} className={isFuturistic ? 'futuristic-dropdown' : ''}>
-      <div className="text-center mb-4">
-        <h2
-          style={{
-            textAlign: 'center',
-            marginBottom: '10px',
-            color: isFuturistic ? '#f8fafc' : '#1a1a1a',
-          }}
-        >
-          {user?.username}
-        </h2>
-        <p style={{ color: isFuturistic ? '#94a3b8' : '#757575', fontSize: '12px', margin: 0 }}>
-          {user?.email}
-        </p>
+    <Menu style={{ background: '#000000', border: '1px solid #333' }}>
+      <div className="text-center mb-4" style={{ padding: '13px' }}>
+        <h2 style={{ color: '#ffffff', marginBottom: '10px' }}>{user?.username}</h2>
+        <p style={{ color: '#888' }}>{user?.email}</p>
       </div>
-      <div
-        className={`border-t border-b py-3 mb-3 ${isFuturistic ? 'border-cyber-border' : 'border-neutral-200'}`}
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <span className={`text-sm ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
-            Theme:
-          </span>
-          <Button
-            size="small"
-            type={theme === THEMES.CLASSIC ? 'primary' : 'default'}
-            onClick={() => theme !== THEMES.CLASSIC && toggleTheme()}
-            className={theme === THEMES.CLASSIC ? '' : isFuturistic ? 'bg-cyber-surface' : ''}
-          >
-            Classic
-          </Button>
-          <Button
-            size="small"
-            type={theme === THEMES.FUTURISTIC ? 'primary' : 'default'}
-            onClick={() => theme !== THEMES.FUTURISTIC && toggleTheme()}
-            className={
-              theme === THEMES.FUTURISTIC
-                ? 'futuristic-btn'
-                : isFuturistic
-                  ? 'bg-cyber-surface'
-                  : ''
-            }
-          >
-            Futuristic
-          </Button>
-        </div>
-      </div>
-      {isMobile && (
-        <>
-          <Menu.Item key="notifications">
-            <BellOutlined /> Notifications
-          </Menu.Item>
-          <Menu.Item key="messages">
-            <MessageOutlined /> Messages
-          </Menu.Item>
-        </>
-      )}
-      <Menu.Item key="dashboard" onClick={() => handleNav('/home')}>
-        <HomeOutlined /> Dashboard
-      </Menu.Item>
-      {user?.role === 'admin' && (
-        <Menu.Item key="admin" onClick={() => handleNav('/admin-dashboard')}>
-          <SettingOutlined /> Admin
-        </Menu.Item>
-      )}
-      <Menu.Item key="profile" onClick={() => handleNav('/profile')}>
-        <UserOutlined /> Profile
-      </Menu.Item>
-      <Menu.Item key="logout" onClick={handleLogout}>
-        <LogoutOutlined /> Logout
-      </Menu.Item>
+      <Menu.Item onClick={() => navigate('/home')}>Dashboard</Menu.Item>
+      <Menu.Item onClick={() => navigate('/profile')}>Profile</Menu.Item>
+      <Menu.Item onClick={() => navigate('/settings')}>Settings</Menu.Item>
+      <Menu.Divider />
+      <Menu.Item onClick={handleLogout}>Logout</Menu.Item>
     </Menu>
   );
 
+  const navStyle = {
+    background: '#000000',
+    borderBottom: '1px solid #222',
+    padding: '0 24px',
+    height: '64px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+  };
+
+  const linkStyle = {
+    color: '#ccc',
+    textDecoration: 'none',
+    fontSize: '14px',
+    fontWeight: 500,
+    transition: 'color 0.2s',
+  };
+
+  const buttonStyle = {
+    background: '#8b5cf6',
+    border: 'none',
+    color: '#fff',
+    padding: '8px 20px',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: 500,
+    cursor: 'pointer',
+  };
+
   return (
-    <div
-      className={`navbar ${isFuturistic ? 'navbar-futuristic' : 'navbar-classic'}`}
-      style={{
-        background: themeConfig.navbar.bg,
-        borderBottom: `1px solid ${isFuturistic ? themeConfig.navbar.border : '#e0e0e0'}`,
-      }}
-    >
-      {/* Clickable Logo */}
-      <div
-        className="navbar-logo cursor-pointer flex items-center gap-3"
-        onClick={() => navigate('/')}
-        role="link"
-        tabIndex={0}
-        onKeyPress={(e) => e.key === 'Enter' && navigate('/')}
-      >
-        <img
-          src={Logo}
-          alt="WakiliWorld Logo"
-          style={{ maxHeight: '44px', maxWidth: '44px', cursor: 'pointer' }}
-        />
-        <div
-          className="navbar-company hidden sm:flex"
-          style={{ color: isFuturistic ? '#f8fafc' : '#102a43' }}
-        >
-          <span>Wakili</span>
-          <span style={{ color: isFuturistic ? '#6366f1' : '#1890ff' }}>World</span>
-        </div>
-      </div>
-
-      {/* Navigation Menu - Desktop */}
-      <div className="navbar-menus">
-        <div className="desktop-menu">
-          <Button
-            type="link"
-            className={`menu-item ${isFuturistic ? 'menu-item-futuristic' : ''}`}
-            onClick={() => handleNav('/')}
-            style={{ color: isFuturistic ? '#f8fafc' : '#102a43' }}
-          >
-            Home
-          </Button>
-          <Button
-            type="link"
-            className={`menu-item ${isFuturistic ? 'menu-item-futuristic' : ''}`}
-            onClick={() => handleNav('/pricing')}
-            style={{ color: isFuturistic ? '#f8fafc' : '#102a43' }}
-          >
-            Pricing
-          </Button>
-          <Button
-            type="link"
-            className={`menu-item ${isFuturistic ? 'menu-item-futuristic' : ''}`}
-            onClick={() => handleNav('/firms')}
-            style={{ color: isFuturistic ? '#f8fafc' : '#102a43' }}
-          >
-            Law Firms
-          </Button>
-          <Button
-            type="link"
-            className={`menu-item ${isFuturistic ? 'menu-item-futuristic' : ''}`}
-            onClick={() => handleNav('/about')}
-            style={{ color: isFuturistic ? '#f8fafc' : '#102a43' }}
-          >
-            About
-          </Button>
-          <Button
-            type="link"
-            className={`menu-item ${isFuturistic ? 'menu-item-futuristic' : ''}`}
-            onClick={() => handleNav('/contact')}
-            style={{ color: isFuturistic ? '#f8fafc' : '#102a43' }}
-          >
-            Contact
-          </Button>
+    <nav style={navStyle}>
+      <div className="flex items-center gap-8">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+          <img src={Logo} alt="WakiliWorld" style={{ height: '36px' }} />
+          <span style={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>
+            Wakili<span style={{ color: '#8b5cf6' }}>World</span>
+          </span>
         </div>
 
-        {/* Mobile Menu */}
-        <div className="mobile-menu">
-          <Dropdown
-            overlay={menu}
-            trigger={['click']}
-            visible={dropdownVisible}
-            onVisibleChange={setDropdownVisible}
-          >
-            <MenuOutlined
-              onClick={() => setDropdownVisible(!dropdownVisible)}
-              style={{
-                color: isFuturistic ? '#f8fafc' : '#102a43',
-                fontSize: '20px',
-                cursor: 'pointer',
-              }}
-            />
-          </Dropdown>
-        </div>
-      </div>
-
-      {/* Auth Buttons */}
-      <div className="navbar-avatar">
-        {user ? (
-          <>
-            {!isMobile && (
-              <>
-                <BellOutlined
-                  style={{
-                    fontSize: '18px',
-                    marginRight: '12px',
-                    cursor: 'pointer',
-                    color: isFuturistic ? '#94a3b8' : '#757575',
-                    transition: 'color 0.2s',
-                  }}
-                  className="hover:opacity-80"
-                  onClick={() => {}}
-                />
-                <MessageOutlined
-                  style={{
-                    fontSize: '18px',
-                    marginRight: '12px',
-                    cursor: 'pointer',
-                    color: isFuturistic ? '#94a3b8' : '#757575',
-                    transition: 'color 0.2s',
-                  }}
-                  className="hover:opacity-80"
-                  onClick={() => handleNav('/mailing')}
-                />
-              </>
-            )}
-            <Dropdown overlay={userMenu} placement="bottomCenter" trigger={['click']}>
-              <Avatar
-                icon={user ? user.email[0].toUpperCase() : <UserOutlined />}
-                size={36}
-                style={{
-                  border: isFuturistic ? '2px solid #6366f1' : '2px solid #22a85a',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  background: isFuturistic
-                    ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
-                    : '#1890ff',
-                }}
-                className="hover:scale-105 transition-transform"
-              />
-            </Dropdown>
-          </>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => handleNav('/login')}
-              className={isFuturistic ? 'border-cyber-border text-aurora-text' : ''}
-              style={{
-                borderColor: isFuturistic ? '#2a2a3a' : undefined,
-                color: isFuturistic ? '#f8fafc' : undefined,
-              }}
-            >
-              Login
-            </Button>
-            <Button
-              type="primary"
-              onClick={() => handleNav('/signup')}
-              className={isFuturistic ? 'futuristic-btn' : ''}
-            >
-              Get Started
-            </Button>
+        {!isMobile && (
+          <div className="flex items-center gap-6">
+            {menuItems.map((item) => (
+              <Link key={item.key} to={item.path} style={linkStyle}>
+                {item.label}
+              </Link>
+            ))}
           </div>
         )}
       </div>
-    </div>
+
+      <div className="flex items-center gap-4">
+        {user ? (
+          <Dropdown overlay={userMenu} trigger={['click']}>
+            <Avatar icon={<UserOutlined />} style={{ background: '#8b5cf6', cursor: 'pointer' }} />
+          </Dropdown>
+        ) : (
+          <div className="flex items-center gap-3">
+            <Link to="/login" style={{ ...linkStyle, color: '#fff' }}>
+              Sign In
+            </Link>
+            <Link to="/signup" style={buttonStyle}>
+              Get Started
+            </Link>
+          </div>
+        )}
+
+        {isMobile && (
+          <Dropdown
+            overlay={
+              <Menu style={{ background: '#000', border: '1px solid #333' }}>
+                {menuItems.map((item) => (
+                  <Menu.Item key={item.key} onClick={() => navigate(item.path)}>
+                    {item.label}
+                  </Menu.Item>
+                ))}
+              </Menu>
+            }
+            trigger={['click']}
+          >
+            <MenuOutlined style={{ color: '#fff', fontSize: '20px', cursor: 'pointer' }} />
+          </Dropdown>
+        )}
+      </div>
+    </nav>
   );
 };
 

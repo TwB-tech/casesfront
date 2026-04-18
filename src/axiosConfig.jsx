@@ -1,5 +1,7 @@
 import DOMPurify from 'dompurify';
 import { USE_SUPABASE } from './config';
+import supabaseApi from './lib/supabaseApi';
+// import { standaloneApi } from './lib/standaloneApi';
 
 // Sanitization helper (kept for compatibility but Supabase handles most)
 const sanitizeResponse = (value) => {
@@ -80,30 +82,14 @@ let apiInstance;
 
 if (USE_SUPABASE) {
   // Use Supabase API implementation
-  const supabaseApi = require('./lib/supabaseApi').default;
   apiInstance = supabaseApi;
 } else {
-  // Fallback to standalone localStorage mode (for demo/development without DB)
-  const standaloneApi = require('./lib/standaloneApi').standaloneApi;
-  // Wrap standalone API with sanitization for consistency
+  // Fallback to dummy API for now
   apiInstance = {
-    ...standaloneApi,
-    async get(url) {
-      const result = await standaloneApi.get(url);
-      return sanitizeApiResponse(result);
-    },
-    async post(url, payload) {
-      const result = await standaloneApi.post(url, payload);
-      return sanitizeApiResponse(result);
-    },
-    async put(url, payload) {
-      const result = await standaloneApi.put(url, payload);
-      return sanitizeApiResponse(result);
-    },
-    async delete(url) {
-      const result = await standaloneApi.delete(url);
-      return sanitizeApiResponse(result);
-    },
+    get: () => Promise.resolve({ data: [] }),
+    post: () => Promise.resolve({ data: {} }),
+    put: () => Promise.resolve({ data: {} }),
+    delete: () => Promise.resolve({ data: {} }),
   };
 }
 

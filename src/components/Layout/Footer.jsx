@@ -1,38 +1,77 @@
 import React from 'react';
-import { Layout } from 'antd';
-import moment from 'moment';
-import { useTheme } from '../../contexts/ThemeContext';
-
-const { Footer } = Layout;
+import { Link } from 'react-router-dom';
 
 const AppFooter = () => {
-  const currentYear = moment().format('YYYY');
-  const { isFuturistic } = useTheme();
-
   return (
-    <Footer
+    <footer
       style={{
-        backgroundColor: isFuturistic ? '#0a0a0f' : '#f8fafc',
-        color: isFuturistic ? '#94a3b8' : '#6b7280',
-        padding: '16px 5px',
+        backgroundColor: '#000000',
+        color: '#6b7280',
+        padding: '32px 24px',
         textAlign: 'center',
         width: '100%',
-        position: 'relative',
-        bottom: '0',
-        borderTop: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e5e7eb',
-        marginTop: 'auto',
-        fontSize: '13px',
+        borderTop: '1px solid #222',
       }}
-      className="mt-auto"
     >
-      <div className="flex items-center justify-center gap-2">
-        <span>&copy; {currentYear} WakiliWorld</span>
-        <span className="mx-2">|</span>
-        <span>Legal Practice Management</span>
-        <span className="mx-2">|</span>
-        <span>All Rights Reserved</span>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '24px',
+            marginBottom: '24px',
+          }}
+        >
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <span style={{ color: '#ffffff', fontWeight: 600 }}>Wakili</span>
+            <span style={{ color: '#8b5cf6', fontWeight: 600 }}>World</span>
+          </div>
+          <div style={{ display: 'flex', gap: '24px' }}>
+            <Link
+              to="/features"
+              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}
+            >
+              Features
+            </Link>
+            <Link
+              to="/pricing"
+              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}
+            >
+              Pricing
+            </Link>
+            <Link
+              to="/about"
+              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}
+            >
+              About
+            </Link>
+            <Link
+              to="/contact"
+              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}
+            >
+              Contact
+            </Link>
+            <Link
+              to="/privacy"
+              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}
+            >
+              Privacy
+            </Link>
+            <Link
+              to="/terms"
+              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}
+            >
+              Terms
+            </Link>
+          </div>
+        </div>
+        <div style={{ fontSize: '14px' }}>
+          {new Date().getFullYear()} WakiliWorld. All rights reserved.
+        </div>
       </div>
-    </Footer>
+    </footer>
   );
 };
 

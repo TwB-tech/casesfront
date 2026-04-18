@@ -1,12 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = import.meta.env.REACT_APP_SUPABASE_URL || 'https://your-project.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.REACT_APP_SUPABASE_ANON_KEY;
+const SUPABASE_URL =
+  import.meta.env.SUPABASE_URL ||
+  import.meta.env.VITE_SUPABASE_URL ||
+  import.meta.env.REACT_APP_SUPABASE_URL ||
+  'https://your-project.supabase.co';
+const SUPABASE_ANON_KEY =
+  import.meta.env.SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.REACT_APP_SUPABASE_ANON_KEY;
 
 // Validate configuration at module load
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error(
-    'Supabase configuration error: REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY must be set in .env'
+    'Supabase configuration error: SUPABASE_URL and SUPABASE_ANON_KEY must be set in .env'
   );
 }
 
