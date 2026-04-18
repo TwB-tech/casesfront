@@ -1,1 +1,0 @@
-import{l as e,r as t,t as n}from"./jsx-runtime-BwsvmyVi.js";var r=e(t());n();var i={CLASSIC:`classic`,FUTURISTIC:`futuristic`};i.CLASSIC,i.FUTURISTIC;var a=(0,r.createContext)(),o=()=>{let e=(0,r.useContext)(a);if(!e)throw Error(`useTheme must be used within a ThemeProvider`);return e};export{o as t};

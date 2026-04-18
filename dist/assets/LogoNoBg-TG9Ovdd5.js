@@ -1,0 +1,1 @@
+import{a as e,i as t}from"./jsx-runtime-6_byoLYo.js";var n=e({default:()=>r}),r,i=t((()=>{r=`/assets/LogoNoBg--4nAIGRy.png`}));export{n,i as r,r as t};

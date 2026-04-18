@@ -1,1 +1,0 @@
-import{l as e,r as t,t as n}from"./jsx-runtime-BwsvmyVi.js";import"./axiosConfig-Czfxzzcs.js";var r=e(t());n();var i=(0,r.createContext)(null);export{i as t};

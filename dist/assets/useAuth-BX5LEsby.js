@@ -1,1 +1,0 @@
-import{l as e,r as t}from"./jsx-runtime-BwsvmyVi.js";import{t as n}from"./authContext-CZmXYugH.js";var r=e(t()),i=()=>(0,r.useContext)(n);export{i as t};
