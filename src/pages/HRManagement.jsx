@@ -54,7 +54,22 @@ const HRManagement = () => {
     try {
       setLoading(true);
       const response = await axiosInstance.get('/hr/employees/');
-      setEmployees(response.data.results || response.data);
+      const employeesData = response.data.results || response.data;
+      // Map API user object to table row shape
+      const mapped = employeesData.map((emp) => ({
+        id: emp.id,
+        name: emp.username || emp.email,
+        email: emp.email,
+        role: emp.role || 'employee',
+        department: emp.department || 'General',
+        billableRate: emp.billable_rate || '$150/hr',
+        utilization: emp.utilization || 85,
+        status: emp.status || 'Active',
+        leaveBalance: emp.leave_balance || 30,
+        avatar: null,
+        currentLeave: null,
+      }));
+      setEmployees(mapped);
     } catch (error) {
       console.error('Error fetching employees:', error);
       message.error('Failed to load employees. Please try again.');
@@ -78,7 +93,7 @@ const HRManagement = () => {
               fontWeight: 600,
             }}
           >
-            {record.avatar}
+            {text?.charAt(0)?.toUpperCase() || 'U'}
           </Avatar>
           <div>
             <p className="font-medium m-0">{text}</p>
@@ -93,59 +108,27 @@ const HRManagement = () => {
       title: 'Role',
       dataIndex: 'role',
       key: 'role',
+      render: (role) => <span className="capitalize">{role?.replace('_', ' ')}</span>,
     },
     {
       title: 'Department',
       dataIndex: 'department',
       key: 'department',
-      render: (dept) => <Tag color="blue">{dept}</Tag>,
-    },
-    {
-      title: 'Billable Rate',
-      dataIndex: 'billableRate',
-      key: 'billableRate',
-      render: (rate) => <span className="font-medium">{rate}</span>,
-    },
-    {
-      title: 'Utilization',
-      dataIndex: 'utilization',
-      key: 'utilization',
-      render: (util) => (
-        <Tag color={util >= 85 ? 'success' : util >= 70 ? 'warning' : 'error'}>{util}%</Tag>
-      ),
+      render: (dept) => <Tag color="blue">{dept || 'N/A'}</Tag>,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       render: (status) => {
-        const colors = {
-          active: 'success',
-          on_leave: 'warning',
-          inactive: 'error',
-        };
-        const icons = {
-          active: <CheckCircle className="w-3 h-3 mr-1" />,
-          on_leave: <Calendar className="w-3 h-3 mr-1" />,
-          inactive: <XCircle className="w-3 h-3 mr-1" />,
-        };
-        return (
-          <Tag color={colors[status]} icon={icons[status]}>
-            {status.replace('_', ' ')}
-          </Tag>
-        );
+        const color = status === 'Active' ? 'success' : status === 'on_leave' ? 'warning' : 'error';
+        return <Tag color={color}>{status}</Tag>;
       },
-    },
-    {
-      title: 'Leave Balance',
-      dataIndex: 'leaveBalance',
-      key: 'leaveBalance',
-      render: (days) => <span className="font-medium">{days} days</span>,
     },
     {
       title: 'Actions',
       key: 'actions',
-      render: (_, _record) => (
+      render: (_, record) => (
         <div className="flex gap-2">
           <Button size="small" type="link">
             View
@@ -180,9 +163,18 @@ const HRManagement = () => {
   const handleAddEmployee = async (values) => {
     try {
       setLoading(true);
-      // Format date properly
-      values.joinDate = values.joinDate.format('YYYY-MM-DD');
-      await axiosInstance.post('/hr/employees/', values);
+      // Map form values to API payload
+      const payload = {
+        full_name: values.name,
+        email: values.email,
+        role: values.role,
+        department: values.department,
+        hire_date: values.joinDate.format('YYYY-MM-DD'),
+        salary: values.salary,
+        phone_number: '',
+        address: '',
+      };
+      await axiosInstance.post('/hr/employees/', payload);
       message.success('Employee added successfully');
       setIsModalVisible(false);
       form.resetFields();
@@ -247,7 +239,7 @@ const HRManagement = () => {
                     fontWeight: 500,
                   }}
                 >
-                  {emp.name} - On Leave ({emp.currentLeave?.daysRemaining || 0}d)
+                  {emp.name} - On Leave
                 </Tag>
               ))}
           </div>

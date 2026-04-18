@@ -82,8 +82,22 @@ const InvoiceList = () => {
       title: 'Amount',
       dataIndex: 'totalAmount',
       key: 'totalAmount',
-      render: (amount) => <span className="font-semibold">${amount?.toLocaleString() || 0}</span>,
-      sorter: (a, b) => (a.totalAmount || 0) - (b.totalAmount || 0),
+      render: (amount) => {
+        const num =
+          typeof amount === 'string' ? parseFloat(amount.replace(/[^0-9.]/g, '')) : amount;
+        return <span className="font-semibold">${num?.toLocaleString() || 0}</span>;
+      },
+      sorter: (a, b) => {
+        const na =
+          typeof a.totalAmount === 'string'
+            ? parseFloat(a.totalAmount.replace(/[^0-9.]/g, ''))
+            : a.totalAmount || 0;
+        const nb =
+          typeof b.totalAmount === 'string'
+            ? parseFloat(b.totalAmount.replace(/[^0-9.]/g, ''))
+            : b.totalAmount || 0;
+        return na - nb;
+      },
     },
     {
       title: 'Status',

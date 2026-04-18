@@ -77,13 +77,12 @@ const ExpenseManagement = () => {
       key: 'category',
       render: (category) => <AntTag color="blue">{category}</AntTag>,
       filters: [
-        { text: 'Court Fees', value: 'Court Fees' },
-        { text: 'Bar Dues', value: 'Bar Dues' },
-        { text: 'Expert Witnesses', value: 'Expert Witnesses' },
+        { text: 'Supplies', value: 'Supplies' },
+        { text: 'Entertainment', value: 'Entertainment' },
         { text: 'Technology', value: 'Technology' },
         { text: 'Operations', value: 'Operations' },
-        { text: 'Marketing', value: 'Marketing' },
         { text: 'Professional', value: 'Professional' },
+        { text: 'Travel', value: 'Travel' },
       ],
       onFilter: (value, record) => record.category === value,
     },
@@ -124,8 +123,9 @@ const ExpenseManagement = () => {
     },
     {
       title: 'Submitted By',
-      dataIndex: 'submittedBy',
+      dataIndex: 'submitted_by',
       key: 'submittedBy',
+      render: (name) => <span>{name}</span>,
     },
     {
       title: 'Actions',

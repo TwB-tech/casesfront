@@ -19,16 +19,19 @@ import {
   ProfileOutlined,
   SolutionOutlined,
   ShopOutlined,
+  SafetyOutlined,
 } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMediaQuery } from 'react-responsive';
 import { useTheme } from '../../contexts/ThemeContext';
 import ThemeSwitcher from './ThemeSwitcher';
+import useAuth from '../../hooks/useAuth';
 import './nav.css';
 
 const { Sider } = Layout;
 
-const ROUTE_CONFIG = [
+// Base routes for all authenticated users
+const BASE_ROUTES = [
   {
     key: 'dashboard',
     path: '/home',
@@ -84,14 +87,7 @@ const ROUTE_CONFIG = [
     path: '/accounting',
     label: 'Accounting',
     icon: DollarOutlined,
-    routes: ['/accounting', '/invoices', '/expenses'],
-  },
-  {
-    key: 'billing',
-    path: '/invoices',
-    label: 'Invoices',
-    icon: FileSearchOutlined,
-    routes: ['/invoices', '/invoice-details', '/new-invoice'],
+    routes: ['/accounting', '/invoices', '/expenses', '/reports/financial'],
   },
   {
     key: 'hr',
@@ -117,61 +113,11 @@ const ROUTE_CONFIG = [
     dividerAfter: true,
   },
   {
-    key: 'financial_reports',
-    path: '/reports/financial',
-    label: 'Financial Reports',
-    icon: BarChartOutlined,
-    routes: ['/reports/financial'],
-  },
-  {
-    key: 'case_reports',
+    key: 'reports',
     path: '/reports',
     label: 'Case Reports',
     icon: SolutionOutlined,
     routes: ['/reports', '/report-details', '/new-report'],
-    dividerAfter: true,
-  },
-  {
-    key: 'features',
-    path: '/features',
-    label: 'Features',
-    icon: SolutionOutlined,
-    routes: ['/features'],
-  },
-  {
-    key: 'pricing',
-    path: '/pricing',
-    label: 'Pricing',
-    icon: DollarOutlined,
-    routes: ['/pricing'],
-  },
-  {
-    key: 'about',
-    path: '/about',
-    label: 'About',
-    icon: UserOutlined,
-    routes: ['/about'],
-  },
-  {
-    key: 'contact',
-    path: '/contact',
-    label: 'Contact',
-    icon: MailOutlined,
-    routes: ['/contact'],
-  },
-  {
-    key: 'privacy',
-    path: '/privacy',
-    label: 'Privacy',
-    icon: FileOutlined,
-    routes: ['/privacy'],
-  },
-  {
-    key: 'terms',
-    path: '/terms',
-    label: 'Terms',
-    icon: FileOutlined,
-    routes: ['/terms'],
   },
   {
     key: 'profile',
@@ -185,56 +131,18 @@ const ROUTE_CONFIG = [
     path: '/settings',
     label: 'Settings',
     icon: SettingOutlined,
-    routes: ['/settings', '/user-settings', '/system-settings'],
+    routes: ['/settings'],
   },
+];
+
+// Admin-only routes
+const ADMIN_ROUTES = [
   {
-    key: 'profile',
-    path: '/profile',
-    label: 'Profile',
-    icon: ProfileOutlined,
-    routes: ['/profile'],
-  },
-  {
-    key: 'features',
-    path: '/features',
-    label: 'Features',
-    icon: SolutionOutlined,
-    routes: ['/features'],
-  },
-  {
-    key: 'pricing',
-    path: '/pricing',
-    label: 'Pricing',
-    icon: DollarOutlined,
-    routes: ['/pricing'],
-  },
-  {
-    key: 'about',
-    path: '/about',
-    label: 'About',
-    icon: UserOutlined,
-    routes: ['/about'],
-  },
-  {
-    key: 'contact',
-    path: '/contact',
-    label: 'Contact',
-    icon: MailOutlined,
-    routes: ['/contact'],
-  },
-  {
-    key: 'privacy',
-    path: '/privacy',
-    label: 'Privacy',
-    icon: FileOutlined,
-    routes: ['/privacy'],
-  },
-  {
-    key: 'terms',
-    path: '/terms',
-    label: 'Terms',
-    icon: FileOutlined,
-    routes: ['/terms'],
+    key: 'admin',
+    path: '/admin-dashboard',
+    label: 'Admin Dashboard',
+    icon: SafetyOutlined,
+    routes: ['/admin-dashboard'],
   },
 ];
 
@@ -244,8 +152,18 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { themeConfig, isFuturistic } = useTheme();
+  const { user } = useAuth();
   const [drawerVisible, setDrawerVisible] = useState(false);
   const isMobile = useMediaQuery({ query: '(max-width: 780px)' });
+
+  // Combine base routes with admin routes if user is admin
+  const ROUTE_CONFIG = useMemo(() => {
+    let routes = [...BASE_ROUTES];
+    if (user && (user.role === 'admin' || user.role === 'administrator')) {
+      routes = [...routes, ...ADMIN_ROUTES];
+    }
+    return routes;
+  }, [user]);
 
   useEffect(() => {
     let timer;
@@ -355,7 +273,6 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     position: 'fixed',
     top: '64px',
     left: 0,
-    overflowY: 'auto',
     borderRight: isFuturistic ? `1px solid ${themeConfig.sidebar.border}` : '1px solid #e0e0e0',
     ...(isFuturistic && {
       background: `

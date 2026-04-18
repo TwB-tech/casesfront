@@ -43,14 +43,26 @@ const Navbar = () => {
   ];
 
   const userMenu = (
-    <Menu theme="dark" style={{ background: '#000000', border: '1px solid #333' }}>
+    <Menu
+      theme="dark"
+      style={{
+        background: isFuturistic ? '#0f0f18' : '#1f1f1f',
+        border: '1px solid',
+        borderColor: isFuturistic ? '#2a2a3a' : '#333',
+      }}
+    >
       <div className="text-center mb-4" style={{ padding: '13px' }}>
-        <h2 style={{ color: '#ffffff', marginBottom: '10px' }}>{user?.username}</h2>
-        <p style={{ color: '#888' }}>{user?.email}</p>
+        <h2 style={{ color: '#ffffff', marginBottom: '10px', fontWeight: 600 }}>
+          {user?.username}
+        </h2>
+        <p style={{ color: '#aaaaaa', fontSize: '13px' }}>{user?.email}</p>
       </div>
       <Menu.Item onClick={() => navigate('/home')}>Dashboard</Menu.Item>
       <Menu.Item onClick={() => navigate('/profile')}>Profile</Menu.Item>
       <Menu.Item onClick={() => navigate('/settings')}>Settings</Menu.Item>
+      {(user?.role === 'admin' || user?.role === 'administrator') && (
+        <Menu.Item onClick={() => navigate('/admin-dashboard')}>Admin Dashboard</Menu.Item>
+      )}
       <Menu.Divider />
       <Menu.Item onClick={handleLogout}>Logout</Menu.Item>
     </Menu>

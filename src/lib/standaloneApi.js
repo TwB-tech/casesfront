@@ -314,6 +314,8 @@ const seedDb = () => ({
       amount: 500,
       date: addDays(-10).slice(0, 10),
       category: 'Supplies',
+      status: 'approved',
+      submitted_by: 'Amina Wanjiru',
       organization_id: 1,
     },
     {
@@ -323,6 +325,8 @@ const seedDb = () => ({
       amount: 2500,
       date: addDays(-5).slice(0, 10),
       category: 'Entertainment',
+      status: 'pending',
+      submitted_by: 'Brian Otieno',
       organization_id: 1,
     },
   ],
@@ -1274,11 +1278,15 @@ export const standaloneApi = {
 
     // Create Expense
     if (path === '/expenses/') {
+      const user = currentUser();
       const created = {
         id: nextId(db.expenses),
         ...payload,
         amount: Number(payload.amount),
         date: payload.date || new Date().toISOString().split('T')[0],
+        status: payload.status || 'pending',
+        submitted_by: payload.submitted_by || user?.username || 'Unknown',
+        organization_id: user?.organization_id || user?.id || 1,
         created_at: new Date().toISOString(),
       };
       db.expenses.push(created);
