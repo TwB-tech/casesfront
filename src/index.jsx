@@ -5,8 +5,8 @@ import './index.css';
 import App from './App.jsx';
 import reportWebVitals from './reportWebVitals';
 import intitializeAnalytics from './analytics';
-import { AuthProvider } from './contexts/authContext.jsx';
-import { ThemeProvider } from './contexts/ThemeContext.jsx';
+import { AuthProvider } from './contexts/authContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { initializeSentry } from './config/sentry';
 
 // Initialize Sentry first (before any other errors)
