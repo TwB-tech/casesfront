@@ -1,0 +1,1 @@
+import{l as e,r as t}from"./jsx-runtime-BwsvmyVi.js";var n=e(t());function r(){let[,e]=n.useReducer(e=>e+1,0);return e}export{r as t};
