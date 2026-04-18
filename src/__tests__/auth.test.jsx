@@ -1,8 +1,9 @@
+/* eslint-disable no-unused-vars */
 /* eslint-env jest */
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from '../contexts/authContext';
+import { AuthProvider } from '../contexts/authContext.jsx';
 import SignIn from '../components/authentication/SignIn';
 
 // Mock axios

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Database Configuration Validation Script
  * Run with: node src/config/validate-config.js

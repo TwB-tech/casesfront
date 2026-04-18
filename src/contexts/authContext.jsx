@@ -5,7 +5,9 @@ import axiosInstance from '../axiosConfig';
 const AuthContext = createContext(null);
 
 const parseStoredUser = () => {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
   try {
     const encrypted = localStorage.getItem('userInfo_encrypted');
     if (encrypted) {
