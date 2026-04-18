@@ -1,12 +1,12 @@
 import * as Sentry from '@sentry/react';
 
 export const initializeSentry = () => {
-  if (process.env.NODE_ENV !== 'production' || !process.env.REACT_APP_SENTRY_DSN) {
+  if (import.meta.env.DEV || !import.meta.env.REACT_APP_SENTRY_DSN) {
     return;
   }
 
   Sentry.init({
-    dsn: process.env.REACT_APP_SENTRY_DSN,
+    dsn: import.meta.env.REACT_APP_SENTRY_DSN,
     tracesSampleRate: 0.1, // 10% of transactions for performance monitoring
     integrations: [
       Sentry.browserTracingIntegration({

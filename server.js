@@ -4,7 +4,7 @@ const crypto = require('crypto');
 
 // HTTPS redirect middleware for production
 const enforceHTTPS = (req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
+  if (import.meta.env.PROD && req.headers['x-forwarded-proto'] !== 'https') {
     return res.redirect(301, `https://${req.headers.host}${req.url}`);
   }
   next();
@@ -46,7 +46,7 @@ module.exports = async function (context) {
         res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
         res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
         // HSTS - only in production
-        if (process.env.NODE_ENV === 'production') {
+        if (import.meta.env.PROD) {
           res.setHeader(
             'Strict-Transport-Security',
             'max-age=31536000; includeSubDomains; preload'
@@ -68,7 +68,7 @@ module.exports = async function (context) {
     let indexContent = await fsp.readFile(indexPath);
 
     // Inject CSP nonce for inline scripts in production
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       const nonce = require('crypto').randomBytes(16).toString('hex');
       indexContent = indexContent.replace(
         /<head>/i,
@@ -83,7 +83,7 @@ module.exports = async function (context) {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     }
     res.send(indexContent);

@@ -1,6 +1,5 @@
 import DOMPurify from 'dompurify';
 import { USE_SUPABASE } from './config';
-import supabaseApi from './lib/supabaseApi';
 
 // Sanitization helper (kept for compatibility but Supabase handles most)
 const sanitizeResponse = (value) => {
@@ -81,6 +80,7 @@ let apiInstance;
 
 if (USE_SUPABASE) {
   // Use Supabase API implementation
+  const supabaseApi = require('./lib/supabaseApi').default;
   apiInstance = supabaseApi;
 } else {
   // Fallback to standalone localStorage mode (for demo/development without DB)

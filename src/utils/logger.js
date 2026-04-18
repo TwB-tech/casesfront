@@ -14,10 +14,12 @@ const LOG_LEVELS = {
   debug: 3,
 };
 
-const currentLevel = process.env.NODE_ENV === 'production' ? LOG_LEVELS.info : LOG_LEVELS.debug;
+const currentLevel = import.meta.env.PROD ? LOG_LEVELS.info : LOG_LEVELS.debug;
 
 const maskSensitiveData = (message) => {
-  if (typeof message !== 'string') {return message;}
+  if (typeof message !== 'string') {
+    return message;
+  }
 
   // Mask email addresses
   let masked = message.replace(
@@ -44,27 +46,35 @@ const maskSensitiveData = (message) => {
 
 const logger = {
   error: (...args) => {
-    if (currentLevel < LOG_LEVELS.error) {return;}
+    if (currentLevel < LOG_LEVELS.error) {
+      return;
+    }
     const maskedArgs = args.map((arg) => maskSensitiveData(arg));
     console.error('[ERROR]', ...maskedArgs);
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       const error = args.find((arg) => arg instanceof Error);
       Sentry.captureException(error || new Error(maskedArgs.join(' ')));
     }
   },
 
   warn: (...args) => {
-    if (currentLevel < LOG_LEVELS.warn) {return;}
+    if (currentLevel < LOG_LEVELS.warn) {
+      return;
+    }
     console.warn('[WARN]', ...args.map((arg) => maskSensitiveData(arg)));
   },
 
   info: (...args) => {
-    if (currentLevel < LOG_LEVELS.info) {return;}
+    if (currentLevel < LOG_LEVELS.info) {
+      return;
+    }
     console.info('[INFO]', ...args.map((arg) => maskSensitiveData(arg)));
   },
 
   debug: (...args) => {
-    if (currentLevel < LOG_LEVELS.debug) {return;}
+    if (currentLevel < LOG_LEVELS.debug) {
+      return;
+    }
     console.debug('[DEBUG]', ...args.map((arg) => maskSensitiveData(arg)));
   },
 
@@ -73,7 +83,7 @@ const logger = {
     const maskedError = maskSensitiveData(error.message || error);
     console.error(`[ERROR] ${maskedError}`, context);
 
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       Sentry.withScope((scope) => {
         Object.entries(context).forEach(([key, value]) => {
           scope.setContext(key, maskSensitiveData(value));

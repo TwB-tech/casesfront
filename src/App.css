@@ -2,7 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
 }
 
@@ -171,7 +173,8 @@ html, body, #root {
 }
 
 /* Carousel */
-.carousel .slick-prev, .carousel .slick-next {
+.carousel .slick-prev,
+.carousel .slick-next {
   color: #001529;
   font-size: 24px;
 }
@@ -250,70 +253,70 @@ html, body, #root {
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 47.4% 11.2%;
- 
+
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
- 
+
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 47.4% 11.2%;
- 
+
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
- 
+
     --card: 0 0% 100%;
     --card-foreground: 222.2 47.4% 11.2%;
- 
+
     --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
- 
+
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
- 
+
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
- 
+
     --destructive: 0 100% 50%;
     --destructive-foreground: 210 40% 98%;
- 
+
     --ring: 215 20.2% 65.1%;
- 
+
     --radius: 0.5rem;
   }
- 
+
   .dark {
     --background: 224 71% 4%;
     --foreground: 213 31% 91%;
- 
+
     --muted: 223 47% 11%;
     --muted-foreground: 215.4 16.3% 56.9%;
- 
+
     --accent: 216 34% 17%;
     --accent-foreground: 210 40% 98%;
- 
+
     --popover: 224 71% 4%;
     --popover-foreground: 215 20.2% 65.1%;
- 
+
     --border: 216 34% 17%;
     --input: 216 34% 17%;
- 
+
     --card: 224 71% 4%;
     --card-foreground: 213 31% 91%;
- 
+
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 1.2%;
- 
+
     --secondary: 222.2 47.4% 11.2%;
     --secondary-foreground: 210 40% 98%;
- 
+
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
- 
+
     --ring: 216 34% 17%;
- 
+
     --radius: 0.5rem;
   }
 }
- 
+
 @layer base {
   * {
     border-color: hsl(var(--border));
@@ -321,7 +324,9 @@ html, body, #root {
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
   }
 }
 
@@ -347,34 +352,34 @@ html, body, #root {
 }
 
 /* Futuristic Theme Enhancements */
-[data-theme="futuristic"] .ant-btn-primary {
+[data-theme='futuristic'] .ant-btn-primary {
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   border: none;
   box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
 
-[data-theme="futuristic"] .ant-btn-primary:hover {
+[data-theme='futuristic'] .ant-btn-primary:hover {
   background: linear-gradient(135deg, #7c7ff2 0%, #9d7bf8 100%);
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
 }
 
-[data-theme="futuristic"] .ant-card {
+[data-theme='futuristic'] .ant-card {
   background: #1a1a24;
   border: 1px solid #2a2a3a;
   border-radius: 12px;
 }
 
-[data-theme="futuristic"] .ant-card-head {
+[data-theme='futuristic'] .ant-card-head {
   background: #12121a;
   border-bottom: 1px solid #2a2a3a;
   border-radius: 12px 12px 0 0;
 }
 
-[data-theme="futuristic"] .ant-card-head-title {
+[data-theme='futuristic'] .ant-card-head-title {
   color: #f8fafc;
 }
 
-[data-theme="futuristic"] .ant-card-body {
+[data-theme='futuristic'] .ant-card-body {
   color: #f8fafc;
 }
 
@@ -384,7 +389,8 @@ html, body, #root {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -393,19 +399,19 @@ html, body, #root {
 }
 
 /* Hover Effects for Cards */
-[data-theme="futuristic"] .hover-glow:hover {
+[data-theme='futuristic'] .hover-glow:hover {
   box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
   border-color: #6366f1;
 }
 
 /* Gradient Border Effect */
-[data-theme="futuristic"] .gradient-border {
+[data-theme='futuristic'] .gradient-border {
   position: relative;
   background: #1a1a24;
   border-radius: 12px;
 }
 
-[data-theme="futuristic"] .gradient-border::before {
+[data-theme='futuristic'] .gradient-border::before {
   content: '';
   position: absolute;
   inset: -1px;
@@ -416,7 +422,7 @@ html, body, #root {
   transition: opacity 0.3s ease;
 }
 
-[data-theme="futuristic"] .gradient-border:hover::before {
+[data-theme='futuristic'] .gradient-border:hover::before {
   opacity: 1;
 }
 

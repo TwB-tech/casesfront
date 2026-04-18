@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'https://your-project.supabase.co';
-const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const SUPABASE_URL = import.meta.env.REACT_APP_SUPABASE_URL || 'https://your-project.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.REACT_APP_SUPABASE_ANON_KEY;
 
 // Validate configuration at module load
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
@@ -56,13 +56,14 @@ export const logAudit = async (action, tableName, recordId, changes = {}) => {
     const user = userData?.user;
 
     await supabase.from(TABLES.AUDIT_LOGS).insert({
-      organization_id: localStorage.getItem('organization_id'),
+      organization_id:
+        typeof window !== 'undefined' ? localStorage.getItem('organization_id') : null,
       user_id: user?.id || null,
       action,
       table_name: tableName,
       record_id: recordId,
       changes: JSON.stringify(changes),
-      user_agent: navigator.userAgent,
+      user_agent: typeof window !== 'undefined' ? navigator.userAgent : '',
     });
   } catch (error) {
     console.warn('Audit log failed:', error);
