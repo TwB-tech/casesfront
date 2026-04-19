@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './useAuth';
 import { CURRENCIES, getSupportedCurrencies, getCurrencyName } from '../utils/currency';
 
 const CurrencyContext = createContext();
@@ -13,20 +12,19 @@ export const useCurrency = () => {
 };
 
 export const CurrencyProvider = ({ children }) => {
-  const { user } = useAuth();
   const [currency, setCurrency] = useState(() => {
     // Get from localStorage default, or KES
     const saved = localStorage.getItem('userCurrency');
     return saved || 'KES';
   });
 
-  // Update when user changes (if we had server-side preference)
-  useEffect(() => {
-    if (user?.currency) {
-      setCurrency(user.currency);
-      localStorage.setItem('userCurrency', user.currency);
-    }
-  }, [user?.currency]);
+  // When user logs in, we could sync from server - placeholder
+  // useEffect(() => {
+  //   if (user?.currency) {
+  //     setCurrency(user.currency);
+  //     localStorage.setItem('userCurrency', user.currency);
+  //   }
+  // }, [user?.currency]);
 
   const changeCurrency = (newCurrency) => {
     if (!getSupportedCurrencies().includes(newCurrency)) {

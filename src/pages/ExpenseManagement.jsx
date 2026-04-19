@@ -23,7 +23,6 @@ import {
   Tag as AntTag,
   message,
 } from 'antd';
-import { useCurrency } from "../contexts/CurrencyContext";
 import { useTheme } from '../contexts/ThemeContext';
 import { useCurrency } from '../contexts/CurrencyContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
@@ -36,7 +35,6 @@ const { TextArea } = Input;
 
 const ExpenseManagement = () => {
   const { isFuturistic } = useTheme();
-  const { currency } = useCurrency();
   const { currency } = useCurrency();
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -454,6 +452,3 @@ const ExpenseManagement = () => {
 };
 
 export default ExpenseManagement;
-
-
-

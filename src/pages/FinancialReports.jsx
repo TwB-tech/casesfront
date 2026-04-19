@@ -1,23 +1,10 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Download, TrendingUp, TrendingDown, DollarSign, Users } from 'lucide-react';
 import { Card, Button, DatePicker, Select, Table, Tag, Statistic, message } from 'antd';
-import { useCurrency } from "../contexts/CurrencyContext";
 import { useTheme } from '../contexts/ThemeContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
-import {
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-} from 'recharts';
-import { useCurrency } from "../contexts/CurrencyContext";
-import { formatCurrency } from "../utils/currency";
+import { useCurrency } from '../contexts/CurrencyContext';
+import { formatCurrency } from '../utils/currency';
 import axiosInstance from '../axiosConfig';
 import { useNavigate } from 'react-router-dom';
 /* eslint-disable no-console */
@@ -348,6 +335,3 @@ const FinancialReports = () => {
 };
 
 export default FinancialReports;
-
-
-

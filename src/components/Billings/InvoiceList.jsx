@@ -12,13 +12,12 @@ import {
   Search,
 } from 'lucide-react';
 import { useMediaQuery } from 'react-responsive';
-import { useCurrency } from "../contexts/CurrencyContext";
 import { useTheme } from '../../contexts/ThemeContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
 import Breadcrumbs from '../ui/Breadcrumbs';
 import EmptyState from '../ui/EmptyState';
-import { useCurrency } from "../contexts/CurrencyContext";
-import { formatCurrency } from "../utils/currency";
 import axiosInstance from '../../axiosConfig';
+import { formatCurrency } from '../../utils/currency';
 
 const InvoiceList = () => {
   const [invoices, setInvoices] = useState([]);
@@ -87,21 +86,10 @@ const InvoiceList = () => {
       dataIndex: 'totalAmount',
       key: 'totalAmount',
       render: (amount) => {
-        const num = typeof amount === 'string' ? parseFloat(amount.replace(/[^0-9.]/g, '')) : amount;
+        const num =
+          typeof amount === 'string' ? parseFloat(amount.replace(/[^0-9.]/g, '')) : amount;
         return <span className="font-semibold">{formatCurrency(num, currency)}</span>;
       },
-      sorter: (a, b) => {
-        const na = typeof a.totalAmount === 'string' ? parseFloat(a.totalAmount.replace(/[^0-9.]/g, '')) : (a.totalAmount || 0);
-        const nb = typeof b.totalAmount === 'string' ? parseFloat(b.totalAmount.replace(/[^0-9.]/g, '')) : (b.totalAmount || 0);
-        return na - nb;
-      },
-    },
-      sorter: (a, b) => {
-        const na = typeof a.totalAmount === 'string' ? parseFloat(a.totalAmount.replace(/[^0-9.]/g, '')) : (a.totalAmount || 0);
-        const nb = typeof b.totalAmount === 'string' ? parseFloat(b.totalAmount.replace(/[^0-9.]/g, '')) : (b.totalAmount || 0);
-        return na - nb;
-      },
-    },
       sorter: (a, b) => {
         const na =
           typeof a.totalAmount === 'string'
@@ -438,6 +426,3 @@ const InvoiceList = () => {
 };
 
 export default InvoiceList;
-
-
-

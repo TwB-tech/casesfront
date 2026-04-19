@@ -27,11 +27,10 @@ import {
   message,
   Tabs,
 } from 'antd';
-import { useCurrency } from "../contexts/CurrencyContext";
 import { useTheme } from '../contexts/ThemeContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
-import { useCurrency } from "../contexts/CurrencyContext";
-import { formatCurrency } from "../utils/currency";
+import { useCurrency } from '../contexts/CurrencyContext';
+import { formatCurrency } from '../utils/currency';
 import axiosInstance from '../axiosConfig';
 /* eslint-disable no-console */
 
@@ -779,6 +778,3 @@ const HRManagement = () => {
 };
 
 export default HRManagement;
-
-
-

@@ -1,9 +1,9 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, DatePicker, InputNumber, Row, Col, Divider, message } from 'antd';
-import { useCurrency } from "../contexts/CurrencyContext";
-import { formatCurrency } from "../utils/currency";
 import axiosInstance from '../../axiosConfig';
 import moment from 'moment';
+import { useCurrency } from '../../contexts/CurrencyContext';
+import { formatCurrency } from '../../utils/currency';
 
 const generateInvoiceNumber = () => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -231,6 +231,3 @@ const NewInvoice = () => {
 };
 
 export default NewInvoice;
-
-
-

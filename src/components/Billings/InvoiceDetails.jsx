@@ -1,12 +1,9 @@
-﻿import React from 'react';
+import React from 'react';
 import { Button, Card, Tag } from 'antd';
 import { Printer, ArrowLeft, Download, CheckCircle, Clock } from 'lucide-react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useCurrency } from "../contexts/CurrencyContext";
 import { useTheme } from '../../contexts/ThemeContext';
 import Breadcrumbs from '../ui/Breadcrumbs';
-import { useCurrency } from "../contexts/CurrencyContext";
-import { formatCurrency } from "../utils/currency";
 import axiosInstance from '../../axiosConfig';
 
 const InvoiceDetails = () => {
@@ -17,7 +14,9 @@ const InvoiceDetails = () => {
   const [invoice, setInvoice] = React.useState(state?.invoice || null);
 
   React.useEffect(() => {
-    if (invoice) {return;}
+    if (invoice) {
+      return;
+    }
     const fetchInvoice = async () => {
       try {
         const response = await axiosInstance.get(`/api/invoices/${id}/`);
@@ -47,11 +46,13 @@ const InvoiceDetails = () => {
   return (
     <div className="min-h-screen">
       <Breadcrumbs />
-      
+
       {/* Header Actions */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
-          <h1 className={`text-3xl font-bold ${isFuturistic ? 'text-aurora-text' : 'text-primary-900'}`}>
+          <h1
+            className={`text-3xl font-bold ${isFuturistic ? 'text-aurora-text' : 'text-primary-900'}`}
+          >
             Invoice {invoice.invoiceNumber}
           </h1>
           <div className="flex items-center gap-2 mt-2">
@@ -64,20 +65,20 @@ const InvoiceDetails = () => {
           </div>
         </div>
         <div className="flex gap-3">
-          <Button 
+          <Button
             icon={<ArrowLeft className="w-4 h-4" />}
             onClick={() => navigate('/invoices')}
             className={isFuturistic ? 'border-cyber-border' : ''}
           >
             Back to Invoices
           </Button>
-          <Button 
+          <Button
             icon={<Download className="w-4 h-4" />}
             className={isFuturistic ? 'border-cyber-border' : ''}
           >
             Download PDF
           </Button>
-          <Button 
+          <Button
             type="primary"
             icon={<Printer className="w-4 h-4" />}
             onClick={() => window.print()}
@@ -90,15 +91,21 @@ const InvoiceDetails = () => {
       </div>
 
       {/* Invoice Document */}
-      <Card 
+      <Card
         className={`${isFuturistic ? 'bg-cyber-card border-cyber-border' : ''}`}
         styles={{ body: { padding: '40px' } }}
       >
         <div className="max-w-3xl mx-auto">
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-6 mb-8 pb-8 border-b" style={{ borderColor: isFuturistic ? '#2a2a3a' : '#e2e8f0' }}>
+          <div
+            className="flex flex-col md:flex-row md:justify-between md:items-start gap-6 mb-8 pb-8 border-b"
+            style={{ borderColor: isFuturistic ? '#2a2a3a' : '#e2e8f0' }}
+          >
             <div>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: isFuturistic ? themeConfig.accent : '#3b82f6' }}>
+              <h2
+                className="text-2xl font-bold mb-2"
+                style={{ color: isFuturistic ? themeConfig.accent : '#3b82f6' }}
+              >
                 WAKILWORLD
               </h2>
               <p className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}>
@@ -106,7 +113,9 @@ const InvoiceDetails = () => {
               </p>
             </div>
             <div className="text-right">
-              <h3 className={`text-xl font-bold mb-2 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
+              <h3
+                className={`text-xl font-bold mb-2 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+              >
                 INVOICE
               </h3>
               <p className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}>
@@ -120,10 +129,14 @@ const InvoiceDetails = () => {
 
           {/* Bill To */}
           <div className="mb-8">
-            <h4 className={`text-sm font-semibold uppercase tracking-wider mb-3 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+            <h4
+              className={`text-sm font-semibold uppercase tracking-wider mb-3 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
+            >
               Bill To:
             </h4>
-            <p className={`text-lg font-medium ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
+            <p
+              className={`text-lg font-medium ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+            >
               {invoice.clientName}
             </p>
             <p className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}>
@@ -140,40 +153,65 @@ const InvoiceDetails = () => {
           <div className="mb-8 overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className={`border-b ${isFuturistic ? 'border-cyber-border' : 'border-neutral-200'}`}>
-                  <th className={`text-left py-3 px-4 text-sm font-semibold ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+                <tr
+                  className={`border-b ${isFuturistic ? 'border-cyber-border' : 'border-neutral-200'}`}
+                >
+                  <th
+                    className={`text-left py-3 px-4 text-sm font-semibold ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
+                  >
                     #
                   </th>
-                  <th className={`text-left py-3 px-4 text-sm font-semibold ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+                  <th
+                    className={`text-left py-3 px-4 text-sm font-semibold ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
+                  >
                     Description
                   </th>
-                  <th className={`text-right py-3 px-4 text-sm font-semibold ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+                  <th
+                    className={`text-right py-3 px-4 text-sm font-semibold ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
+                  >
                     Rate
                   </th>
-                  <th className={`text-right py-3 px-4 text-sm font-semibold ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+                  <th
+                    className={`text-right py-3 px-4 text-sm font-semibold ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
+                  >
                     Hours
                   </th>
-                  <th className={`text-right py-3 px-4 text-sm font-semibold ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+                  <th
+                    className={`text-right py-3 px-4 text-sm font-semibold ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
+                  >
                     Amount
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {invoice.items?.map((item, index) => (
-                  <tr key={index} className={`border-b ${isFuturistic ? 'border-cyber-border' : 'border-neutral-100'}`}>
-                    <td className={`py-4 px-4 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}>
+                  <tr
+                    key={index}
+                    className={`border-b ${isFuturistic ? 'border-cyber-border' : 'border-neutral-100'}`}
+                  >
+                    <td
+                      className={`py-4 px-4 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}
+                    >
                       {index + 1}
                     </td>
-                    <td className={`py-4 px-4 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}>
+                    <td
+                      className={`py-4 px-4 ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}
+                    >
                       {item.description}
                     </td>
-                    <td className={`py-4 px-4 text-right ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}>
+                    <td
+                      className={`py-4 px-4 text-right ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}
+                    >
                       ${item.rate}
                     </td>
-                    <td className={`py-4 px-4 text-right ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}>
+                    <td
+                      className={`py-4 px-4 text-right ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}
+                    >
                       {item.hours}
                     </td>
-                    <td className={`py-4 px-4 text-right font-medium ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>
+                    <td
+                      className={`py-4 px-4 text-right font-medium ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+                    >
                       ${item.total}
                     </td>
                   </tr>
@@ -185,7 +223,9 @@ const InvoiceDetails = () => {
           {/* Totals */}
           <div className="flex flex-col md:flex-row md:justify-between gap-8 mb-8">
             <div className="md:w-1/2">
-              <h4 className={`text-sm font-semibold uppercase tracking-wider mb-3 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+              <h4
+                className={`text-sm font-semibold uppercase tracking-wider mb-3 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
+              >
                 Payment Information:
               </h4>
               <p className={isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}>
@@ -201,16 +241,32 @@ const InvoiceDetails = () => {
             <div className="md:w-1/3">
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}>Subtotal:</span>
-                  <span className={isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}>${invoice.total}</span>
+                  <span className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}>
+                    Subtotal:
+                  </span>
+                  <span className={isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}>
+                    ${invoice.total}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}>Tax:</span>
-                  <span className={isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}>${invoice.tax}</span>
+                  <span className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}>
+                    Tax:
+                  </span>
+                  <span className={isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}>
+                    ${invoice.tax}
+                  </span>
                 </div>
-                <div className={`flex justify-between pt-3 border-t ${isFuturistic ? 'border-cyber-border' : 'border-neutral-200'}`}>
-                  <span className={`text-lg font-bold ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}>Total Due:</span>
-                  <span className={`text-lg font-bold ${isFuturistic ? 'text-aurora-primary' : 'text-primary-600'}`}>
+                <div
+                  className={`flex justify-between pt-3 border-t ${isFuturistic ? 'border-cyber-border' : 'border-neutral-200'}`}
+                >
+                  <span
+                    className={`text-lg font-bold ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+                  >
+                    Total Due:
+                  </span>
+                  <span
+                    className={`text-lg font-bold ${isFuturistic ? 'text-aurora-primary' : 'text-primary-600'}`}
+                  >
                     ${invoice.amountDue}
                   </span>
                 </div>
@@ -220,8 +276,13 @@ const InvoiceDetails = () => {
 
           {/* Terms */}
           {invoice.terms && (
-            <div className="pt-8 border-t" style={{ borderColor: isFuturistic ? '#2a2a3a' : '#e2e8f0' }}>
-              <h4 className={`text-sm font-semibold uppercase tracking-wider mb-2 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+            <div
+              className="pt-8 border-t"
+              style={{ borderColor: isFuturistic ? '#2a2a3a' : '#e2e8f0' }}
+            >
+              <h4
+                className={`text-sm font-semibold uppercase tracking-wider mb-2 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
+              >
                 Terms & Conditions:
               </h4>
               <p className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'}>
@@ -236,6 +297,3 @@ const InvoiceDetails = () => {
 };
 
 export default InvoiceDetails;
-
-
-

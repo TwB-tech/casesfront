@@ -14,9 +14,6 @@ const UserSettings = () => {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { currency, changeCurrency, supportedCurrencies } = useCurrency();
-  const { currency, changeCurrency, supportedCurrencies } = useCurrency();
-  const { currency, changeCurrency, supportedCurrencies } = useCurrency();
-  const { currency, changeCurrency, supportedCurrencies } = useCurrency();
 
   useEffect(() => {
     if (user?.id) {
@@ -67,124 +64,17 @@ const UserSettings = () => {
     }
   };
 
-   const handleTaskSettingsSubmit = async (values) => {
-     try {
-       setLoading(true);
-       await axiosInstance.put('/user/task-settings', values); // API endpoint for updating task settings
-       message.success('Task and deadline tracking settings updated successfully');
-     } catch (error) {
-       message.error('Failed to update task settings');
-     } finally {
-       setLoading(false);
-     }
-   };
-
-   const handleRegionalSettingsSubmit = async (values) => {
-     try {
-       setLoading(true);
-       // Change currency
-       changeCurrency(values.currency);
-       message.success('Regional settings updated successfully');
-     } catch (error) {
-       message.error('Failed to update regional settings');
-     } finally {
-       setLoading(false);
-     }
-   };
-
-   return (
-     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-       <h2>User Settings</h2>
-       <Tabs defaultActiveKey="1">
-         <TabPane tab="General Settings" key="1">
-           <Form form={form} onFinish={handleGeneralSettingsSubmit}>
-             <Form.Item
-               label="Name"
-               name="username"
-               rules={[{ required: true, message: 'Please enter your name!' }]}
-             >
-               <Input placeholder="User Name" />
-             </Form.Item>
-             <Form.Item
-               label="Email"
-               name="email"
-               rules={[{ required: true, message: 'Please enter your email!' }]}
-             >
-               <Input placeholder="Your Email" />
-             </Form.Item>
-             <Form.Item label="Change Password" name="password">
-               <Input.Password placeholder="New Password" />
-             </Form.Item>
-             <Form.Item label="Time Zone" name="timezone">
-               <Select placeholder="Select your time zone">
-                 <Option value="GMT">GMT</Option>
-                 <Option value="EST">EST</Option>
-                 <Option value="PST">PST</Option>
-               </Select>
-             </Form.Item>
-             <Form.Item>
-               <Button type="primary" htmlType="submit" loading={loading}>
-                 Save
-               </Button>
-             </Form.Item>
-           </Form>
-         </TabPane>
-         <TabPane tab="Communication Settings" key="2">
-           <Form form={form} onFinish={handleCommunicationSettingsSubmit}>
-             <Form.Item name="messaging" valuePropName="checked">
-               <Checkbox>Enable Internal Messaging</Checkbox>
-             </Form.Item>
-             <Form.Item name="clientCommunication" valuePropName="checked">
-               <Checkbox>Enable Client Communication Logging</Checkbox>
-             </Form.Item>
-             <Form.Item>
-               <Button type="primary" htmlType="submit" loading={loading}>
-                 Save
-               </Button>
-             </Form.Item>
-           </Form>
-         </TabPane>
-         <TabPane tab="Task and Deadline Tracking" key="3">
-           <Form form={form} onFinish={handleTaskSettingsSubmit}>
-             <Form.Item name="taskManagement" valuePropName="checked">
-               <Checkbox>Enable Task Management</Checkbox>
-             </Form.Item>
-             <Form.Item name="deadlineNotifications" valuePropName="checked">
-               <Checkbox>Enable Deadline Notifications</Checkbox>
-             </Form.Item>
-             <Form.Item>
-               <Button type="primary" htmlType="submit" loading={loading}>
-                 Save
-               </Button>
-             </Form.Item>
-           </Form>
-         </TabPane>
-         <TabPane tab="Regional" key="4">
-           <Form form={form} onFinish={handleRegionalSettingsSubmit} initialValues={{ currency }}>
-             <Form.Item
-               label="Currency"
-               name="currency"
-               rules={[{ required: true, message: 'Please select currency' }]}
-             >
-               <Select placeholder="Select currency">
-                 {supportedCurrencies.map((code) => (
-                   <Option key={code} value={code}>
-                     {code} - {getCurrencyName(code)}
-                   </Option>
-                 ))}
-               </Select>
-             </Form.Item>
-             <Form.Item>
-               <Button type="primary" htmlType="submit" loading={loading}>
-                 Save
-               </Button>
-             </Form.Item>
-           </Form>
-         </TabPane>
-       </Tabs>
-     </div>
-   );
- };
+  const handleTaskSettingsSubmit = async (values) => {
+    try {
+      setLoading(true);
+      await axiosInstance.put('/user/task-settings', values); // API endpoint for updating task settings
+      message.success('Task and deadline tracking settings updated successfully');
+    } catch (error) {
+      message.error('Failed to update task settings');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRegionalSettingsSubmit = async (values) => {
     try {

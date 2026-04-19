@@ -11,23 +11,10 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Card, Statistic, Progress, Tag, Table, Button, message } from 'antd';
-import { useCurrency } from "../contexts/CurrencyContext";
 import { useTheme } from '../contexts/ThemeContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-} from 'recharts';
-import { useCurrency } from "../contexts/CurrencyContext";
-import { formatCurrency } from "../utils/currency";
+import { useCurrency } from '../contexts/CurrencyContext';
+import { formatCurrency } from '../utils/currency';
 import axiosInstance from '../axiosConfig';
 import { useNavigate } from 'react-router-dom';
 
@@ -477,6 +464,3 @@ const AccountingDashboard = () => {
 };
 
 export default AccountingDashboard;
-
-
-
