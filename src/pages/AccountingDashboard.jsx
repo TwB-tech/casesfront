@@ -63,11 +63,16 @@ const AccountingDashboard = () => {
       title: 'Amount',
       dataIndex: 'amount',
       key: 'amount',
-      render: (amount) => (
-        <span className={amount > 0 ? 'text-green-600' : 'text-red-600'}>
-          ${Math.abs(amount).toLocaleString()}
-        </span>
-      ),
+      render: (amount, _record) => {
+        const num =
+          typeof amount === 'string' ? parseFloat(amount.replace(/[^0-9.-]/g, '')) : amount;
+        const abs = Math.abs(num);
+        return (
+          <span className={num > 0 ? 'text-green-600' : 'text-red-600'}>
+            {formatCurrency(abs, currency)}
+          </span>
+        );
+      },
     },
     {
       title: 'Status',
@@ -165,15 +170,11 @@ const AccountingDashboard = () => {
               >
                 Total Revenue
               </p>
-              <Statistic
-                value={dashboardData.totalRevenue}
-                prefix="$"
-                valueStyle={{
-                  color: isFuturistic ? '#6366f1' : '#102a43',
-                  fontWeight: 700,
-                  fontSize: '28px',
-                }}
-              />
+              <p
+                className={`text-3xl font-bold ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+              >
+                {formatCurrency(dashboardData.totalRevenue, currency)}
+              </p>
               <div className="flex items-center mt-2 text-sm">
                 {dashboardData.revenueGrowth > 0 ? (
                   <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
@@ -200,6 +201,14 @@ const AccountingDashboard = () => {
               />
             </div>
           </div>
+          <p className={`text-sm mt-3 ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}>
+            Total Revenue
+          </p>
+          <p
+            className={`text-3xl font-bold ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+          >
+            {formatCurrency(dashboardData.totalRevenue, currency)}
+          </p>
         </Card>
 
         {/* Total Expenses */}
@@ -214,15 +223,11 @@ const AccountingDashboard = () => {
               >
                 Total Expenses
               </p>
-              <Statistic
-                value={dashboardData.totalExpenses}
-                prefix="$"
-                valueStyle={{
-                  color: isFuturistic ? '#f59e0b' : '#d97706',
-                  fontWeight: 700,
-                  fontSize: '28px',
-                }}
-              />
+              <p
+                className={`text-3xl font-bold ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+              >
+                {formatCurrency(dashboardData.totalExpenses, currency)}
+              </p>
               <div className="flex items-center mt-2 text-sm">
                 {dashboardData.expenseGrowth > 0 ? (
                   <ArrowUpRight className="w-4 h-4 text-red-500 mr-1" />
@@ -263,15 +268,11 @@ const AccountingDashboard = () => {
               >
                 Net Profit
               </p>
-              <Statistic
-                value={dashboardData.netProfit}
-                prefix="$"
-                valueStyle={{
-                  color: isFuturistic ? '#38c172' : '#22c55e',
-                  fontWeight: 700,
-                  fontSize: '28px',
-                }}
-              />
+              <p
+                className={`text-3xl font-bold ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
+              >
+                {formatCurrency(dashboardData.netProfit, currency)}
+              </p>
               <div className="mt-2">
                 <div className="flex items-center justify-between mb-1">
                   <span
@@ -417,7 +418,7 @@ const AccountingDashboard = () => {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value) => [`$${value.toLocaleString()}`, '']}
+                formatter={(value) => [formatCurrency(value, currency), '']}
                 contentStyle={{
                   backgroundColor: isFuturistic ? '#1a1a24' : '#fff',
                   border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',

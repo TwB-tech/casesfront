@@ -3,7 +3,9 @@ import { Button, Card, Tag } from 'antd';
 import { Printer, ArrowLeft, Download, CheckCircle, Clock } from 'lucide-react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
 import Breadcrumbs from '../ui/Breadcrumbs';
+import { formatCurrency } from '../../utils/currency';
 import axiosInstance from '../../axiosConfig';
 
 const InvoiceDetails = () => {
@@ -11,6 +13,7 @@ const InvoiceDetails = () => {
   const { id } = useParams();
   const { state } = useLocation();
   const { isFuturistic, themeConfig } = useTheme();
+  const { currency } = useCurrency();
   const [invoice, setInvoice] = React.useState(state?.invoice || null);
 
   React.useEffect(() => {
@@ -202,7 +205,7 @@ const InvoiceDetails = () => {
                     <td
                       className={`py-4 px-4 text-right ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}
                     >
-                      ${item.rate}
+                      {formatCurrency(item.rate, currency)}
                     </td>
                     <td
                       className={`py-4 px-4 text-right ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}
@@ -212,7 +215,7 @@ const InvoiceDetails = () => {
                     <td
                       className={`py-4 px-4 text-right font-medium ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
                     >
-                      ${item.total}
+                      {formatCurrency(item.total, currency)}
                     </td>
                   </tr>
                 ))}
@@ -245,7 +248,7 @@ const InvoiceDetails = () => {
                     Subtotal:
                   </span>
                   <span className={isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}>
-                    ${invoice.total}
+                    {formatCurrency(invoice.total, currency)}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -253,7 +256,7 @@ const InvoiceDetails = () => {
                     Tax:
                   </span>
                   <span className={isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}>
-                    ${invoice.tax}
+                    {formatCurrency(invoice.tax, currency)}
                   </span>
                 </div>
                 <div
@@ -267,7 +270,7 @@ const InvoiceDetails = () => {
                   <span
                     className={`text-lg font-bold ${isFuturistic ? 'text-aurora-primary' : 'text-primary-600'}`}
                   >
-                    ${invoice.amountDue}
+                    {formatCurrency(invoice.amountDue, currency)}
                   </span>
                 </div>
               </div>

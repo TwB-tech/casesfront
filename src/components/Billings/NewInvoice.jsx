@@ -1,9 +1,9 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, DatePicker, InputNumber, Row, Col, Divider, message } from 'antd';
 import axiosInstance from '../../axiosConfig';
 import moment from 'moment';
 import { useCurrency } from '../../contexts/CurrencyContext';
-import { formatCurrency } from '../../utils/currency';
+import { CURRENCIES } from '../../utils/currency';
 
 const generateInvoiceNumber = () => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -18,6 +18,7 @@ const NewInvoice = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState(() => generateInvoiceNumber());
+  const { currency } = useCurrency();
 
   useEffect(() => {
     form.setFieldsValue({ date: moment() });
@@ -40,6 +41,8 @@ const NewInvoice = () => {
         setLoading(false);
       });
   };
+
+  const currencySymbol = CURRENCIES[currency]?.symbol || '$';
 
   return (
     <div
@@ -121,7 +124,7 @@ const NewInvoice = () => {
                       >
                         <InputNumber
                           min={0}
-                          prefix="$"
+                          prefix={currencySymbol}
                           placeholder="Rate"
                           style={{ width: '100%' }}
                         />
@@ -146,7 +149,7 @@ const NewInvoice = () => {
                       >
                         <InputNumber
                           min={0}
-                          prefix="$"
+                          prefix={currencySymbol}
                           placeholder="Total"
                           style={{ width: '100%' }}
                         />
@@ -187,13 +190,13 @@ const NewInvoice = () => {
             </Col>
             <Col xs={24} md={12}>
               <Form.Item name="total" label="Total" rules={[{ required: true }]}>
-                <InputNumber min={0} prefix="$" style={{ width: '100%' }} />
+                <InputNumber min={0} prefix={currencySymbol} style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item name="tax" label="Tax" rules={[{ required: true }]}>
-                <InputNumber min={0} prefix="$" style={{ width: '100%' }} />
+                <InputNumber min={0} prefix={currencySymbol} style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item name="amountDue" label="Amount Due" rules={[{ required: true }]}>
-                <InputNumber min={0} prefix="$" style={{ width: '100%' }} />
+                <InputNumber min={0} prefix={currencySymbol} style={{ width: '100%' }} />
               </Form.Item>
             </Col>
           </Row>
