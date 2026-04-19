@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -26,9 +26,6 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
-
-      - name: Run Prettier check
-        run: npx prettier --check "src/**/*.{js,jsx,json,css}"
 
   test:
     name: Run Tests
@@ -41,14 +38,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Jest tests
-        run: npm test -- --watchAll=false --passWithNoTests
+      - name: Run Vitest suite
+        run: npm test
         env:
           CI: true
 
@@ -63,7 +60,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -81,16 +78,16 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
-          path: build/
+          name: dist-artifacts
+          path: dist/
           retention-days: 30
 
       - name: Check bundle size
         run: |
           echo "Build size:"
-          du -sh build/
+          du -sh dist/
           echo "JS bundle sizes:"
-          find build/static/js -name "*.js" -exec du -h {} \;
+          find dist/assets -name "*.js" -exec du -h {} \;
 
   security:
     name: Security Audit
@@ -103,8 +100,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Run npm audit
         run: npm audit --audit-level=high

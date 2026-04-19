@@ -1,29 +1,48 @@
-/* eslint-disable no-unused-vars */
-/* eslint-env jest */
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../contexts/authContext.jsx';
+import ThemeProvider from '../contexts/ThemeContext.jsx';
 import SignIn from '../components/authentication/SignIn';
+import { vi } from 'vitest';
 
-// Mock axios
-jest.mock('../axiosConfig', () => ({
-  default: {
-    post: jest.fn(),
+const { mockNavigate, mockPost, messageApi } = vi.hoisted(() => ({
+  mockNavigate: vi.fn(),
+  mockPost: vi.fn(),
+  messageApi: {
+    success: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
-// Mock useNavigate
-const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate,
+vi.mock('../axiosConfig', () => ({
+  default: {
+    post: mockPost,
+  },
 }));
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
+vi.mock('antd', async () => {
+  const actual = await vi.importActual('antd');
+  return {
+    ...actual,
+    message: messageApi,
+  };
+});
 
 const renderWithProviders = (component) => {
   return render(
     <BrowserRouter>
-      <AuthProvider>{component}</AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>{component}</AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 };
@@ -31,6 +50,9 @@ const renderWithProviders = (component) => {
 describe('SignIn Component', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
+    mockPost.mockReset();
+    messageApi.success.mockReset();
+    messageApi.error.mockReset();
     localStorage.clear();
   });
 
@@ -50,77 +72,60 @@ describe('SignIn Component', () => {
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
 
-    expect(emailInput.value).toBe('test@example.com');
-    expect(passwordInput.value).toBe('password123');
+    expect(emailInput).toHaveValue('test@example.com');
+    expect(passwordInput).toHaveValue('password123');
   });
 
   test('submits form with valid credentials', async () => {
-    const mockLogin = jest.fn().mockResolvedValue({
-      id: 1,
-      email: 'test@example.com',
-      username: 'Test User',
-      role: 'advocate',
+    mockPost.mockResolvedValue({
+      data: {
+        id: 1,
+        email: 'test@example.com',
+        username: 'Test User',
+        role: 'advocate',
+        organization_id: null,
+        tokens: JSON.stringify({ access: 'token123', refresh: 'refresh123' }).replace(/"/g, "'"),
+      },
     });
-    require('../axiosConfig').default.post.mockImplementation(() =>
-      Promise.resolve({
-        data: {
-          id: 1,
-          email: 'test@example.com',
-          username: 'Test User',
-          role: 'advocate',
-          tokens: JSON.stringify({ access: 'token123', refresh: 'refresh123' }).replace(/"/g, "'"),
-        },
-      })
-    );
 
-    // Re-render with mocked login
     renderWithProviders(<SignIn />);
 
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole('button', { name: /sign in/i });
-
-    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    fireEvent.click(submitButton);
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'test@example.com' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'password123' } });
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(require('../axiosConfig').default.post).toHaveBeenCalledWith('/auth/login/', {
+      expect(mockPost).toHaveBeenCalledWith('/auth/login/', {
         email: 'test@example.com',
         password: 'password123',
       });
     });
+
+    await waitFor(() => {
+      expect(messageApi.success).toHaveBeenCalledWith('Login successful!');
+      expect(mockNavigate).toHaveBeenCalledWith('/home');
+    });
   });
 
   test('shows error on failed login', async () => {
-    require('../axiosConfig').default.post.mockRejectedValue(new Error('Invalid credentials'));
+    mockPost.mockRejectedValue(new Error('Invalid credentials'));
 
     renderWithProviders(<SignIn />);
 
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole('button', { name: /sign in/i });
-
-    fireEvent.change(emailInput, { target: { value: 'wrong@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'wrongpass' } });
-    fireEvent.click(submitButton);
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'wrong@example.com' } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'wrongpass' } });
+    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
-      // Error message should appear (implementation dependent)
-      expect(screen.getByText(/login failed/i)).toBeInTheDocument();
+      expect(messageApi.error).toHaveBeenCalledWith('Login failed!');
     });
   });
 
   test('validates required fields', () => {
     renderWithProviders(<SignIn />);
-    const submitButton = screen.getByRole('button', { name: /sign in/i });
 
-    // Form should have required attribute
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-
-    expect(emailInput).toHaveAttribute('required');
-    expect(passwordInput).toHaveAttribute('required');
+    expect(screen.getByLabelText(/email/i)).toHaveAttribute('required');
+    expect(screen.getByLabelText(/password/i)).toHaveAttribute('required');
   });
 
   test('password field toggles visibility', () => {
@@ -128,12 +133,12 @@ describe('SignIn Component', () => {
     const passwordInput = screen.getByLabelText(/password/i);
     const toggleButton = passwordInput.parentElement.querySelector('span');
 
-    expect(passwordInput.type).toBe('password');
+    expect(passwordInput).toHaveAttribute('type', 'password');
 
     fireEvent.click(toggleButton);
-    expect(passwordInput.type).toBe('text');
+    expect(passwordInput).toHaveAttribute('type', 'text');
 
     fireEvent.click(toggleButton);
-    expect(passwordInput.type).toBe('password');
+    expect(passwordInput).toHaveAttribute('type', 'password');
   });
 });

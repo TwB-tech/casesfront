@@ -26,6 +26,7 @@ body {
 
 #root {
   width: 100%;
+  min-height: 100%;
 }
 
 html {
@@ -44,6 +45,68 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: #000000;
   color: #ffffff;
+  overflow-x: hidden;
+}
+
+a,
+button,
+input,
+textarea,
+select {
+  max-width: 100%;
+}
+
+img,
+svg,
+canvas,
+video {
+  max-width: 100%;
+}
+
+.scroll-to-top-btn {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 999px;
+  background: rgba(10, 10, 15, 0.92);
+  color: #f8fafc;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+  z-index: 1200;
+}
+
+.scroll-to-top-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.scroll-to-top-btn:hover {
+  background: rgba(99, 102, 241, 0.96);
+  border-color: rgba(129, 140, 248, 0.6);
+}
+
+@media (max-width: 640px) {
+  .scroll-to-top-btn {
+    left: 14px;
+    bottom: 14px;
+    width: 44px;
+    height: 44px;
+  }
 }
 
 code {

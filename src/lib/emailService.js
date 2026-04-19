@@ -5,7 +5,9 @@
 
 const RESEND_API_KEY = import.meta.env.RESEND_API_KEY;
 const ADMIN_EMAIL = import.meta.env.ADMIN_EMAIL || 'admin@wakiliworld.local';
-const SITE_URL = import.meta.env.SITE_URL || window.location.origin;
+const SITE_URL =
+  import.meta.env.SITE_URL ||
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
 
 /**
  * Send email via Resend API

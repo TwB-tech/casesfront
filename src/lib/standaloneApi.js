@@ -479,6 +479,21 @@ const currentUser = () => {
   }
 };
 
+const canAccessOrgRecord = (record, user, userOrg) => {
+  if (!record || !user?.id) {
+    return false;
+  }
+
+  return (
+    (userOrg && record.organization_id === userOrg) ||
+    record.client_id === user.id ||
+    record.advocate_id === user.id ||
+    record.assigned_to === user.id ||
+    record.created_by === user.id ||
+    record.owner === user.id
+  );
+};
+
 const publicUser = (user) => {
   if (!user) {
     return null;
@@ -655,13 +670,7 @@ export const standaloneApi = {
     if (path === '/case/') {
       // ORGANIZATION ISOLATION: Only return cases belonging to current user's organization
       const userOrg = user?.organization_id || user?.id;
-      const filteredCases = db.cases.filter(
-        (item) =>
-          !userOrg ||
-          item.organization_id === userOrg ||
-          item.client_id === user.id ||
-          item.advocate_id === user.id
-      );
+      const filteredCases = db.cases.filter((item) => canAccessOrgRecord(item, user, userOrg));
       return success({ results: filteredCases.map((item) => enrichCase(db, item)) });
     }
 
@@ -671,6 +680,10 @@ export const standaloneApi = {
       const found = db.cases.find((item) => item.id === id);
       if (!found) {
         return failure('Case not found', 404);
+      }
+      const userOrg = user?.organization_id || user?.id;
+      if (!canAccessOrgRecord(found, user, userOrg)) {
+        return failure('Forbidden', 403);
       }
       return success(enrichCase(db, found));
     }
@@ -705,9 +718,7 @@ export const standaloneApi = {
     if (path === '/tasks/' || path === '/tasks') {
       // ORGANIZATION ISOLATION: Only return tasks assigned to current user or organization
       const userOrg = user?.organization_id || user?.id;
-      const filteredTasks = db.tasks.filter(
-        (task) => !userOrg || task.organization_id === userOrg || task.assigned_to === user.id
-      );
+      const filteredTasks = db.tasks.filter((task) => canAccessOrgRecord(task, user, userOrg));
       return success({ results: filteredTasks.map((task) => enrichTask(db, task)) });
     }
 
@@ -734,9 +745,9 @@ export const standaloneApi = {
 
     if (path === '/clientcomm/api/clientcommunications/') {
       // ORGANIZATION ISOLATION: Only return communications created by current user
-      const filteredComms = db.communications.filter(
-        (comm) =>
-          !user || comm.created_by === user.id || comm.organization_id === user?.organization_id
+      const userOrg = user?.organization_id || user?.id;
+      const filteredComms = db.communications.filter((comm) =>
+        canAccessOrgRecord(comm, user, userOrg)
       );
       return success({
         results: [...filteredComms].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)),
@@ -749,15 +760,17 @@ export const standaloneApi = {
       if (!item) {
         return failure('Communication not found', 404);
       }
+      const userOrg = user?.organization_id || user?.id;
+      if (!canAccessOrgRecord(item, user, userOrg)) {
+        return failure('Forbidden', 403);
+      }
       return success(item);
     }
 
     if (path === '/api/invoices') {
       // ORGANIZATION ISOLATION: Only return invoices belonging to current user organization
       const userOrg = user?.organization_id || user?.id;
-      const filteredInvoices = db.invoices.filter(
-        (inv) => !userOrg || inv.organization_id === userOrg || inv.client_id === user.id
-      );
+      const filteredInvoices = db.invoices.filter((inv) => canAccessOrgRecord(inv, user, userOrg));
       return success(filteredInvoices);
     }
 
@@ -767,6 +780,10 @@ export const standaloneApi = {
       const found = db.invoices.find((inv) => inv.id === id);
       if (!found) {
         return failure('Invoice not found', 404);
+      }
+      const userOrg = user?.organization_id || user?.id;
+      if (!canAccessOrgRecord(found, user, userOrg)) {
+        return failure('Forbidden', 403);
       }
       return success(found);
     }
@@ -858,10 +875,8 @@ export const standaloneApi = {
 
     // Reports: Financial
     if (path === '/reports/financial/') {
-      const invoices = db.invoices.filter(
-        (inv) =>
-          !user || inv.organization_id === user?.organization_id || inv.client_id === user?.id
-      );
+      const userOrg = user?.organization_id || user?.id;
+      const invoices = db.invoices.filter((inv) => canAccessOrgRecord(inv, user, userOrg));
       const summary = {
         totalRevenue: invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0),
         paidInvoices: invoices.filter((i) => i.status === 'paid').length,
@@ -877,8 +892,7 @@ export const standaloneApi = {
     // Expenses: List
     if (path === '/expenses/') {
       const userOrg = user?.organization_id || user?.id;
-      const filtered =
-        db.expenses?.filter((exp) => !userOrg || exp.organization_id === userOrg) || [];
+      const filtered = db.expenses?.filter((exp) => canAccessOrgRecord(exp, user, userOrg)) || [];
       return success(filtered);
     }
 
@@ -886,7 +900,7 @@ export const standaloneApi = {
     if (path === '/payroll/') {
       const userOrg = user?.organization_id || user?.id;
       const filtered =
-        db.payroll_runs?.filter((pr) => !userOrg || pr.organization_id === userOrg) || [];
+        db.payroll_runs?.filter((pr) => canAccessOrgRecord(pr, user, userOrg)) || [];
       return success(filtered);
     }
 
@@ -905,11 +919,8 @@ export const standaloneApi = {
     // Accounting Dashboard Summary (alias for /accounting/dashboard in standalone)
     if (path === '/accounting/dashboard' || path === '/accounting/dashboard/summary/') {
       const userOrg = user?.organization_id || user?.id;
-      const invoices = db.invoices.filter(
-        (inv) => !userOrg || inv.organization_id === userOrg || inv.client_id === user?.id
-      );
-      const expenses =
-        db.expenses?.filter((exp) => !userOrg || exp.organization_id === userOrg) || [];
+      const invoices = db.invoices.filter((inv) => canAccessOrgRecord(inv, user, userOrg));
+      const expenses = db.expenses?.filter((exp) => canAccessOrgRecord(exp, user, userOrg)) || [];
       const totalRevenue = invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0);
       const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
       const netProfit = totalRevenue - totalExpenses;

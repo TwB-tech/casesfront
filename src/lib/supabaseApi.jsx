@@ -29,6 +29,20 @@ const getRequestContext = () => {
   return { user, organizationId };
 };
 
+const canAccessOrgRecord = (record, user, organizationId) => {
+  if (!record || !user?.id) {
+    return false;
+  }
+
+  return (
+    (organizationId && record.organization_id === organizationId) ||
+    record.client_id === user.id ||
+    record.advocate_id === user.id ||
+    record.created_by === user.id ||
+    record.owner === user.id
+  );
+};
+
 // Enrich case with client, advocate, court data
 const enrichCase = async (item) => {
   if (!item) {
@@ -158,15 +172,7 @@ export const supabaseApi = {
       }
       const user = JSON.parse(localStorage.getItem('userInfo') || '{}');
       const orgId = user?.organization_id || user?.id;
-      const filtered = orgId
-        ? data.filter(
-            (item) =>
-              !item.organization_id ||
-              item.organization_id === orgId ||
-              item.client_id === user.id ||
-              item.advocate_id === user.id
-          )
-        : data;
+      const filtered = data.filter((item) => canAccessOrgRecord(item, user, orgId));
       const enriched = await Promise.all(filtered.map(enrichCase));
       return success({ results: enriched });
     }
@@ -176,6 +182,11 @@ export const supabaseApi = {
       const { data, error } = await supabase.from(TABLES.CASES).select('*').eq('id', id).single();
       if (error) {
         throw error;
+      }
+      const user = getStoredUser();
+      const orgId = user?.organization_id || user?.id;
+      if (!canAccessOrgRecord(data, user, orgId)) {
+        return failure('Forbidden', 403);
       }
       const enriched = await enrichCase(data);
       return success(enriched);

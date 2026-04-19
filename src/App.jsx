@@ -14,6 +14,7 @@ import ReyaAssistant from './components/Reya/ReyaAssistant';
 import { useTheme } from './contexts/ThemeContext.jsx';
 import Breadcrumbs from './components/ui/Breadcrumbs';
 import ErrorBoundary from './components/ErrorBoundary';
+import ScrollManager from './components/ui/ScrollManager';
 
 const { Content } = Layout;
 
@@ -118,26 +119,33 @@ function AppContent() {
 
   const shouldHideSidebar =
     hideSidebarRoutes.includes(location.pathname) || location.pathname === '*';
+  const isPublicRoute = shouldHideSidebar;
 
   usePageTracking();
 
   return (
     <>
+      <ScrollManager />
       <Layout
         className={`app-layout ${isFuturistic ? 'futuristic' : 'classic'}`}
-        style={{ minHeight: '100vh' }}
+        style={{
+          minHeight: '100vh',
+          background: isPublicRoute ? '#000000' : undefined,
+        }}
       >
         <Navbar />
-        <Layout>
+        <Layout style={{ background: isPublicRoute ? '#000000' : undefined }}>
           {!shouldHideSidebar && <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />}
           <Layout
             style={{
               marginLeft: !shouldHideSidebar ? (collapsed ? (isMobile ? 0 : 80) : 260) : 0,
-              marginTop: isMobile ? '64px' : 0,
-              padding: isMobile ? '16px' : '24px',
+              marginTop: '64px',
+              padding: isPublicRoute ? 0 : isMobile ? '16px' : '24px',
               flexGrow: 1,
               transition: 'margin-left 0.2s, background 0.3s ease',
               minHeight: 'calc(100vh - 64px)',
+              background: isPublicRoute ? '#000000' : undefined,
+              overflowX: 'clip',
             }}
           >
             {!shouldHideSidebar && (
@@ -145,7 +153,7 @@ function AppContent() {
                 <Breadcrumbs />
               </div>
             )}
-            <Content>
+            <Content style={{ background: isPublicRoute ? '#000000' : 'transparent' }}>
               <ErrorBoundary>
                 <Suspense
                   fallback={

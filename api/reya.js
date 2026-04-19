@@ -1,7 +1,7 @@
 const https = require('https');
 const http = require('http');
 
-exports.handler = async function (req, res) {
+module.exports = async function handler(req, res) {
   // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -136,13 +136,14 @@ Guidelines:
 
 // Generic external API caller with retry
 async function callExternalAPI(url, apiKey, body, retries = 2) {
+  const payload = JSON.stringify(body);
   const options = {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(payload),
     },
-    body: JSON.stringify(body),
   };
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -157,6 +158,7 @@ async function callExternalAPI(url, apiKey, body, retries = 2) {
           });
         });
         req.on('error', reject);
+        req.write(payload);
         req.end();
       });
 
