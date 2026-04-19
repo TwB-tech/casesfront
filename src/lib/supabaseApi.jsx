@@ -213,7 +213,7 @@ export const supabaseApi = {
         ...data,
         id: data.id,
         username: data.name,
-        role: data.user_metadata?.role || 'individual',
+        role: data.user_metadata?.role || data.role || 'individual',
       });
     }
 
@@ -367,7 +367,7 @@ export const supabaseApi = {
         ...safeUser,
         id: data.id,
         username: data.name,
-        role: data.user_metadata?.role || 'individual',
+        role: data.user_metadata?.role || data.role || 'individual',
       });
     }
 
@@ -670,7 +670,7 @@ export const supabaseApi = {
         id: data.user.id,
         email: data.user.email,
         username: userData?.name || data.user.email,
-        role: userData?.user_metadata?.role || 'individual',
+        role: userData?.user_metadata?.role || userData?.role || 'individual',
         organization_id: userData?.user_metadata?.organization_id,
         tokens: JSON.stringify({
           access: data.session?.access_token,
@@ -895,10 +895,7 @@ export const supabaseApi = {
     }
 
     if (path === 'hr/employees/') {
-      return failure(
-        'Employee provisioning must be handled by a trusted backend endpoint.',
-        501
-      );
+      return failure('Employee provisioning must be handled by a trusted backend endpoint.', 501);
     }
 
     if (path === 'hr/invites/') {
