@@ -30,7 +30,7 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import { useCurrency } from '../contexts/CurrencyContext';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency, CURRENCIES } from '../utils/currency';
 import axiosInstance from '../axiosConfig';
 /* eslint-disable no-console */
 
@@ -65,7 +65,9 @@ const HRManagement = () => {
         email: emp.email,
         role: emp.role || 'employee',
         department: emp.department || 'General',
-        billableRate: emp.billable_rate || '$150/hr',
+        billableRate: emp.billable_rate
+          ? `${formatCurrency(emp.billable_rate, currency)}/hr`
+          : `${formatCurrency(150, currency)}/hr`,
         utilization: emp.utilization || 85,
         status: emp.status || 'Active',
         leaveBalance: emp.leave_balance || 30,
@@ -701,7 +703,7 @@ const HRManagement = () => {
           </Form.Item>
           <Form.Item
             name="salary"
-            label="Salary ($)"
+            label={`Salary (${CURRENCIES[currency].symbol})`}
             rules={[{ required: true, message: 'Please enter salary' }]}
           >
             <Input type="number" placeholder="0.00" />
