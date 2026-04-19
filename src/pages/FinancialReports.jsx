@@ -7,6 +7,18 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { formatCurrency } from '../utils/currency';
 import axiosInstance from '../axiosConfig';
 import { useNavigate } from 'react-router-dom';
+import {
+  ResponsiveContainer,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Bar,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 /* eslint-disable no-console */
 
 const { RangePicker } = DatePicker;

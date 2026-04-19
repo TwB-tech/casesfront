@@ -8,7 +8,7 @@ import Navbar from './components/Layout/Navbar';
 import Sidebar from './components/Layout/SideBar';
 import AppFooter from './components/Layout/Footer';
 import { Layout, Skeleton } from 'antd';
-import ProtectedRoute, { AccountingRoute, HRRoute } from './utils/ProtectedRoute';
+import ProtectedRoute, { AdminRoute, AccountingRoute, HRRoute } from './utils/ProtectedRoute';
 import ReactGA from 'react-ga4';
 import ReyaAssistant from './components/Reya/ReyaAssistant';
 import { useTheme } from './contexts/ThemeContext.jsx';
@@ -359,9 +359,9 @@ function AppContent() {
                     <Route
                       path="/admin-dashboard"
                       element={
-                        <ProtectedRoute>
+                        <AdminRoute>
                           <AdminDashboard />
-                        </ProtectedRoute>
+                        </AdminRoute>
                       }
                     />
                     <Route path="/login" element={<Login />} />

@@ -103,7 +103,9 @@ export const formatCurrency = (amount, currencyCode = 'KES') => {
   const num =
     typeof amount === 'string' ? parseFloat(amount.replace(/[^0-9.-]/g, '')) : Number(amount);
 
-  if (isNaN(num)) return `${currency.symbol}0.00`;
+  if (isNaN(num)) {
+    return `${currency.symbol}0.00`;
+  }
 
   // Round to appropriate decimals
   const rounded = currency.decimals === 0 ? Math.round(num) : num.toFixed(currency.decimals);
@@ -133,8 +135,12 @@ export const formatCurrency = (amount, currencyCode = 'KES') => {
  * Parse a currency string to number (handles various formats)
  */
 export const parseCurrency = (value, currencyCode = 'KES') => {
-  if (typeof value === 'number') return value;
-  if (!value) return 0;
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (!value) {
+    return 0;
+  }
 
   const currency = CURRENCIES[currencyCode] || CURRENCIES.KES;
   // Remove symbol and separators

@@ -210,7 +210,9 @@ const ReyaAssistant = ({ context: _ = 'dashboard' }) => {
   };
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim()) {
+      return;
+    }
 
     const userMessage = input;
     setInput('');
@@ -307,22 +309,30 @@ const ReyaAssistant = ({ context: _ = 'dashboard' }) => {
   // Concise fallback when AI services are unavailable
   const getSimpleFallback = (query) => {
     const q = query.toLowerCase();
-    if (q.includes('case') || q.includes('matter'))
+    if (q.includes('case') || q.includes('matter')) {
       return 'You can view all cases in the Cases section, or create a new one. Need me to open it?';
-    if (q.includes('document') || q.includes('draft'))
+    }
+    if (q.includes('document') || q.includes('draft')) {
       return 'I can draft letters, contracts, and more. What type do you need?';
-    if (q.includes('deadline') || q.includes('calendar'))
+    }
+    if (q.includes('deadline') || q.includes('calendar')) {
       return 'Check your calendar for upcoming deadlines. Want me to list urgent ones?';
-    if (q.includes('client'))
+    }
+    if (q.includes('client')) {
       return 'All your clients are in the Clients section. Need to add a new one?';
-    if (q.includes('invoice') || q.includes('billing'))
+    }
+    if (q.includes('invoice') || q.includes('billing')) {
       return 'Invoices are in the Billing section. I can help create one.';
-    if (q.includes('task') || q.includes('todo'))
+    }
+    if (q.includes('task') || q.includes('todo')) {
       return 'You have pending tasks in the Tasks list. Want me to show them?';
-    if (q.includes('firm') || q.includes('support'))
+    }
+    if (q.includes('firm') || q.includes('support')) {
       return 'Browse our law firm marketplace for on-demand help.';
-    if (q.includes('help') || q.includes('what can you'))
+    }
+    if (q.includes('help') || q.includes('what can you')) {
       return 'I can manage cases, draft docs, track deadlines, handle billing, and connect you with firms. What first?';
+    }
     return "I'm here to help. Try asking about cases, documents, deadlines, clients, or billing.";
   };
 
@@ -862,9 +872,9 @@ Want to start a trial?`,
     try {
       setIsTyping(true);
 
-      // Verify user has proper permissions first
-      const permissions = JSON.parse(localStorage.getItem('user_permissions') || '{}');
-      if (!permissions.generate_documents) {
+      const allowedRoles = new Set(['admin', 'administrator', 'partner', 'advocate', 'firm']);
+      const userRole = (user?.role || '').toLowerCase();
+      if (!user || !allowedRoles.has(userRole)) {
         setMessages((prev) => [
           ...prev,
           {

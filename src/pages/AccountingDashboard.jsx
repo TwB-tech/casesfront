@@ -17,6 +17,18 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { formatCurrency } from '../utils/currency';
 import axiosInstance from '../axiosConfig';
 import { useNavigate } from 'react-router-dom';
+import {
+  ResponsiveContainer,
+  LineChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Line,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 
 const AccountingDashboard = () => {
   const { isFuturistic } = useTheme();

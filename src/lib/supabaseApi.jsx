@@ -1,6 +1,7 @@
 import { supabase, TABLES, auth } from './supabase';
 
 const delay = (ms = 50) => new Promise((resolve) => setTimeout(resolve, ms));
+const SELF_SERVICE_ROLES = new Set(['individual', 'advocate', 'firm', 'organization']);
 
 const success = async (data, status = 200) => {
   await delay();
@@ -12,6 +13,20 @@ const failure = async (message, status = 400, errors) => {
   const error = new Error(message);
   error.response = { status, data: errors || { message } };
   throw error;
+};
+
+const getStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('userInfo') || '{}');
+  } catch {
+    return {};
+  }
+};
+
+const getRequestContext = () => {
+  const user = getStoredUser();
+  const organizationId = localStorage.getItem('organization_id') || user?.organization_id;
+  return { user, organizationId };
 };
 
 // Enrich case with client, advocate, court data
@@ -602,12 +617,16 @@ export const supabaseApi = {
 
   async post(url, payload = {}) {
     const path = url.replace(/^\/api\//, '').replace(/^\//, '');
-    const user = JSON.parse(localStorage.getItem('userInfo') || '{}');
-    let organization_id = localStorage.getItem('organization_id') || user?.organization_id;
+    const { user, organizationId: storedOrganizationId } = getRequestContext();
+    let organization_id = storedOrganizationId;
 
     if (!url.includes('/auth/')) {
       if (!payload._csrf && !payload.csrf_token) {
-        const token = sessionStorage.getItem('csrf_token') || 'token';
+        let token = sessionStorage.getItem('csrf_token');
+        if (!token) {
+          token = crypto.randomUUID();
+          sessionStorage.setItem('csrf_token', token);
+        }
         payload._csrf = token;
       }
       const token = payload._csrf || payload.csrf_token;
@@ -650,19 +669,15 @@ export const supabaseApi = {
     }
 
     if (path === 'auth/register/') {
-      const { data: user, error: userErr } = await auth.create(
-        undefined,
-        payload.email,
-        payload.password,
-        payload.username || payload.email
-      );
-      if (userErr) {
-        return failure('Registration failed', 400, userErr);
+      const requestedRole = (payload.role || 'individual').toLowerCase();
+      if (!SELF_SERVICE_ROLES.has(requestedRole)) {
+        return failure('This role must be provisioned by an administrator.', 403);
       }
 
+      let resolvedOrganizationId = payload.organization_id || null;
       if (
-        (payload.role === 'firm' || payload.role === 'organization') &&
-        !payload.organization_id
+        (requestedRole === 'firm' || requestedRole === 'organization') &&
+        !resolvedOrganizationId
       ) {
         const { data: org, error: orgErr } = await supabase
           .from(TABLES.ORGANIZATIONS)
@@ -672,25 +687,38 @@ export const supabaseApi = {
             plan_type: 'free',
           })
           .select();
-        if (!orgErr && org[0]) {
-          await auth.updatePrefs(user.id, { role: payload.role, organization_id: org[0].id });
+        if (orgErr || !org?.[0]) {
+          return failure('Unable to create organization profile', 400, orgErr);
+        }
+        if (org[0]) {
           localStorage.setItem('organization_id', org[0].id);
+          resolvedOrganizationId = org[0].id;
           organization_id = org[0].id;
         }
-      } else {
-        await auth.updatePrefs(user.id, {
-          role: payload.role,
-          organization_id: payload.organization_id,
-        });
+      }
+
+      const signUpData = await auth.create(
+        undefined,
+        payload.email,
+        payload.password,
+        payload.username || payload.email,
+        {
+          role: requestedRole,
+          organization_id: resolvedOrganizationId,
+        }
+      );
+      const registeredUser = signUpData?.user;
+      if (!registeredUser?.id) {
+        return failure('Registration failed', 400, signUpData);
       }
 
       // Create user profile
       const userProfile = {
-        id: user.id,
+        id: registeredUser.id,
         name: payload.username || payload.email,
         username: payload.username || payload.email,
         email: payload.email,
-        role: payload.role,
+        role: requestedRole,
         phone_number: payload.phone_number || '',
         alternative_phone_number: payload.alternative_phone_number || '',
         id_number: payload.id_number || payload.id_passport_number || '',
@@ -707,14 +735,18 @@ export const supabaseApi = {
         client_communication: true,
         task_management: true,
         deadline_notifications: true,
-        organization_id,
+        organization_id: resolvedOrganizationId,
       };
       const { error: userInsertErr } = await supabase.from(TABLES.USERS).insert(userProfile);
       if (userInsertErr) {
         console.warn('User profile insert failed:', userInsertErr);
       }
 
-      return success({ id: user.id, email: user.email, username: payload.username });
+      return success({
+        id: registeredUser.id,
+        email: registeredUser.email,
+        username: payload.username,
+      });
     }
 
     if (path === 'case/') {
@@ -852,43 +884,10 @@ export const supabaseApi = {
     }
 
     if (path === 'hr/employees/') {
-      const { data: user, error } = await auth.create(
-        undefined,
-        payload.email,
-        payload.password,
-        payload.full_name || payload.email
+      return failure(
+        'Employee provisioning must be handled by a trusted backend endpoint.',
+        501
       );
-      if (error) {
-        return failure('Employee already exists', 400, error);
-      }
-      await auth.updatePrefs(user.id, {
-        role: 'employee',
-        organization_id,
-        department: payload.department,
-        position: payload.position,
-        salary: payload.salary,
-        hire_date: payload.hire_date,
-      });
-      const { error: userErr } = await supabase.from(TABLES.USERS).insert({
-        id: user.id,
-        name: payload.full_name || payload.email,
-        username: payload.full_name || payload.email,
-        email: payload.email,
-        role: 'employee',
-        phone_number: payload.phone_number || '',
-        address: payload.address || '',
-        status: 'Active',
-        timezone: 'EAT',
-        department: payload.department,
-        position: payload.position,
-        salary: payload.salary,
-        hire_date: payload.hire_date,
-        organization_id,
-      });
-      if (userErr) {
-        console.warn('Employee profile insert failed:', userErr);
-      }
-      return success({ id: user.id, email: user.email }, 201);
     }
 
     if (path === 'hr/invites/') {

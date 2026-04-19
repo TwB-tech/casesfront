@@ -183,7 +183,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       }
     }
     return '1';
-  }, [location.pathname]);
+  }, [location.pathname, ROUTE_CONFIG]);
 
   const showDrawer = () => setDrawerVisible(true);
   const closeDrawer = () => setDrawerVisible(false);

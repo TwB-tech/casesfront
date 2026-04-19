@@ -38,7 +38,7 @@ const ThemeProvider = ({ children }) => {
   };
   const value = useMemo(
     () => ({ theme, setTheme, isFuturistic, themeConfig, toggleTheme }),
-    [theme]
+    [theme, isFuturistic, themeConfig]
   );
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };

@@ -9,6 +9,9 @@ const parseStoredUser = () => {
     return null;
   }
   try {
+    if (!localStorage.getItem('accessToken')) {
+      return null;
+    }
     const encrypted = localStorage.getItem('userInfo_encrypted');
     if (encrypted) {
       // TODO: In production, derive key from user password
@@ -76,8 +79,14 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(parseStoredUser);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && user) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (user) {
       localStorage.setItem('userInfo', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('userInfo');
     }
   }, [user]);
 
@@ -89,6 +98,7 @@ const AuthProvider = ({ children }) => {
       email: data.email,
       username: data.username,
       role: data.role,
+      organization_id: data.organization_id || null,
     };
 
     localStorage.setItem('accessToken', tokens.access);
@@ -120,25 +130,11 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  const verifyToken = async () => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      return false;
-    }
-    try {
-      await axiosInstance.post('/auth/verify-token', { token });
-      return true;
-    } catch (error) {
-      logout();
-      return false;
-    }
-  };
-
   const forgotPassword = async (email) => {
     await axiosInstance.post('/auth/request-reset-email/', { email });
     notification.success({
       message: 'Reset Link Generated',
-      description: 'In standalone mode, you can proceed directly to the reset screen.',
+      description: 'Check your email for the password reset instructions.',
     });
   };
 
@@ -162,7 +158,6 @@ const AuthProvider = ({ children }) => {
       description: 'Your password has been updated.',
     });
   };
-
   const logout = async () => {
     try {
       await axiosInstance.post('/auth/logout/');
@@ -173,8 +168,33 @@ const AuthProvider = ({ children }) => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('organization_id');
+    localStorage.removeItem('user_permissions');
     setUser(null);
   };
+
+  const verifyToken = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      return false;
+    }
+    try {
+      await axiosInstance.post('/auth/verify-token', { token });
+      return true;
+    } catch (error) {
+      logout();
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !localStorage.getItem('accessToken')) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      void verifyToken();
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const value = useMemo(
     () => ({

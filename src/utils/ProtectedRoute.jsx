@@ -4,7 +4,7 @@ import useAuth from '../hooks/useAuth';
 export default function ProtectedRoute({ children, roles = [] }) {
   const { user, isAuthenticated } = useAuth();
 
-  if (!isAuthenticated || !localStorage.getItem("userInfo")) {
+  if (!isAuthenticated || !user) {
     return <Navigate to={"/login"} replace />;
   }
 

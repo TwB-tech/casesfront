@@ -70,7 +70,7 @@ function LandingPage() {
                     fontStyle: 'italic',
                   }}
                 >
-                  "{testimonial.quote}"
+                  &quot;{testimonial.quote}&quot;
                 </p>
                 <div>
                   <p style={{ color: '#ffffff', fontWeight: 600 }}>{testimonial.author}</p>

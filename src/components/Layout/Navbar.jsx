@@ -10,6 +10,7 @@ import {
 import Logo from '../../assets/LogoNoBg.png';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const Navbar = () => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -17,6 +18,7 @@ const Navbar = () => {
     typeof window !== 'undefined' ? window.innerWidth <= 768 : false
   );
   const navigate = useNavigate();
+  const { isFuturistic } = useTheme();
   const { logout, user } = useAuth();
 
   useEffect(() => {

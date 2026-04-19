@@ -123,7 +123,9 @@ export const sendVerificationEmail = async (user) => {
     const db = JSON.parse(
       localStorage.getItem('wakiliworld.frontend.db.v1') || '{"emailVerifications":[]}'
     );
-    if (!db.emailVerifications) db.emailVerifications = [];
+    if (!db.emailVerifications) {
+      db.emailVerifications = [];
+    }
     db.emailVerifications.push({
       token,
       email: user.email,
@@ -156,7 +158,9 @@ export const sendPasswordResetEmail = async (email, token) => {
   if (!import.meta.env.SUPABASE_URL) {
     const db = JSON.parse(localStorage.getItem('wakiliworld.frontend.db.v1') || '{}');
     const user = db.users?.find((u) => u.email === email);
-    if (user) username = user.username || user.email;
+    if (user) {
+      username = user.username || user.email;
+    }
   }
 
   const html = buildPasswordResetEmail(username, token);

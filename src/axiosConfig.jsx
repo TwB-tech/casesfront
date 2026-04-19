@@ -81,13 +81,22 @@ const sanitizeApiResponse = (response) => {
 const createHybridApi = (primary, fallback) => {
   const isNetworkError = (error) => {
     // No response object = network/connectivity error
-    if (!error.response) return true;
+    if (!error.response) {
+      return true;
+    }
     // Server errors (5xx) - Supabase may be down
-    if (error.response.status >= 500) return true;
+    if (error.response.status >= 500) {
+      return true;
+    }
     // Connection errors typically have specific messages
     const msg = error.message?.toLowerCase() || '';
-    if (msg.includes('network') || msg.includes('failed to fetch') || msg.includes('econnrefused'))
+    if (
+      msg.includes('network') ||
+      msg.includes('failed to fetch') ||
+      msg.includes('econnrefused')
+    ) {
       return true;
+    }
     return false;
   };
 
@@ -117,11 +126,17 @@ const createHybridApi = (primary, fallback) => {
 
 // Determine mode: Supabase-only, Standalone-only, or Hybrid fallback
 let apiInstance;
+const ENABLE_STANDALONE_FALLBACK =
+  import.meta.env.VITE_ENABLE_STANDALONE_FALLBACK === 'true' || import.meta.env.DEV;
 
 if (USE_SUPABASE) {
-  // Use Supabase with automatic fallback to standalone on network failures
-  console.info('Initializing hybrid API: Supabase primary, standalone fallback');
-  apiInstance = createHybridApi(supabaseApi, standaloneApi);
+  if (ENABLE_STANDALONE_FALLBACK) {
+    console.info('Initializing hybrid API: Supabase primary, standalone fallback');
+    apiInstance = createHybridApi(supabaseApi, standaloneApi);
+  } else {
+    console.info('Initializing Supabase API without standalone fallback');
+    apiInstance = supabaseApi;
+  }
 } else {
   // Pure standalone mode (no Supabase)
   console.info('Initializing standalone API (DATABASE_MODE=standalone)');

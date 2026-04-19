@@ -90,12 +90,16 @@ export const auth = {
     return data;
   },
 
-  async create(userId, email, password, username) {
-    const { data, error } = await supabase.auth.admin.createUser({
+  async create(userId, email, password, username, metadata = {}) {
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      email_confirm: true,
-      user_metadata: { username, role: 'individual' },
+      options: {
+        data: {
+          username,
+          ...metadata,
+        },
+      },
     });
     if (error) {
       throw error;
@@ -112,7 +116,7 @@ export const auth = {
   },
 
   async updatePrefs(userId, prefs) {
-    const { error } = await supabase.auth.admin.updateUserById(userId, { user_metadata: prefs });
+    const { error } = await supabase.auth.updateUser({ data: prefs });
     if (error) {
       throw error;
     }

@@ -95,15 +95,15 @@ const ContactUsForm = () => {
           className={`mb-4 ${isFuturistic ? 'text-aurora-text' : 'text-primary-900'}`}
           style={{ fontSize: '42px', fontWeight: 700 }}
         >
-          We're here to help
+          We&apos;re here to help
         </Title>
         <Text
           className={`text-lg block max-w-xl mx-auto ${
             isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'
           }`}
         >
-          Got questions? Need support? Just say hello — we'd love to hear from you. We typically
-          respond within a few hours.
+          Got questions? Need support? Just say hello — we&apos;d love to hear from you. We
+          typically respond within a few hours.
         </Text>
       </div>
 
@@ -134,7 +134,7 @@ const ContactUsForm = () => {
                 </Title>
                 <Text className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}>
                   Your email client is open with the message ready to go. If nothing happened, you
-                  can also reach us directly at admin@techwithbrands.com — we're here to help.
+                  can also reach us directly at admin@techwithbrands.com — we&apos;re here to help.
                 </Text>
                 <div className="mt-6">
                   <Button
@@ -309,7 +309,8 @@ const ContactUsForm = () => {
                 <Text
                   className={`text-sm ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
                 >
-                  Built with care by
+                  Your email client is open with the message ready to go. If nothing happened, you
+                  can also reach us directly at admin@techwithbrands.com — we&apos;re here to help.
                 </Text>
                 <a
                   href="https://techwithbrands.com"
