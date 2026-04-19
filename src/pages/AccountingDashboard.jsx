@@ -366,7 +366,7 @@ const AccountingDashboard = () => {
               <XAxis dataKey="month" stroke={isFuturistic ? '#94a3b8' : '#64748b'} />
               <YAxis
                 stroke={isFuturistic ? '#94a3b8' : '#64748b'}
-                tickFormatter={(value) => `$${value / 1000}k`}
+                tickFormatter={(value) => formatCurrency(value, currency)}
               />
               <Tooltip
                 contentStyle={{
@@ -374,7 +374,7 @@ const AccountingDashboard = () => {
                   border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
                   borderRadius: '8px',
                 }}
-                formatter={(value) => [`$${value.toLocaleString()}`, '']}
+                formatter={(value) => [formatCurrency(value, currency), '']}
               />
               <Line
                 type="monotone"

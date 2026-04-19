@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { CreditCard, Calendar, Download, Plus, FileText, CheckCircle } from 'lucide-react';
 import { Card, Table, Button, Modal, Form, DatePicker, Tag, message } from 'antd';
 import { useTheme } from '../contexts/ThemeContext';
+import { useCurrency } from '../contexts/CurrencyContext';
+import { formatCurrency } from '../utils/currency';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import axiosInstance from '../axiosConfig';
 /* eslint-disable no-console */
 
 const PayrollManagement = () => {
   const { isFuturistic } = useTheme();
+  const { currency } = useCurrency();
   const [payrolls, setPayrolls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -47,7 +50,7 @@ const PayrollManagement = () => {
       title: 'Total Amount',
       dataIndex: 'totalAmount',
       key: 'totalAmount',
-      render: (amount) => <span className="font-semibold">${amount.toLocaleString()}</span>,
+      render: (amount) => <span className="font-semibold">{formatCurrency(amount, currency)}</span>,
       sorter: (a, b) => a.totalAmount - b.totalAmount,
     },
     {
@@ -184,7 +187,7 @@ const PayrollManagement = () => {
               <p
                 className={`text-2xl font-bold ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
               >
-                $27,500
+                {formatCurrency(27500, currency)}
               </p>
             </div>
           </div>
@@ -253,7 +256,7 @@ const PayrollManagement = () => {
               <p
                 className={`text-2xl font-bold ${isFuturistic ? 'text-aurora-text' : 'text-neutral-800'}`}
               >
-                $110,000
+                {formatCurrency(110000, currency)}
               </p>
             </div>
           </div>

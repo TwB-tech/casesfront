@@ -23,6 +23,8 @@ import {
 
 import useAuth from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
+import { formatCurrency } from '../../utils/currency';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../axiosConfig';
 import {
@@ -70,6 +72,7 @@ const ActionButton = ({ action, onClick, isFuturistic }) => {
 const ReyaAssistant = ({ context: _ = 'dashboard' }) => {
   const { user } = useAuth();
   const { isFuturistic } = useTheme();
+  const { currency } = useCurrency();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -609,7 +612,7 @@ Want to start a trial?`,
       const totalRevenue = invoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
 
       return {
-        content: `💰 **BILLING & INVOICING**\n\n**Your Billing Status:**\n• ${invoices.length} total invoices\n• ${pendingInvoices} pending payment\n• $${totalRevenue.toLocaleString()} total revenue this period\n\n**Automated Billing Actions:**\n• "Reya, generate invoice for Case #123"\n• "Reya, send payment reminder for invoice #456"\n• "Reya, show me overdue payments"\n\nI can automatically generate invoices when cases are closed, send reminders on your schedule, and provide real-time revenue tracking.\n\nHow can I assist you with billing?`,
+        content: `💰 **BILLING & INVOICING**\n\n**Your Billing Status:**\n• ${invoices.length} total invoices\n• ${pendingInvoices} pending payment\n• ${formatCurrency(totalRevenue, currency)} total revenue this period\n\n**Automated Billing Actions:**\n• "Reya, generate invoice for Case #123"\n• "Reya, send payment reminder for invoice #456"\n• "Reya, show me overdue payments"\n\nI can automatically generate invoices when cases are closed, send reminders on your schedule, and provide real-time revenue tracking.\n\nHow can I assist you with billing?`,
         actions: [
           { label: 'Create Invoice', icon: 'dollar', action: 'new_invoice', path: '/new-invoice' },
           { label: 'View Invoices', icon: 'dollar', action: 'invoices', path: '/invoices' },

@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { Button, Tabs, Spin, message } from 'antd';
 import { useTheme } from '../contexts/ThemeContext';
+import { useCurrency } from '../contexts/CurrencyContext';
+import { CURRENCIES } from '../utils/currency';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import api from '../axiosConfig';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +25,7 @@ import { useNavigate } from 'react-router-dom';
 
 const FirmsMarketplace = () => {
   const { isFuturistic } = useTheme();
+  const { currency } = useCurrency();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,7 +45,7 @@ const FirmsMarketplace = () => {
         email: adv.email,
         rating: 4.5 + Math.random() * 0.5,
         reviewCount: Math.floor(Math.random() * 50) + 10,
-        hourlyRate: '$120-250/hr',
+        hourlyRate: `${CURRENCIES[currency].symbol}120-250/hr`,
         specialties: ['Corporate', 'Litigation'],
         location: 'Nairobi, Kenya',
         verified: true,
@@ -79,37 +82,37 @@ const FirmsMarketplace = () => {
       description:
         'Comprehensive corporate legal support including structuring, compliance, and governance',
       icon: Building,
-      avgRate: '$120-250/hr',
+      avgRate: `${CURRENCIES[currency].symbol}120-250/hr`,
     },
     {
       title: 'Litigation Services',
       description: 'Full representation in civil, commercial, and criminal litigation matters',
       icon: Scale,
-      avgRate: '$150-300/hr',
+      avgRate: `${CURRENCIES[currency].symbol}150-300/hr`,
     },
     {
       title: 'Real Estate Transactions',
       description: 'Conveyancing, property due diligence, and land dispute resolution',
       icon: MapPin,
-      avgRate: '$100-180/hr',
+      avgRate: `${CURRENCIES[currency].symbol}100-180/hr`,
     },
     {
       title: 'IP Protection',
       description: 'Trademark, patent, copyright registration and enforcement',
       icon: Award,
-      avgRate: '$130-220/hr',
+      avgRate: `${CURRENCIES[currency].symbol}130-220/hr`,
     },
     {
       title: 'Family Law Matters',
       description: 'Divorce, custody, adoption, and estate planning services',
       icon: Users,
-      avgRate: '$80-150/hr',
+      avgRate: `${CURRENCIES[currency].symbol}80-150/hr`,
     },
     {
       title: 'Commercial Arbitration',
       description: 'Alternative dispute resolution for commercial conflicts',
       icon: Briefcase,
-      avgRate: '$180-350/hr',
+      avgRate: `${CURRENCIES[currency].symbol}180-350/hr`,
     },
   ];
 
