@@ -52,6 +52,7 @@ const Navbar = () => {
         border: '1px solid',
         borderColor: isFuturistic ? '#2a2a3a' : '#333',
       }}
+      className="user-dropdown-menu"
     >
       <div className="text-center mb-4" style={{ padding: '13px' }}>
         <h2 style={{ color: '#ffffff', marginBottom: '10px', fontWeight: 600 }}>
@@ -59,14 +60,24 @@ const Navbar = () => {
         </h2>
         <p style={{ color: '#aaaaaa', fontSize: '13px' }}>{user?.email}</p>
       </div>
-      <Menu.Item onClick={() => navigate('/home')}>Dashboard</Menu.Item>
-      <Menu.Item onClick={() => navigate('/profile')}>Profile</Menu.Item>
-      <Menu.Item onClick={() => navigate('/settings')}>Settings</Menu.Item>
+      <Menu.Item onClick={() => navigate('/home')} style={{ color: '#8b5cf6' }}>
+        Dashboard
+      </Menu.Item>
+      <Menu.Item onClick={() => navigate('/profile')} style={{ color: '#8b5cf6' }}>
+        Profile
+      </Menu.Item>
+      <Menu.Item onClick={() => navigate('/settings')} style={{ color: '#8b5cf6' }}>
+        Settings
+      </Menu.Item>
       {(user?.role === 'admin' || user?.role === 'administrator') && (
-        <Menu.Item onClick={() => navigate('/admin-dashboard')}>Admin Dashboard</Menu.Item>
+        <Menu.Item onClick={() => navigate('/admin-dashboard')} style={{ color: '#8b5cf6' }}>
+          Admin Dashboard
+        </Menu.Item>
       )}
       <Menu.Divider />
-      <Menu.Item onClick={handleLogout}>Logout</Menu.Item>
+      <Menu.Item onClick={handleLogout} style={{ color: '#8b5cf6' }}>
+        Logout
+      </Menu.Item>
     </Menu>
   );
 
