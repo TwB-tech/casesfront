@@ -1106,7 +1106,9 @@ Want to start a trial?`,
       {isOpen && (
         <div
           className={`fixed z-[1000] flex flex-col transition-all duration-300 ${
-            isMinimized ? 'bottom-6 right-6 w-80 h-16' : 'bottom-6 right-6 w-[420px] h-[600px]'
+            isMinimized
+              ? 'bottom-6 right-6 w-80 max-w-[calc(100vw-24px)] h-16'
+              : 'bottom-6 left-4 right-4 sm:left-auto sm:right-6 w-[calc(100vw-32px)] sm:w-[420px] max-w-[calc(100vw-32px)] sm:max-w-[420px] h-[calc(100vh-120px)] sm:h-[600px]'
           }`}
           style={{
             boxShadow: '0 25px 50px -12px rgba(99, 102, 241, 0.25)',

@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Button, Card, Select, DatePicker, Row, Col, Tooltip } from 'antd';
+import { Form, Input, Button, Card, Select, DatePicker, Row, Col, Tooltip, message } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import axiosInstance from '../../axiosConfig';
 import { useNavigate, useLocation } from 'react-router-dom';
 import moment from 'moment';
+import useAuth from '../../hooks/useAuth';
 
 const { Option } = Select;
 
 function CaseForm() {
+  const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [courts, setCourts] = useState([]);
   const [caseNumber] = useState(() => Math.floor(Math.random() * 2147483648));
   const [loading, setLoading] = useState(false);
+  const [loadingClients, setLoadingClients] = useState(false);
   const [form] = Form.useForm();
 
   const navigate = useNavigate();
@@ -21,31 +24,54 @@ function CaseForm() {
   const editCase = state?.case;
 
   useEffect(() => {
-    // Fetching data for selects
     const fetchData = async () => {
-      const [userRes, courtRes] = await Promise.all([
-        axiosInstance.get('/advocate/'),
-        axiosInstance.get('/court/'),
-      ]);
-      setUsers(userRes.data.results);
-      setCourts(courtRes.data.results);
+      // Fetch courts (always all courts)
+      try {
+        const courtRes = await axiosInstance.get('/court/');
+        setCourts(courtRes.data.results || []);
+      } catch (error) {
+        console.error('Error fetching courts:', error);
+        setCourts([]);
+      }
+
+      // Fetch appropriate "clients" (referred to as "individual" in the form) based on user role
+      if (user) {
+        if (user.role === 'individual') {
+          // Individual users can only create cases for themselves
+          setUsers([{ id: user.id, username: user.username }]);
+        } else {
+          // Advocates and firms fetch their associated clients
+          try {
+            setLoadingClients(true);
+            const userRes = await axiosInstance.get('/advocate/clients/');
+            setUsers(userRes.data.results || []);
+          } catch (error) {
+            console.error('Error fetching clients:', error);
+            setUsers([]);
+            message.error('Failed to load clients. Please try again later.');
+          } finally {
+            setLoadingClients(false);
+          }
+        }
+      }
     };
     fetchData();
+  }, [user]);
 
+  useEffect(() => {
     if (isEditing && editCase) {
       // Prefill the form if editing
       form.setFieldsValue({
         case_number: editCase.case_number,
         title: editCase.title,
         description: editCase.description,
-        individual: editCase.client?.username,
-        court: editCase.court?.name,
+        individual: editCase.client?.id || editCase.client_id,
+        court: editCase.court?.id || editCase.court_id,
         status: editCase.status,
         start_date: moment(editCase.start_date),
         end_date: editCase.end_date ? moment(editCase.end_date) : null,
       });
     }
-    // No need to generate case number; it's generated via lazy state init
   }, [form, isEditing, editCase]);
 
   const onFinish = async (values) => {
@@ -135,13 +161,13 @@ function CaseForm() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="Advocate"
+                label="Client"
                 name="individual"
-                rules={[{ required: true, message: 'Please select the advocate!' }]}
+                rules={[{ required: true, message: 'Please select the client!' }]}
               >
                 <Select
                   showSearch
-                  placeholder="Search and select an advocate"
+                  placeholder="Search and select a client"
                   optionFilterProp="children"
                   filterOption={(input, option) =>
                     option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0

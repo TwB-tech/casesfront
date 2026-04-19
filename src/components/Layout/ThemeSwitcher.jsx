@@ -14,9 +14,9 @@ const ThemeSwitcher = ({ compact = false }) => {
         title={`Switch to ${theme === THEMES.CLASSIC ? 'Futuristic' : 'Classic'} theme`}
       >
         {theme === THEMES.CLASSIC ? (
-          <ExperimentOutlined className="text-lg text-neutral-600 group-hover:text-aurora-primary transition-colors" />
+          <ExperimentOutlined className="text-lg text-white group-hover:text-aurora-primary transition-colors" />
         ) : (
-          <SunOutlined className="text-lg text-aurora-muted group-hover:text-warning transition-colors" />
+          <SunOutlined className="text-lg text-aurora-primary group-hover:text-aurora-muted transition-colors" />
         )}
       </button>
     );

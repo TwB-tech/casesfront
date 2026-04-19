@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Form, Input, Button, Upload, Select, Card, Tooltip, notification } from 'antd';
 import { UploadOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import axiosInstance from '../../axiosConfig';
@@ -12,6 +12,11 @@ function NewDocument() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const filterOption = useCallback(
+    (input, option) => option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0,
+    []
+  );
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -31,10 +36,12 @@ function NewDocument() {
     const formData = new FormData();
     formData.append('title', values.title);
     formData.append('description', values.description);
-    if (file) {formData.append('file', file);}
+    if (file) {
+      formData.append('file', file);
+    }
     formData.append('owner', values.owner);
-    (values.shared_with || []).forEach(user => formData.append('shared_with', user));
-  
+    (values.shared_with || []).forEach((user) => formData.append('shared_with', user));
+
     try {
       await axiosInstance.post('/document_management/api/documents/', formData, {
         headers: {
@@ -46,7 +53,7 @@ function NewDocument() {
       console.error('Error uploading document:', error);
       notification.error({
         message: 'Upload Failed',
-        description: 'Could not upload document. Please try again.'
+        description: 'Could not upload document. Please try again.',
       });
     } finally {
       setLoading(false);
@@ -67,14 +74,20 @@ function NewDocument() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1>Add New Document</h1>
           <Tooltip title="Back to documents">
-            <ArrowLeftOutlined onClick={handleBackClick} style={{ marginBottom: '20px', fontSize: '18px', color: 'blue', border: '1px solid grey', borderRadius: '50%', padding: '10px' }} />
+            <ArrowLeftOutlined
+              onClick={handleBackClick}
+              style={{
+                marginBottom: '20px',
+                fontSize: '18px',
+                color: 'blue',
+                border: '1px solid grey',
+                borderRadius: '50%',
+                padding: '10px',
+              }}
+            />
           </Tooltip>
         </div>
-        <Form
-          name="newDocument"
-          layout="vertical"
-          onFinish={onFinish}
-        >
+        <Form name="newDocument" layout="vertical" onFinish={onFinish}>
           <Form.Item
             label="Title"
             name="title"
@@ -97,30 +110,32 @@ function NewDocument() {
             rules={[{ required: true, message: 'Please select the owner!' }]}
           >
             <Select
-             showSearch
-             placeholder="Search and select a User"
-             optionFilterProp="children"
-             filterOption={(input, option) =>
-               option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-             }
-            >
-              {users.map(user => <Option key={user.id} value={user.id}>{user.username}</Option>)}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            label="Shared With"
-            name="shared_with"
-          >
-            <Select mode="multiple"
               showSearch
               placeholder="Search and select a User"
               optionFilterProp="children"
-              filterOption={(input, option) =>
-                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-              }
+              filterOption={filterOption}
             >
-              {users.map(user => <Option key={user.id} value={user.id}>{user.username}</Option>)}
+              {users.map((user) => (
+                <Option key={user.id} value={user.id}>
+                  {user.username}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item label="Shared With" name="shared_with">
+            <Select
+              mode="multiple"
+              showSearch
+              placeholder="Search and select a User"
+              optionFilterProp="children"
+              filterOption={filterOption}
+            >
+              {users.map((user) => (
+                <Option key={user.id} value={user.id}>
+                  {user.username}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 
@@ -129,7 +144,7 @@ function NewDocument() {
             name="file"
             rules={[{ required: true, message: 'Please upload a file!' }]}
           >
-           <Upload beforeUpload={() => false} onChange={onFileChange}>
+            <Upload beforeUpload={() => false} onChange={onFileChange}>
               <Button icon={<UploadOutlined />}>Click to Upload</Button>
             </Upload>
           </Form.Item>

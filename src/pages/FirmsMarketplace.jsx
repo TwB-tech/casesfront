@@ -50,6 +50,7 @@ const FirmsMarketplace = () => {
         location: 'Nairobi, Kenya',
         verified: true,
         responseTime: 'within 2h',
+        availability: 'Now',
         memberSince: '2023-01-15',
         avatar: null,
       }));

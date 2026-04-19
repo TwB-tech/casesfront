@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Card,
   Row,
@@ -34,31 +34,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 
 /* eslint-disable no-console */
-const dataPie1 = [
-  { name: 'New', value: 62 },
-  { name: 'Returning', value: 26 },
-  { name: 'Inactive', value: 12 },
-];
-
-const dataPie2 = [
-  { name: 'Paid', value: 70 },
-  { name: 'Trial', value: 30 },
-];
-
-const dataBar = [
-  { name: 'JAN', cases: 100 },
-  { name: 'FEB', cases: 120 },
-  { name: 'MAR', cases: 180 },
-  { name: 'APR', cases: 150 },
-  { name: 'MAY', cases: 200 },
-  { name: 'JUN', cases: 250 },
-  { name: 'JUL', cases: 270 },
-  { name: 'AUG', cases: 50 },
-  { name: 'SEP', cases: 100 },
-  { name: 'OCT', cases: 250 },
-  { name: 'NOV', cases: 290 },
-  { name: 'DEC', cases: 400 },
-];
+const COLORS1 = ['#FFBB28', '#FF8042', '#0088Fe'];
+const COLORS2 = ['#0088Fe', '#00C49F'];
 
 const columns = [
   { title: 'Task', dataIndex: 'title', key: 'title' },
@@ -78,34 +55,40 @@ const columns = [
   },
 ];
 
-const COLORS1 = ['#FFBB28', '#FF8042', '#0088FE'];
-const COLORS2 = ['#0088FE', '#00C49F'];
-
 function Home() {
   const { isFuturistic } = useTheme();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [cases, setCases] = useState([]);
-  const [clients, setClients] = useState([]);
+  const [cases, setCases] = useState({ cases_count: 0, results: [] });
+  const [clients, setClients] = useState({ clients_count: 0, results: [] });
   const [tasks, setTasks] = useState([]);
   const [loadingCases, setLoadingCases] = useState(true);
   const [loadingClients, setLoadingClients] = useState(true);
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Fetch functions defined before useEffect to avoid hoisting issues
   const [financialData, setFinancialData] = useState({
-    monthlyRevenue: 25410,
-    pendingRevenue: 1352,
+    totalRevenue: 0,
+    totalExpenses: 0,
+    netProfit: 0,
+    profitMargin: 0,
+    revenueGrowth: 0,
+    expenseGrowth: 0,
+    monthlyRevenue: [],
+    expenseCategories: [],
+    recentTransactions: [],
+    pendingInvoices: 0,
+    overdueInvoices: 0,
+    paidInvoices: 0,
   });
 
   const fetchCases = async () => {
     try {
-      const response = await axiosInstance.get('/advocate/cases/');
+      const response = await axiosInstance.get('/case/');
       const data = response.data || {};
       setCases({
-        cases_count: data.cases_count || 0,
+        cases_count: data.results ? data.results.length : 0,
         results: Array.isArray(data.results) ? data.results : [],
       });
     } catch (error) {
@@ -153,6 +136,54 @@ function Home() {
       console.error('Error fetching financials:', error);
     }
   };
+
+  // Compute case volume data (cases per month) from cases list
+  const caseVolumeData = useMemo(() => {
+    const caseList = cases.results || [];
+    if (!Array.isArray(caseList) || caseList.length === 0) {
+      return [];
+    }
+    const monthCounts = {};
+    const monthNames = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    caseList.forEach((c) => {
+      const start = c.start_date ? new Date(c.start_date) : new Date(c.created_at || Date.now());
+      if (isNaN(start.getTime())) {
+        return;
+      }
+      const monthIdx = start.getMonth();
+      const year = start.getFullYear();
+      const key = `${year}-${monthIdx}`;
+      if (!monthCounts[key]) {
+        monthCounts[key] = { name: monthNames[monthIdx], cases: 0 };
+      }
+      monthCounts[key].cases += 1;
+    });
+    // Sort by month index (could also sort by key)
+    return Object.values(monthCounts);
+  }, [cases]);
+
+  // Compute billing status pie data from financialData
+  const billingStatusData = useMemo(() => {
+    const { paidInvoices = 0, pendingInvoices = 0, overdueInvoices = 0 } = financialData;
+    return [
+      { name: 'Paid', value: paidInvoices },
+      { name: 'Pending', value: pendingInvoices },
+      { name: 'Overdue', value: overdueInvoices },
+    ];
+  }, [financialData]);
 
   // Other UI handlers
   const showModal = () => {
@@ -375,6 +406,7 @@ function Home() {
 
       <Row gutter={[16, 16]}>
         {/* Stats Cards - Optimized layout */}
+        {/* Active Cases */}
         <Col xs={24} sm={12} md={6} lg={3}>
           <Card
             className={isFuturistic ? 'hover-glow' : ''}
@@ -419,6 +451,7 @@ function Home() {
           </Card>
         </Col>
 
+        {/* Total Clients */}
         <Col xs={24} sm={12} md={6} lg={3}>
           <Card
             className={isFuturistic ? 'hover-glow' : ''}
@@ -463,6 +496,7 @@ function Home() {
           </Card>
         </Col>
 
+        {/* Total Revenue */}
         <Col xs={24} sm={12} md={6} lg={3}>
           <Card
             className={isFuturistic ? 'hover-glow' : ''}
@@ -476,9 +510,9 @@ function Home() {
           >
             <Statistic
               title={
-                <span style={{ color: isFuturistic ? '#94a3b8' : '#627d98' }}>Monthly Revenue</span>
+                <span style={{ color: isFuturistic ? '#94a3b8' : '#627d98' }}>Total Revenue</span>
               }
-              value={financialData.monthlyRevenue || 25410}
+              value={financialData.totalRevenue || 0}
               prefix="$"
               valueStyle={{
                 color: isFuturistic ? '#f8fafc' : '#102a43',
@@ -489,12 +523,12 @@ function Home() {
             <div style={{ marginTop: '8px' }}>
               <span
                 style={{
-                  color: financialData.revenueChange >= 0 ? '#38c172' : '#f5222d',
+                  color: financialData.revenueGrowth >= 0 ? '#38c172' : '#f5222d',
                   fontWeight: 500,
                 }}
               >
-                {financialData.revenueChange >= 0 ? '+' : ''}
-                {financialData.revenueChange || 0.4}%
+                {financialData.revenueGrowth >= 0 ? '+' : ''}
+                {financialData.revenueGrowth || 0}%
               </span>
               <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontSize: '12px' }}>
                 since last month
@@ -503,6 +537,7 @@ function Home() {
           </Card>
         </Col>
 
+        {/* Pending Invoices */}
         <Col xs={24} sm={12} md={6} lg={3}>
           <Card
             className={isFuturistic ? 'hover-glow' : ''}
@@ -516,10 +551,11 @@ function Home() {
           >
             <Statistic
               title={
-                <span style={{ color: isFuturistic ? '#94a3b8' : '#627d98' }}>Pending Revenue</span>
+                <span style={{ color: isFuturistic ? '#94a3b8' : '#627d98' }}>
+                  Pending Invoices
+                </span>
               }
-              value={financialData.pendingRevenue || 1352}
-              prefix="$"
+              value={financialData.pendingInvoices || 0}
               valueStyle={{
                 color: isFuturistic ? '#f59e0b' : '#faad14',
                 fontWeight: 600,
@@ -530,15 +566,11 @@ function Home() {
               <span style={{ color: isFuturistic ? '#f59e0b' : '#faad14', fontWeight: 500 }}>
                 Action Required
               </span>
-              <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontSize: '12px' }}>
-                -{' '}
-                {Math.round(
-                  ((financialData.pendingRevenue || 1352) /
-                    (financialData.monthlyRevenue || 25410)) *
-                    100
-                )}
-                % outstanding
-              </span>
+              {financialData.overdueInvoices > 0 && (
+                <span style={{ color: '#f5222d', fontWeight: 500, marginLeft: '8px' }}>
+                  ({financialData.overdueInvoices} overdue)
+                </span>
+              )}
             </div>
           </Card>
         </Col>
@@ -564,12 +596,12 @@ function Home() {
                 color: isFuturistic ? '#f8fafc' : '#102a43',
               }}
             >
-              Client Distribution
+              Expense Breakdown
             </h3>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
-                  data={dataPie1}
+                  data={financialData.expenseCategories || []}
                   cx="50%"
                   cy="50%"
                   outerRadius={75}
@@ -578,16 +610,18 @@ function Home() {
                   dataKey="value"
                   label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                 >
-                  {(dataPie1 || []).map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS1[index % COLORS1.length]} />
+                  {(financialData.expenseCategories || []).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
             <div style={{ textAlign: 'center', marginTop: '12px' }}>
-              <span style={{ color: COLORS1[0], fontWeight: 500 }}>● New</span> &nbsp;
-              <span style={{ color: COLORS1[1], fontWeight: 500 }}>● Returning</span> &nbsp;
-              <span style={{ color: COLORS1[2], fontWeight: 500 }}>● Inactive</span>
+              {(financialData.expenseCategories || []).map((cat, idx) => (
+                <span key={idx} style={{ color: cat.color, fontWeight: 500, margin: '0 8px' }}>
+                  ● {cat.name}
+                </span>
+              ))}
             </div>
           </Card>
         </Col>
@@ -615,7 +649,7 @@ function Home() {
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
-                  data={dataPie2}
+                  data={billingStatusData}
                   cx="50%"
                   cy="50%"
                   outerRadius={75}
@@ -624,15 +658,38 @@ function Home() {
                   dataKey="value"
                   label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                 >
-                  {(dataPie2 || []).map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS2[index % COLORS2.length]} />
-                  ))}
+                  {billingStatusData.map((entry, index) => {
+                    let color = '#0088Fe';
+                    if (entry.name === 'Paid') {
+                      color = '#38c172';
+                    } else if (entry.name === 'Pending') {
+                      color = '#faad14';
+                    } else if (entry.name === 'Overdue') {
+                      color = '#f5222d';
+                    }
+                    return <Cell key={`cell-${index}`} fill={color} />;
+                  })}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
             <div style={{ textAlign: 'center', marginTop: '12px' }}>
-              <span style={{ color: COLORS2[0], fontWeight: 500 }}>● Paid</span> &nbsp;
-              <span style={{ color: COLORS2[1], fontWeight: 500 }}>● Outstanding</span>
+              {billingStatusData.map((item, idx) => (
+                <span
+                  key={idx}
+                  style={{
+                    color:
+                      item.name === 'Paid'
+                        ? '#38c172'
+                        : item.name === 'Pending'
+                          ? '#faad14'
+                          : '#f5222d',
+                    fontWeight: 500,
+                    margin: '0 8px',
+                  }}
+                >
+                  ● {item.name}
+                </span>
+              ))}
             </div>
           </Card>
         </Col>
@@ -706,7 +763,7 @@ function Home() {
               <Tag color="blue">2024</Tag>
             </div>
             <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={dataBar} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <BarChart data={caseVolumeData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f4f8" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} />
                 <YAxis axisLine={false} tickLine={false} />
@@ -736,21 +793,40 @@ function Home() {
                 <Row gutter={16}>
                   <Col span={12}>
                     <Statistic
-                      title="Paid Invoices"
-                      value={30256.23}
+                      title="Total Expenses"
+                      value={financialData.totalExpenses || 0}
                       prefix="$"
-                      valueStyle={{ color: '#38c172', fontWeight: 600, fontSize: '20px' }}
+                      valueStyle={{ color: '#f5222d', fontWeight: 600, fontSize: '20px' }}
                     />
-                    <span style={{ color: '#38c172', fontWeight: 500 }}>▲ 15%</span>
+                    <div style={{ marginTop: '4px' }}>
+                      <span
+                        style={{
+                          color: financialData.expenseGrowth >= 0 ? '#f5222d' : '#38c172',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {financialData.expenseGrowth >= 0 ? '▲' : '▼'}{' '}
+                        {Math.abs(financialData.expenseGrowth || 0)}%
+                      </span>
+                    </div>
                   </Col>
                   <Col span={12}>
                     <Statistic
-                      title="Total Revenue"
-                      value={150256.23}
+                      title="Net Profit"
+                      value={financialData.netProfit || 0}
                       prefix="$"
-                      valueStyle={{ color: '#102a43', fontWeight: 600, fontSize: '20px' }}
+                      valueStyle={{
+                        color: isFuturistic ? '#f8fafc' : '#102a43',
+                        fontWeight: 600,
+                        fontSize: '20px',
+                      }}
                     />
-                    <span style={{ color: '#38c172', fontWeight: 500 }}>▲ 59%</span>
+                    <div style={{ marginTop: '4px' }}>
+                      <span style={{ color: '#38c172', fontWeight: 500 }}>
+                        {financialData.profitMargin ? financialData.profitMargin.toFixed(1) : 0}%
+                        margin
+                      </span>
+                    </div>
                   </Col>
                 </Row>
               </Card>
