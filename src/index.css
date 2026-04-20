@@ -3,12 +3,12 @@
 :root {
   --sidebar-bg: #001529;
   --sidebar-text: #ffffff;
-  --navbar-bg: #000000;
-  --body-bg: #000000;
-  --card-bg: #0d0d0d;
-  --accent-color: #8b5cf6;
-  --scrollbar-track: #1a1a1a;
-  --scrollbar-thumb: #404040;
+  --navbar-bg: #001529;
+  --body-bg: #f0f2f5;
+  --card-bg: #ffffff;
+  --accent-color: #1890ff;
+  --scrollbar-track: #f0f0f0;
+  --scrollbar-thumb: #c0c0c0;
 }
 
 * {
@@ -21,7 +21,7 @@ html,
 body {
   width: 100%;
   height: 100%;
-  background: #000000;
+  background: #f0f2f5;
 }
 
 #root {
@@ -43,8 +43,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #000000;
-  color: #ffffff;
+  background: #f0f2f5;
+  color: #102a43;
   overflow-x: hidden;
 }
 
@@ -210,7 +210,13 @@ a:focus-visible {
 
 /* Futuristic Theme Variables */
 [data-theme='futuristic'] {
-  --scrollbar-track: #12121a;
+  --sidebar-bg: #0f0f18;
+  --sidebar-text: #c7d7fe;
+  --navbar-bg: #0f0f18;
+  --body-bg: #0a0a0f;
+  --card-bg: #1a1a24;
+  --accent-color: #6366f1;
+  --scrollbar-track: #1a1a2a;
   --scrollbar-thumb: #4b5563;
 }
 

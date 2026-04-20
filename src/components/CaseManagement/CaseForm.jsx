@@ -209,7 +209,7 @@ function CaseForm() {
           </Row>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item
                 label="Status"
                 name="status"
@@ -222,7 +222,29 @@ function CaseForm() {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
+              <Form.Item
+                label="Priority/Grade"
+                name="priority"
+                initialValue="medium"
+              >
+                <Select>
+                  <Option value="low">
+                    <span style={{ color: '#52c41a' }}>Low (Grade A)</span>
+                  </Option>
+                  <Option value="medium">
+                    <span style={{ color: '#1890ff' }}>Medium (Grade B)</span>
+                  </Option>
+                  <Option value="high">
+                    <span style={{ color: '#faad14' }}>High (Grade C)</span>
+                  </Option>
+                  <Option value="urgent">
+                    <span style={{ color: '#ff4d4f' }}>Urgent (Grade D)</span>
+                  </Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
               <Form.Item
                 label="Start Date"
                 name="start_date"

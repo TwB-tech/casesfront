@@ -16,6 +16,8 @@ import { Layout, Skeleton } from 'antd';
 import ProtectedRoute, { AdminRoute, AccountingRoute, HRRoute } from './utils/ProtectedRoute';
 import ReactGA from 'react-ga4';
 import ReyaAssistant from './components/Reya/ReyaAssistant';
+
+const isGAAvailable = typeof ReactGA !== 'undefined' && ReactGA.send && typeof ReactGA.send === 'function';
 import { useTheme } from './contexts/ThemeContext.jsx';
 import Breadcrumbs from './components/ui/Breadcrumbs';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -80,7 +82,9 @@ const usePageTracking = () => {
   const location = useLocation();
 
   useEffect(() => {
-    ReactGA.send({ hitType: 'pageview', page: location.pathname });
+    if (isGAAvailable && ReactGA.send) {
+      ReactGA.send({ hitType: 'pageview', page: location.pathname });
+    }
   }, [location]);
 };
 
@@ -125,6 +129,16 @@ function AppContent() {
     hideSidebarRoutes.includes(location.pathname) || location.pathname === '*';
   const isPublicRoute = shouldHideSidebar;
 
+  const getLayoutBackground = () => {
+    if (isPublicRoute) return '#000000';
+    return isFuturistic ? '#0a0a0f' : '#f0f2f5';
+  };
+
+  const getContentBackground = () => {
+    if (isPublicRoute) return '#000000';
+    return isFuturistic ? '#0a0a0f' : '#ffffff';
+  };
+
   usePageTracking();
 
   return (
@@ -134,11 +148,11 @@ function AppContent() {
         className={`app-layout ${isFuturistic ? 'futuristic' : 'classic'}`}
         style={{
           minHeight: '100vh',
-          background: isPublicRoute ? '#000000' : undefined,
+          background: getLayoutBackground(),
         }}
       >
         <Navbar />
-        <Layout style={{ background: isPublicRoute ? '#000000' : undefined }}>
+        <Layout style={{ background: getLayoutBackground() }}>
           {!shouldHideSidebar && <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />}
           <Layout
             style={{
@@ -148,7 +162,7 @@ function AppContent() {
               flexGrow: 1,
               transition: 'margin-left 0.2s, background 0.3s ease',
               minHeight: 'calc(100vh - 64px)',
-              background: isPublicRoute ? '#000000' : undefined,
+              background: getLayoutBackground(),
               overflowX: 'clip',
             }}
           >
@@ -157,7 +171,7 @@ function AppContent() {
                 <Breadcrumbs />
               </div>
             )}
-            <Content style={{ background: isPublicRoute ? '#000000' : 'transparent' }}>
+            <Content style={{ background: getContentBackground() }}>
               <ErrorBoundary>
                 <Suspense
                   fallback={

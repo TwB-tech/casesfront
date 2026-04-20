@@ -12,6 +12,10 @@ import {
   Statistic,
   Typography,
   Tooltip,
+  Input,
+  Select,
+  Switch,
+  Divider,
 } from 'antd';
 import {
   UserOutlined,
@@ -35,10 +39,26 @@ import { useLicense } from '../contexts/LicenseContext';
 const { Title, Text } = Typography;
 
 const AdminDashboard = () => {
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [activeKey, setActiveKey] = useState('1');
   const { isFuturistic } = useTheme();
   const { stats: licenseStats, refreshData: refreshLicense } = useLicense();
+
+  // Case Management Settings
+  const [caseSettings, setCaseSettings] = useState({
+    defaultStatus: 'open',
+    enableAutoAssign: true,
+    requireApproval: false,
+    maxCaseDuration: 365,
+  });
+
+  // Client Management Settings
+  const [clientSettings, setClientSettings] = useState({
+    requireVerification: true,
+    allowSelfRegistration: false,
+    defaultClientType: 'individual',
+    autoWelcomeEmail: true,
+  });
 
   // User Management State
   const [users, setUsers] = useState([]);
@@ -156,13 +176,31 @@ const AdminDashboard = () => {
             children: (
               <Row gutter={[16, 16]}>
                 <Col xs={24} md={12}>
-                  <Card title="Case Details" style={{ marginBottom: 16 }}>
+                  <Card title="Case Defaults" style={{ marginBottom: 16 }}>
                     <Form
-                      onFinish={(_values) => {
-                        /* existing case details submit */
+                      layout="vertical"
+                      initialValues={caseSettings}
+                      onFinish={(values) => {
+                        setCaseSettings(values);
+                        message.success('Case settings saved successfully');
                       }}
                     >
-                      {/* ... existing case details form fields ... */}
+                      <Form.Item name="defaultStatus" label="Default Status">
+                        <Select>
+                          <Select.Option value="open">Open</Select.Option>
+                          <Select.Option value="pending">Pending</Select.Option>
+                          <Select.Option value="in_progress">In Progress</Select.Option>
+                        </Select>
+                      </Form.Item>
+                      <Form.Item name="maxCaseDuration" label="Max Case Duration (days)">
+                        <Input type="number" min={1} />
+                      </Form.Item>
+                      <Form.Item name="requireApproval" label="Require Approval for New Cases" valuePropName="checked">
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item name="enableAutoAssign" label="Auto-assign Cases to Advocates" valuePropName="checked">
+                        <Switch />
+                      </Form.Item>
                       <Button type="primary" htmlType="submit">
                         Save Settings
                       </Button>
@@ -170,13 +208,26 @@ const AdminDashboard = () => {
                   </Card>
                 </Col>
                 <Col xs={24} md={12}>
-                  <Card title="Case Progress">
-                    <Form
-                      onFinish={(_values) => {
-                        /* existing progress submit */
-                      }}
-                    >
-                      {/* ... */}
+                  <Card title="Case Workflow">
+                    <Form layout="vertical">
+                      <Form.Item label="Case Statuses">
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {['Open', 'Pending', 'In Progress', 'On Hold', 'Resolved', 'Closed'].map(status => (
+                            <Tag key={status} color="blue">{status}</Tag>
+                          ))}
+                        </div>
+                      </Form.Item>
+                      <Divider>Case Numbering</Divider>
+                      <Form.Item label="Case Number Prefix">
+                        <Input placeholder="CASE-" defaultValue="CASE-" />
+                      </Form.Item>
+                      <Form.Item label="Case Number Format">
+                        <Select defaultValue="sequential">
+                          <Select.Option value="sequential">Sequential (001, 002...)</Select.Option>
+                          <Select.Option value="year sequential">YEAR-SEQ (2024-001)</Select.Option>
+                          <Select.Option value="custom">Custom</Select.Option>
+                        </Select>
+                      </Form.Item>
                       <Button type="primary" htmlType="submit">
                         Save Settings
                       </Button>
@@ -192,29 +243,58 @@ const AdminDashboard = () => {
             children: (
               <Row gutter={[16, 16]}>
                 <Col xs={24} md={12}>
-                  <Card title="Client Profile">
+                  <Card title="Client Defaults">
                     <Form
-                      onFinish={(_values) => {
-                        /* existing client profile submit */
+                      layout="vertical"
+                      initialValues={clientSettings}
+                      onFinish={(values) => {
+                        setClientSettings(values);
+                        message.success('Client settings saved successfully');
                       }}
                     >
-                      {/* ... */}
+                      <Form.Item name="defaultClientType" label="Default Client Type">
+                        <Select>
+                          <Select.Option value="individual">Individual</Select.Option>
+                          <Select.Option value="company">Company/Organization</Select.Option>
+                        </Select>
+                      </Form.Item>
+                      <Form.Item name="requireVerification" label="Require ID Verification" valuePropName="checked">
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item name="autoWelcomeEmail" label="Send Welcome Email" valuePropName="checked">
+                        <Switch />
+                      </Form.Item>
                       <Button type="primary" htmlType="submit">
-                        Save
+                        Save Settings
                       </Button>
                     </Form>
                   </Card>
                 </Col>
                 <Col xs={24} md={12}>
-                  <Card title="Client Portal">
-                    <Form
-                      onFinish={(_values) => {
-                        /* existing portal submit */
-                      }}
-                    >
-                      {/* ... */}
+                  <Card title="Client Portal Settings">
+                    <Form layout="vertical">
+                      <Form.Item name="allowSelfRegistration" label="Allow Self-Registration" valuePropName="checked">
+                        <Switch onChange={(checked) => setClientSettings(prev => ({ ...prev, allowSelfRegistration: checked }))} />
+                      </Form.Item>
+                      <Divider>Client Types</Divider>
+                      <Form.Item label="Active Client Types">
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          <Tag color="blue">Individual</Tag>
+                          <Tag color="green">Company</Tag>
+                          <Tag color="purple">NGO</Tag>
+                          <Tag color="orange">Government</Tag>
+                        </div>
+                      </Form.Item>
+                      <Divider>Communication</Divider>
+                      <Form.Item label="Default Notifications">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <span><Switch defaultChecked /> Email Notifications</span>
+                          <span><Switch defaultChecked /> SMS Notifications</span>
+                          <span><Switch /> Push Notifications</span>
+                        </div>
+                      </Form.Item>
                       <Button type="primary" htmlType="submit">
-                        Save
+                        Save Settings
                       </Button>
                     </Form>
                   </Card>

@@ -256,6 +256,42 @@ const CaseList = () => {
       sortOrder: orderBy === 'status' && order,
     },
     {
+      title: 'Grade',
+      dataIndex: 'priority',
+      key: 'priority',
+      render: (priority) => {
+        const gradeColors = {
+          low: '#52c41a',
+          medium: '#1890ff',
+          high: '#faad14',
+          urgent: '#ff4d4f',
+        };
+        const gradeLabels = {
+          low: 'A',
+          medium: 'B',
+          high: 'C',
+          urgent: 'D',
+        };
+        const color = gradeColors[priority] || '#8c8c8c';
+        const label = gradeLabels[priority] || '-';
+        return (
+          <Tag
+            style={{
+              background: color + '20',
+              color: color,
+              borderColor: color,
+              borderRadius: '50%',
+              fontWeight: 600,
+            }}
+          >
+            {label}
+          </Tag>
+        );
+      },
+      sorter: (a, b) => (a.priority || '').localeCompare(b.priority || ''),
+      sortOrder: orderBy === 'priority' && order,
+    },
+    {
       title: 'Deadline',
       dataIndex: 'end_date',
       key: 'end_date',
