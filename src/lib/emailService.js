@@ -1,13 +1,39 @@
 /**
  * Email Service using Resend API
- * Handles transactional emails: verification, password reset, notifications
+ * Handles transactional emails: verification, password reset, notifications, contact form
  */
 
 const RESEND_API_KEY = import.meta.env.RESEND_API_KEY;
-const ADMIN_EMAIL = import.meta.env.ADMIN_EMAIL || 'admin@wakiliworld.local';
+const ADMIN_EMAIL = import.meta.env.ADMIN_EMAIL || 'admin@techwithbrands.com';
 const SITE_URL =
   import.meta.env.SITE_URL ||
   (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+
+const buildContactEmail = (formData) => {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+      <h2 style="color: #1e40af; margin-bottom: 20px;">New Contact Form Submission</h2>
+      <p><strong>Name:</strong> ${formData.firstName} ${formData.lastName}</p>
+      <p><strong>Email:</strong> ${formData.email}</p>
+      <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+      <p><strong>Message:</strong></p>
+      <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px;">
+        ${formData.message.replace(/\n/g, '<br>')}
+      </div>
+      <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+      <p style="color: #999; font-size: 12px;">This email was sent from the WakiliWorld contact form.</p>
+    </div>
+  `;
+};
+
+export const sendContactEmail = async (formData) => {
+  const html = buildContactEmail(formData);
+  return sendEmail({
+    to: ADMIN_EMAIL,
+    subject: `WakiliWorld Enquiry: ${formData.firstName} ${formData.lastName}`,
+    html,
+  });
+};
 
 /**
  * Send email via Resend API

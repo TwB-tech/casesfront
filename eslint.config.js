@@ -20,6 +20,7 @@ export default [
         document: 'readonly',
         navigator: 'readonly',
         localStorage: 'readonly',
+        FileReader: 'readonly',
         sessionStorage: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
@@ -93,6 +94,7 @@ export default [
       '*.config.js',
       'vite.config.js',
       'vitest.config.js',
+      '.kilo/',
     ],
   },
 ];

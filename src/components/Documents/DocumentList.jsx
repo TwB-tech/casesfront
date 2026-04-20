@@ -20,7 +20,9 @@ import {
   FileOutlined,
   SearchOutlined,
   FileTextOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
+import { Popconfirm } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../axiosConfig';
 import { useMediaQuery } from 'react-responsive';
@@ -171,13 +173,50 @@ function DocumentList() {
           <Tooltip title="Download">
             <Button
               type="text"
-              href={record.file}
-              download
-              target="_blank"
+              onClick={async (e) => {
+                e.preventDefault();
+                try {
+                  const response = await axiosInstance.get(`/api/documents/${record.id}/file/`);
+                  const fileData = response.data;
+                  if (fileData.data) {
+                    const link = document.createElement('a');
+                    link.href = fileData.data;
+                    link.download = fileData.name || 'document';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  } else {
+                    message.error('File data not available');
+                  }
+                } catch (error) {
+                  message.error('Failed to download file');
+                }
+              }}
               icon={<DownloadOutlined />}
               size="small"
             />
           </Tooltip>
+          <Popconfirm
+            title="Delete this document?"
+            description="This action cannot be undone."
+            onConfirm={async () => {
+              try {
+                await axiosInstance.delete(`/api/documents/${record.id}/`);
+                message.success('Document deleted successfully');
+                eventBus.emit('documentDeleted', { id: record.id });
+                setDocuments(documents.filter((d) => d.id !== record.id));
+              } catch (error) {
+                message.error('Failed to delete document');
+              }
+            }}
+            onCancel={() => {}}
+            okText="Delete"
+            cancelText="Cancel"
+          >
+            <Tooltip title="Delete">
+              <Button type="text" danger icon={<DeleteOutlined />} size="small" />
+            </Tooltip>
+          </Popconfirm>
         </div>
       ),
     },

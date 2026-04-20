@@ -119,9 +119,29 @@ function DocumentDetails() {
             {document.shared_with?.map((user) => user.username).join(', ') || 'None'}
           </Descriptions.Item>
           <Descriptions.Item label="File">
-            <a href={document.file} target="_blank" rel="noopener noreferrer">
-              View File
-            </a>
+            <Button
+              type="link"
+              onClick={async () => {
+                try {
+                  const response = await axiosInstance.get(`/api/documents/${id}/file/`);
+                  const fileData = response.data;
+                  if (fileData.data) {
+                    const link = window.document.createElement('a');
+                    link.href = fileData.data;
+                    link.download = fileData.name || 'document';
+                    window.document.body.appendChild(link);
+                    link.click();
+                    window.document.body.removeChild(link);
+                  } else {
+                    message.error('File data not available');
+                  }
+                } catch (error) {
+                  message.error('Failed to download file');
+                }
+              }}
+            >
+              Download File
+            </Button>
           </Descriptions.Item>
           <Descriptions.Item label="Uploaded At">
             {new Date(document.uploaded_at).toLocaleString()}

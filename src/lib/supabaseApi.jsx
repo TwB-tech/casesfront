@@ -831,22 +831,14 @@ export const supabaseApi = {
           console.error('Auth creation failed:', signUpData);
           return failure('Registration failed', 400, signUpData);
         }
-      } catch (authError) {
-        console.error('Supabase auth error:', authError);
-        return failure(
-          'Registration failed. Please check your information and try again.',
-          400,
-          authError
-        );
-      }
 
-      // Create user profile
-      const userProfile = {
-        id: registeredUser.id,
-        name: payload.username || payload.email,
-        username: payload.username || payload.email,
-        email: payload.email,
-        role: requestedRole,
+        // Create user profile
+        const userProfile = {
+          id: registeredUser.id,
+          name: payload.username || payload.email,
+          username: payload.username || payload.email,
+          email: payload.email,
+          role: requestedRole,
         phone_number: payload.phone_number || '',
         alternative_phone_number: payload.alternative_phone_number || '',
         id_number: payload.id_number || payload.id_passport_number || '',
@@ -875,6 +867,14 @@ export const supabaseApi = {
         email: registeredUser.email,
         username: payload.username,
       });
+      } catch (authError) {
+        console.error('Supabase auth error:', authError);
+        return failure(
+          'Registration failed. Please check your information and try again.',
+          400,
+          authError
+        );
+      }
     }
 
     if (path === 'auth/verify-email/') {

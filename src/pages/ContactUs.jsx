@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import { useTheme } from '../contexts/ThemeContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
+import { sendContactEmail } from '../lib/emailService';
 
 const { Title, Text } = Typography;
 
@@ -22,14 +23,14 @@ const ContactUsForm = () => {
   const handleSubmit = async (values) => {
     setSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      const emailSubject = `WakiliWorld Enquiry: ${values.firstName} ${values.lastName}`;
-      const emailBody = values.message;
-      const mailtoLink = `mailto:contact@wakiliworld.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-      window.location.href = mailtoLink;
-      setSubmitted(true);
-      message.success('Opening email client...');
-      form.resetFields();
+      const result = await sendContactEmail(values);
+      if (result.success) {
+        setSubmitted(true);
+        message.success('Message sent successfully! We\'ll get back to you soon.');
+        form.resetFields();
+      } else {
+        message.error(result.error || 'Failed to send message. Please try again.');
+      }
     } catch (errorInfo) {
       console.error('Failed:', errorInfo);
       message.error('Failed to submit. Please try again.');
@@ -133,8 +134,7 @@ const ContactUsForm = () => {
                   Message sent!
                 </Title>
                 <Text className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}>
-                  Your email client is open with the message ready to go. If nothing happened, you
-                  can also reach us directly at admin@techwithbrands.com — we&apos;re here to help.
+                  Thank you for reaching out! We&apos;ve received your message and will get back to you within 24 hours.
                 </Text>
                 <div className="mt-6">
                   <Button
@@ -333,19 +333,54 @@ const ContactUsForm = () => {
                 Follow Us
               </Text>
               <div className="flex gap-4">
-                {['Twitter', 'Facebook', 'Instagram', 'LinkedIn'].map((social) => (
-                  <a
-                    key={social}
-                    href="#"
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all hover:-translate-y-1 ${
-                      isFuturistic
-                        ? 'bg-cyber-bg text-aurora-muted hover:text-aurora-primary hover:bg-aurora-primary/10'
-                        : 'bg-neutral-100 text-neutral-600 hover:text-primary-600 hover:bg-primary-50'
-                    }`}
-                  >
-                    <span className="text-sm font-medium">{social[0]}</span>
-                  </a>
-                ))}
+                <a
+                  href="https://twitter.com/techwithbrands"
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all hover:-translate-y-1 ${
+                    isFuturistic
+                      ? 'bg-cyber-bg text-aurora-muted hover:text-aurora-primary hover:bg-aurora-primary/10'
+                      : 'bg-neutral-100 text-neutral-600 hover:text-primary-600 hover:bg-primary-50'
+                  }`}
+                >
+                  <span className="text-sm font-medium">X</span>
+                </a>
+                <a
+                  href="https://facebook.com/techwithbrands"
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all hover:-translate-y-1 ${
+                    isFuturistic
+                      ? 'bg-cyber-bg text-aurora-muted hover:text-aurora-primary hover:bg-aurora-primary/10'
+                      : 'bg-neutral-100 text-neutral-600 hover:text-primary-600 hover:bg-primary-50'
+                  }`}
+                >
+                  <span className="text-sm font-medium">F</span>
+                </a>
+                <a
+                  href="https://instagram.com/techwithbrands"
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all hover:-translate-y-1 ${
+                    isFuturistic
+                      ? 'bg-cyber-bg text-aurora-muted hover:text-aurora-primary hover:bg-aurora-primary/10'
+                      : 'bg-neutral-100 text-neutral-600 hover:text-primary-600 hover:bg-primary-50'
+                  }`}
+                >
+                  <span className="text-sm font-medium">I</span>
+                </a>
+                <a
+                  href="https://linkedin.com/company/techwithbrands"
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all hover:-translate-y-1 ${
+                    isFuturistic
+                      ? 'bg-cyber-bg text-aurora-muted hover:text-aurora-primary hover:bg-aurora-primary/10'
+                      : 'bg-neutral-100 text-neutral-600 hover:text-primary-600 hover:bg-primary-50'
+                  }`}
+                >
+                  <span className="text-sm font-medium">L</span>
+                </a>
               </div>
             </div>
           </Card>

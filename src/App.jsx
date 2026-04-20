@@ -130,12 +130,16 @@ function AppContent() {
   const isPublicRoute = shouldHideSidebar;
 
   const getLayoutBackground = () => {
-    if (isPublicRoute) return '#000000';
+    if (isPublicRoute) {
+      return '#000000';
+    }
     return isFuturistic ? '#0a0a0f' : '#f0f2f5';
   };
 
   const getContentBackground = () => {
-    if (isPublicRoute) return '#000000';
+    if (isPublicRoute) {
+      return '#000000';
+    }
     return isFuturistic ? '#0a0a0f' : '#ffffff';
   };
 

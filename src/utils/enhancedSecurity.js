@@ -4,6 +4,7 @@
  * Tech with Brands (TwB) - WakiliWorld/LawFirm CRM
  */
 
+/* eslint-disable no-unused-private-class-members */
 import axios from 'axios';
 // Using native browser crypto for production build compatibility
 // import crypto from 'crypto-js';
