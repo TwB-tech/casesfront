@@ -243,6 +243,22 @@ function AppContent() {
                       }
                     />
                     <Route
+                      path="/client-form"
+                      element={
+                        <ProtectedRoute>
+                          <OnboardingRequest />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/new-client"
+                      element={
+                        <ProtectedRoute>
+                          <OnboardingRequest />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
                       path="/documents"
                       element={
                         <ProtectedRoute>

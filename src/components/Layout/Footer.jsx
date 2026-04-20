@@ -17,10 +17,10 @@ const AppFooter = () => {
         <div
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'center',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: '24px',
+            gap: '16px',
             marginBottom: '24px',
           }}
         >
@@ -28,40 +28,25 @@ const AppFooter = () => {
             <span style={{ color: '#ffffff', fontWeight: 600 }}>Wakili</span>
             <span style={{ color: '#8b5cf6', fontWeight: 600 }}>World</span>
           </div>
-          <div style={{ display: 'flex', gap: '24px' }}>
-            <Link
-              to="/features"
-              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}
-            >
-              Features
-            </Link>
-            <Link
-              to="/pricing"
-              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}
-            >
-              Pricing
-            </Link>
-            <Link
-              to="/about"
-              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}
-            >
-              About
-            </Link>
+          <div 
+            className="footer-links"
+            style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}
+          >
             <Link
               to="/contact"
-              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}
+              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '12px' }}
             >
               Contact
             </Link>
             <Link
               to="/privacy"
-              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}
+              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '12px' }}
             >
               Privacy
             </Link>
             <Link
               to="/terms"
-              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}
+              style={{ color: '#6b7280', textDecoration: 'none', fontSize: '12px' }}
             >
               Terms
             </Link>

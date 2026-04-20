@@ -1,21 +1,34 @@
 .board-view {
   display: flex;
   gap: 16px;
-  padding: 20px;
+  padding: 16px;
   overflow-x: auto;
   background-color: #d9e5fc;
-  margin: 25px;
+  margin: 16px;
   border-radius: 25px;
+}
+
+@media (min-width: 769px) {
+  .board-view {
+    padding: 20px;
+    margin: 25px;
+  }
 }
 
 .board-column {
   background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  flex: 1 1 300px;
+  flex: 0 0 85vw;
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 100px);
+}
+
+@media (min-width: 769px) {
+  .board-column {
+    flex: 1 1 300px;
+  }
 }
 
 .board-column-header {

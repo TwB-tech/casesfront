@@ -213,15 +213,27 @@ const Navbar = () => {
         {isMobile && (
           <Dropdown
             overlay={
-              <Menu theme="dark" style={{ background: '#000', border: '1px solid #333' }}>
+              <Menu 
+                style={{ 
+                  background: '#1a1a1a', 
+                  border: '1px solid #333',
+                  minWidth: '200px'
+                }}
+                selectedKeys={[]}
+              >
                 {menuItems.map((item) => (
-                  <Menu.Item key={item.key} onClick={() => navigate(item.path)}>
+                  <Menu.Item 
+                    key={item.key} 
+                    onClick={() => navigate(item.path)}
+                    style={{ color: '#fff' }}
+                  >
                     {item.label}
                   </Menu.Item>
                 ))}
               </Menu>
             }
             trigger={['click']}
+            placement="bottomRight"
           >
             <MenuOutlined style={{ color: '#fff', fontSize: '20px', cursor: 'pointer' }} />
           </Dropdown>

@@ -289,21 +289,22 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
       {/* Proactive Notification Banner */}
       {!isOpen && pendingNotificationCount > 0 && (
         <div
-          className="fixed bottom-24 right-6 z-[999] px-4 py-2 rounded-full animate-pulse cursor-pointer"
+          className="fixed bottom-20 right-4 md:bottom-24 md:right-6 z-[999] px-3 md:px-4 py-2 rounded-full animate-pulse cursor-pointer text-xs md:text-sm"
           style={{
             background: 'linear-gradient(135deg, #ef4444 0%, #f59e0b 100%)',
             color: 'white',
             fontWeight: 600,
             boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+            maxWidth: 'calc(100vw - 32px)',
           }}
           onClick={() => setIsOpen(true)}
         >
-          ⚠️ {pendingNotificationCount} items need your attention
+          ⚠️ {pendingNotificationCount} items need attention
         </div>
       )}
 
       {/* Main Assistant Interface */}
-      <div className="fixed bottom-6 right-6 z-[1000]">
+      <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[1000] w-[calc(100vw-32px)] md:w-96 max-w-[384px]">
         {!isOpen ? (
           // Closed state - show floating button
           <button
@@ -324,7 +325,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
         ) : (
           // Open state - show chat interface
           <div
-            className={`w-96 h-[600px] rounded-2xl shadow-2xl border flex flex-col ${
+            className={`w-full h-[calc(100vh-120px)] md:h-[600px] max-h-[600px] rounded-2xl shadow-2xl border flex flex-col ${
               isFuturistic ? 'bg-cyber-card border-cyber-border' : 'bg-white border-gray-200'
             }`}
           >
