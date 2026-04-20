@@ -23,8 +23,14 @@ class EncryptedStorage {
     // For production build, use simple base64 encoding instead of crypto
     // In production, this should use proper encryption
     try {
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined' || !window.btoa) {
+        console.warn('EncryptedStorage: Browser environment required for encryption');
+        return JSON.stringify(data); // Fallback to plain JSON
+      }
+
       const dataStr = JSON.stringify(data);
-      return btoa(dataStr); // Simple base64 encoding for now
+      return window.btoa(dataStr); // Simple base64 encoding for now
     } catch (error) {
       console.error('Encryption failed:', error);
       return null;
@@ -33,7 +39,13 @@ class EncryptedStorage {
 
   static async decrypt(encryptedData) {
     try {
-      const decoded = atob(encryptedData); // Simple base64 decoding for now
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined' || !window.atob) {
+        console.warn('EncryptedStorage: Browser environment required for decryption');
+        return JSON.parse(encryptedData); // Fallback to plain JSON
+      }
+
+      const decoded = window.atob(encryptedData); // Simple base64 decoding for now
       return JSON.parse(decoded);
     } catch (error) {
       console.error('Decryption failed:', error);
@@ -62,6 +74,16 @@ class EncryptedStorage {
 export class LicenseValidator {
   static async validateLicense(licenseKey, installationId, clientName = '') {
     try {
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined' || !window.location || !window.navigator) {
+        console.warn('LicenseValidator: Browser environment required for license validation');
+        return {
+          valid: false,
+          reason: 'environment_error',
+          message: 'License validation requires browser environment',
+        };
+      }
+
       // Create validation payload with signature
       const timestamp = Date.now();
       const payload = {
@@ -70,7 +92,7 @@ export class LicenseValidator {
         clientName,
         timestamp,
         domain: window.location.hostname,
-        userAgent: navigator.userAgent.substring(0, 200),
+        userAgent: window.navigator.userAgent.substring(0, 200),
       };
 
       // Sign payload for authenticity
@@ -171,8 +193,18 @@ export class LicenseValidator {
   static #createSignature(payload) {
     // Simplified signature for production build compatibility
     // In production, this should use proper HMAC
-    const dataString = JSON.stringify(payload, Object.keys(payload).sort());
-    return btoa(dataString).substring(0, 32); // Simple truncated base64 for now
+    try {
+      const dataString = JSON.stringify(payload, Object.keys(payload).sort());
+      if (typeof window !== 'undefined' && window.btoa) {
+        return window.btoa(dataString).substring(0, 32); // Simple truncated base64 for now
+      } else {
+        // Fallback for non-browser environments
+        return Buffer.from(dataString).toString('base64').substring(0, 32);
+      }
+    } catch (error) {
+      console.error('Signature creation failed:', error);
+      return 'signature_error';
+    }
   }
 
   static #cacheValidation(licenseKey, data) {
@@ -194,8 +226,15 @@ export class LicenseValidator {
 export class TamperDetector {
   static #integrityChecks = [];
   static #lastHeartbeat = Date.now();
+  static #devToolsInterval = null;
 
   static initialize() {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined') {
+      console.warn('TamperDetector: Browser environment required, skipping initialization');
+      return;
+    }
+
     // Monitor for developer tools
     this.#monitorDevTools();
 
@@ -215,21 +254,29 @@ export class TamperDetector {
     const devtools = { open: false, orientation: null };
     const threshold = 200;
 
-    setInterval(() => {
-      if (
-        window.outerHeight - window.innerHeight > threshold ||
-        window.outerWidth - window.innerWidth > threshold ||
-        window.outerHeight < 100 ||
-        window.outerWidth < 100
-      ) {
-        if (!devtools.open) {
-          devtools.open = true;
-          TamperDetector.onTamperDetected('dev_tools_opened', 'Developer tools detected');
+    const interval = setInterval(() => {
+      try {
+        if (
+          window.outerHeight - window.innerHeight > threshold ||
+          window.outerWidth - window.innerWidth > threshold ||
+          window.outerHeight < 100 ||
+          window.outerWidth < 100
+        ) {
+          if (!devtools.open) {
+            devtools.open = true;
+            TamperDetector.onTamperDetected('dev_tools_opened', 'Developer tools detected');
+          }
+        } else {
+          devtools.open = false;
         }
-      } else {
-        devtools.open = false;
+      } catch (error) {
+        // Silently handle errors in dev tools detection
+        console.warn('Dev tools detection error:', error);
       }
     }, 500);
+
+    // Store interval for cleanup
+    this.#devToolsInterval = interval;
   }
 
   static #monitorStorageTampering() {
@@ -340,14 +387,20 @@ export class CodeIntegrity {
   };
 
   static async verifyIntegrity() {
-    const scripts = document.querySelectorAll('script[src]');
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined' || !window.document || !window.btoa) {
+      console.warn('CodeIntegrity: Browser environment required for integrity verification');
+      return { valid: true, violations: [] };
+    }
+
+    const scripts = window.document.querySelectorAll('script[src]');
     const violations = [];
 
     for (const script of scripts) {
       try {
         const response = await fetch(script.src);
         const content = await response.text();
-        const hash = btoa(content).substring(0, 32); // Simple hash for production build
+        const hash = window.btoa(content).substring(0, 32); // Simple hash for production build
 
         const filename = script.src.split('/').pop();
         const expectedHash = this.#expectedHashes[filename];
@@ -379,8 +432,14 @@ export class CodeIntegrity {
   }
 
   static injectWatermark() {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined' || !window.document) {
+      console.warn('CodeIntegrity: Browser environment required for watermark injection');
+      return;
+    }
+
     // Invisible watermark for code ownership
-    const watermark = document.createElement('div');
+    const watermark = window.document.createElement('div');
     watermark.id = 'twb-watermark';
     watermark.style.cssText = `
       position: fixed !important;
@@ -394,7 +453,7 @@ export class CodeIntegrity {
       z-index: -9999 !important;
     `;
     watermark.textContent = `Licensed to TwB - Anthony Kerige (Tony Kamau) - Version 2.0 - ${new Date().toISOString()}`;
-    document.body.appendChild(watermark);
+    window.document.body.appendChild(watermark);
 
     // Console watermark
     const originalConsoleLog = console.log;
@@ -422,6 +481,12 @@ export class LicenseMonitor {
   };
 
   static initialize() {
+    // Check if we're in a browser environment
+    if (typeof window === 'undefined') {
+      console.warn('LicenseMonitor: Browser environment required, skipping initialization');
+      return;
+    }
+
     this.#trackPageViews();
     this.#trackFeatureUsage();
     this.#trackUserActivity();
@@ -432,17 +497,21 @@ export class LicenseMonitor {
     let currentPage = window.location.pathname;
 
     const trackPageChange = () => {
-      const newPage = window.location.pathname;
-      if (newPage !== currentPage) {
-        this.#usageStats.pageViews++;
-        currentPage = newPage;
-        this.#updateActivity();
+      try {
+        const newPage = window.location.pathname;
+        if (newPage !== currentPage) {
+          this.#usageStats.pageViews++;
+          currentPage = newPage;
+          this.#updateActivity();
+        }
+      } catch (error) {
+        console.warn('Page tracking error:', error);
       }
     };
 
     // Listen for navigation events
     window.addEventListener('popstate', trackPageChange);
-    window.addEventListener('pushstate', trackPageChange);
+    // Note: pushstate is not a standard event, React Router uses different navigation
 
     // Track initial page load
     this.#usageStats.pageViews++;
@@ -504,11 +573,22 @@ export class LicenseMonitor {
 
 // Initialize all security systems
 export function initializeSecurity() {
-  TamperDetector.initialize();
-  CodeIntegrity.injectWatermark();
-  LicenseMonitor.initialize();
+  // Only initialize security systems in browser environment
+  if (typeof window === 'undefined') {
+    console.log('🔒 Security systems initialization skipped (server environment)');
+    return;
+  }
 
-  console.log('🔒 Advanced security systems initialized');
+  try {
+    TamperDetector.initialize();
+    CodeIntegrity.injectWatermark();
+    LicenseMonitor.initialize();
+
+    console.log('🔒 Advanced security systems initialized');
+  } catch (error) {
+    console.error('Security system initialization failed:', error);
+    // Don't throw - allow app to continue without security features
+  }
 }
 
 // Export enhanced utilities

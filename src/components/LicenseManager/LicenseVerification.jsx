@@ -9,8 +9,8 @@ const { Title, Text, Paragraph } = Typography;
 
 const LicenseVerification = ({ children }) => {
   const [showActivation, setShowActivation] = useState(false);
-
   const [isBlocked, setIsBlocked] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const { activation, refreshData } = useLicense();
 
   // Use ref to track verification state and avoid setState in useEffect
@@ -30,49 +30,69 @@ const LicenseVerification = ({ children }) => {
     return null;
   }, []);
 
-  const performVerification = useCallback(() => {
-    // Allow app to render by default - don't block unless explicitly needed
-    setIsBlocked(false);
-
-    if (!installationId) {
-      return;
-    }
-
-    const trialStatus = getTrialStatus();
-
-    // Check activation
-    if (activation?.activated) {
-      const verification = verifyLicenseKey(activation.licenseKey, installationId);
-
-      if (verification.valid) {
+  const performVerification = useCallback(async () => {
+    try {
+      if (!installationId) {
         setIsBlocked(false);
+        return;
+      }
+
+      const trialStatus = getTrialStatus();
+
+      // Check activation
+      if (activation?.activated) {
+        try {
+          const verification = await verifyLicenseKey(activation.licenseKey, installationId);
+
+          if (verification?.valid) {
+            setIsBlocked(false);
+          } else {
+            // Activation invalid - show modal but allow trial
+            if (!trialStatus.inTrial) {
+              setIsBlocked(true);
+            } else {
+              setShowActivation(true);
+            }
+          }
+        } catch (verificationError) {
+          console.error('License verification failed:', verificationError);
+          // On verification error, allow trial if available
+          if (!trialStatus.inTrial) {
+            setIsBlocked(true);
+          } else {
+            setIsBlocked(false);
+            setShowActivation(true);
+          }
+        }
       } else {
-        // Activation invalid - show modal but don't block the app
+        // Not activated
         if (!trialStatus.inTrial) {
-          // Only block if both license is invalid AND trial is expired
           setIsBlocked(true);
         } else {
-          setShowActivation(true);
+          // Show activation modal after trial expires in future
+          setShowActivation(false);
+          setIsBlocked(false);
         }
       }
-    } else {
-      // Not activated - only block if trial has actually expired
-      if (!trialStatus.inTrial && trialStatus.daysRemaining === 0) {
-        setIsBlocked(true);
-      } else {
-        // Don't show activation modal constantly, just allow the app to work
-        setShowActivation(false);
-      }
+    } catch (error) {
+      console.error('License verification error:', error);
+      // On any error, default to allowing the app to work
+      setIsBlocked(false);
+      setShowActivation(false);
     }
   }, [installationId, activation]);
 
   // Initial verification effect - runs once on mount
   useEffect(() => {
-    if (!verificationPerformedRef.current && installationId) {
+    if (!verificationPerformedRef.current) {
       verificationPerformedRef.current = true;
-      performVerification();
+      performVerification().catch((error) => {
+        console.error('Initial license verification failed:', error);
+        setHasError(true);
+        setIsBlocked(false); // Allow app to work even if verification fails
+      });
     }
-  }, [installationId]); // Only depend on installationId, not performVerification
+  }, []); // Empty dependency array to run only once
 
   // Periodic verification effect
   useEffect(() => {
@@ -110,63 +130,63 @@ const LicenseVerification = ({ children }) => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [refreshData, performVerification]);
 
-  // Render the blocked state
-  if (isBlocked) {
+  // If there's an error or we're not blocked, render the app
+  if (hasError || !isBlocked) {
     return (
-      <Result
-        status="lock"
-        title="Software License Required"
-        subTitle={
-          <Space direction="vertical" size="middle">
-            <Paragraph>
-              Your trial period has expired or the license is invalid. Please activate your software
-              license to continue using WakiliWorld CRM.
-            </Paragraph>
-            <Paragraph>
-              <Text strong>Contact for License:</Text>
-              <br />
-              Email: support@techwithbrands.com
-              <br />
-              Phone: +254 700 000 000
-              <br />
-              Mpesa Till: 8352474 | KCB: 1261709403
-            </Paragraph>
-          </Space>
-        }
-        extra={[
-          <Button
-            key="activate"
-            type="primary"
-            size="large"
-            onClick={() => setShowActivation(true)}
-            icon={<UnlockOutlined />}
-          >
-            Activate License
-          </Button>,
-          <Button key="retry" size="large" onClick={() => window.location.reload()}>
-            Retry
-          </Button>,
-        ]}
-      />
+      <>
+        {showActivation && !activation?.activated && !hasError && (
+          <LicenseActivationModal
+            visible={showActivation}
+            onClose={() => {
+              setShowActivation(false);
+              performVerification().catch((error) => {
+                console.error('License modal close verification failed:', error);
+              });
+            }}
+          />
+        )}
+        {children}
+      </>
     );
   }
 
-  // Show activation modal if needed
-  const showActivationModal = showActivation && !activation?.activated;
-
+  // Only show the blocked state if we're explicitly blocked and there's no error
   return (
-    <>
-      {showActivationModal && (
-        <LicenseActivationModal
-          visible={showActivationModal}
-          onClose={() => {
-            setShowActivation(false);
-            performVerification();
-          }}
-        />
-      )}
-      {children}
-    </>
+    <Result
+      status="lock"
+      title="Software License Required"
+      subTitle={
+        <Space direction="vertical" size="middle">
+          <Paragraph>
+            Your trial period has expired or the license is invalid. Please activate your software
+            license to continue using WakiliWorld CRM.
+          </Paragraph>
+          <Paragraph>
+            <Text strong>Contact for License:</Text>
+            <br />
+            Email: support@techwithbrands.com
+            <br />
+            Phone: +254 700 000 000
+            <br />
+            Mpesa Till: 8352474 | KCB: 1261709403
+          </Paragraph>
+        </Space>
+      }
+      extra={[
+        <Button
+          key="activate"
+          type="primary"
+          size="large"
+          onClick={() => setShowActivation(true)}
+          icon={<UnlockOutlined />}
+        >
+          Activate License
+        </Button>,
+        <Button key="retry" size="large" onClick={() => window.location.reload()}>
+          Retry
+        </Button>,
+      ]}
+    />
   );
 };
 

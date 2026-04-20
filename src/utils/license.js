@@ -14,7 +14,7 @@ const STORAGE_KEYS = {
   LICENSE_VERIFICATION: 'twb_license_last_check',
 };
 
-const GRACE_PERIOD_DAYS = import.meta.env.DEV ? 30 : 365; // 1 year trial for production/demo
+const GRACE_PERIOD_DAYS = 30;
 
 /**
  * Generate a cryptographically secure random string
@@ -101,34 +101,58 @@ export function hashLicenseKey(key) {
  */
 export async function verifyLicenseKey(licenseKey, installationId = null) {
   try {
-    // First try server-side validation
-    const serverResult = await LicenseValidator.validateLicense(licenseKey, installationId);
+    // For now, always use local validation to prevent API issues
+    // TODO: Re-enable server validation when license server is stable
+    console.warn('Using local license validation (server validation disabled)');
+    return fallbackLocalValidation(licenseKey, installationId);
 
-    if (serverResult.valid) {
+    /* Temporarily disabled server validation
+    // First try server-side validation with timeout
+    const serverResult = await Promise.race([
+      LicenseValidator.validateLicense(licenseKey, installationId),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('License server timeout')), 5000)
+      )
+    ]);
+
+    if (serverResult && serverResult.valid) {
       // Cache successful validation
-      EncryptedStorage.setItem(`license_cache_${licenseKey}`, {
-        data: serverResult,
-        timestamp: Date.now(),
-      });
+      try {
+        EncryptedStorage.setItem(`license_cache_${licenseKey}`, {
+          data: serverResult,
+          timestamp: Date.now(),
+        });
+      } catch (cacheError) {
+        console.warn('Failed to cache license validation:', cacheError);
+      }
       return serverResult;
     }
 
     // If server validation fails but we have a recent cache (offline mode)
-    if (serverResult.offline) {
-      const cached = EncryptedStorage.getItem(`license_cache_${licenseKey}`);
-      if (cached && Date.now() - cached.timestamp < 7 * 24 * 60 * 60 * 1000) {
-        // 7 days
-        console.warn('Using cached license validation (offline mode)');
-        return cached.data;
+    if (serverResult && serverResult.offline) {
+      try {
+        const cached = EncryptedStorage.getItem(`license_cache_${licenseKey}`);
+        if (cached && Date.now() - cached.timestamp < 7 * 24 * 60 * 60 * 1000) {
+          // 7 days
+          console.warn('Using cached license validation (offline mode)');
+          return cached.data;
+        }
+      } catch (cacheError) {
+        console.warn('Failed to read license cache:', cacheError);
       }
     }
 
     // Fall back to local validation for admin operations
     return fallbackLocalValidation(licenseKey, installationId);
+    */
   } catch (error) {
     console.error('License verification error:', error);
-    // Emergency fallback
-    return fallbackLocalValidation(licenseKey, installationId);
+    // Emergency fallback - always allow access for now
+    return {
+      valid: true,
+      reason: 'fallback',
+      message: 'Using emergency license validation fallback',
+    };
   }
 }
 
