@@ -24,21 +24,89 @@ const parseStoredUser = () => {
   }
 };
 
+// Rate limiting for registration
+const checkRegistrationRateLimit = () => {
+  const RATE_LIMIT_KEY = 'wakiliworld_registration_attempts';
+  const MAX_ATTEMPTS = 3; // 3 attempts per hour
+  const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+  try {
+    const attempts = JSON.parse(localStorage.getItem(RATE_LIMIT_KEY) || '[]');
+    const now = Date.now();
+
+    // Filter out old attempts
+    const recentAttempts = attempts.filter((timestamp) => now - timestamp < WINDOW_MS);
+
+    if (recentAttempts.length >= MAX_ATTEMPTS) {
+      const oldestAttempt = Math.min(...recentAttempts);
+      const resetTime = new Date(oldestAttempt + WINDOW_MS);
+      throw new Error(
+        `Too many registration attempts. Try again after ${resetTime.toLocaleTimeString()}`
+      );
+    }
+
+    // Add current attempt
+    recentAttempts.push(now);
+    localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(recentAttempts));
+
+    return true;
+  } catch (error) {
+    if (error.message.includes('Too many registration attempts')) {
+      throw error;
+    }
+    // If localStorage fails, allow registration but log the issue
+    console.warn('Rate limiting check failed:', error);
+    return true;
+  }
+};
+
 const normalizeRegisterPayload = (formData, userType) => {
-  const lowered = Object.entries(formData || {}).reduce((acc, [key, value]) => {
+  if (!formData || typeof formData !== 'object') {
+    throw new Error('Invalid form data provided');
+  }
+
+  const lowered = Object.entries(formData).reduce((acc, [key, value]) => {
+    if (typeof key !== 'string') {
+      console.warn('Non-string key found in form data:', key);
+      return acc;
+    }
     acc[key.toLowerCase()] = typeof value === 'string' ? value.trim() : value;
     return acc;
   }, {});
 
-  if (lowered.password !== lowered['confirm password']) {
+  // Validate password confirmation
+  const password = lowered.password;
+  const confirmPassword = lowered['confirm password'];
+
+  if (!password || password.length < 6) {
+    throw new Error('Password must be at least 6 characters long');
+  }
+
+  if (password !== confirmPassword) {
     throw new Error('Passwords do not match');
   }
 
+  // Validate email is present
+  const email = lowered.email;
+  if (!email || email === '') {
+    throw new Error('Email is required for registration');
+  }
+
+  // Basic email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    throw new Error('Please enter a valid email address');
+  }
+
   if (userType === 'organization') {
+    const orgName = lowered['organization name'];
+    if (!orgName || orgName === '') {
+      throw new Error('Organization name is required');
+    }
     return {
-      email: lowered.email,
-      username: lowered['organization name'] || lowered.email,
-      password: lowered.password,
+      email,
+      username: orgName,
+      password,
       role: 'organization',
       phone_number: lowered['phone number'] || '',
       alternative_phone_number: lowered['alternative phone number'] || '',
@@ -47,11 +115,15 @@ const normalizeRegisterPayload = (formData, userType) => {
     };
   }
 
-  if (userType === 'law firm') {
+  if (userType === 'firm') {
+    const firmName = lowered['law firm name'];
+    if (!firmName || firmName === '') {
+      throw new Error('Law firm name is required');
+    }
     return {
-      email: lowered.email,
-      username: lowered['law firm name'] || lowered.email,
-      password: lowered.password,
+      email,
+      username: firmName,
+      password,
       role: 'firm',
       phone_number: lowered['phone number'] || '',
       alternative_phone_number: lowered['alternative phone number'] || '',
@@ -60,11 +132,17 @@ const normalizeRegisterPayload = (formData, userType) => {
     };
   }
 
+  // Default case (advocate, individual)
+  const fullName = lowered['full name'];
+  if (!fullName || fullName === '') {
+    throw new Error('Full name is required');
+  }
+
   return {
-    email: lowered.email,
-    username: lowered['full name'] || lowered.email,
-    password: lowered.password,
-    role: lowered['is advocate'] === 'true' ? 'advocate' : 'individual',
+    email,
+    username: fullName,
+    password,
+    role: userType === 'advocate' ? 'advocate' : 'individual',
     phone_number: lowered['phone number'] || '',
     alternative_phone_number: lowered['alternative phone number'] || '',
     id_passport_number: lowered['id number or passport number'] || '',
@@ -110,21 +188,61 @@ const AuthProvider = ({ children }) => {
 
   const register = async (formData, userType) => {
     try {
+      // Check rate limiting before processing
+      checkRegistrationRateLimit();
+
+      // Validate required fields before processing
+      if (!formData || typeof formData !== 'object') {
+        throw new Error('Invalid form data provided');
+      }
+
       const registrationData = normalizeRegisterPayload(formData, userType);
+
+      // Ensure email is present and valid
+      if (
+        !registrationData.email ||
+        typeof registrationData.email !== 'string' ||
+        registrationData.email.trim() === ''
+      ) {
+        throw new Error('Email is required for registration');
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(registrationData.email)) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      // Ensure password is present
+      if (!registrationData.password || registrationData.password.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
+      }
+
+      console.log('Registration data:', { ...registrationData, password: '[REDACTED]' });
+
       const { data } = await axiosInstance.post('/auth/register/', registrationData);
 
       notification.success({
         message: 'Registration Successful',
-        description: `Welcome, ${data.username}! Your standalone workspace is ready.`,
+        description: `Welcome, ${data.username || registrationData.username}! Your standalone workspace is ready.`,
       });
 
       return data;
     } catch (error) {
+      console.error('Registration error:', error);
+
+      let errorMessage = 'Unable to create your account.';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.errors) {
+        errorMessage = Object.values(error.response.data.errors).flat().join(', ');
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
       notification.error({
         message: 'Registration Failed',
-        description: error?.response?.data?.errors
-          ? Object.values(error.response.data.errors).flat().join(', ')
-          : error.message || 'Unable to create your account.',
+        description: errorMessage,
       });
       throw error;
     }
@@ -139,24 +257,31 @@ const AuthProvider = ({ children }) => {
   };
 
   const resetPassword = async (token, newPassword, confirmPassword) => {
-    if (newPassword !== confirmPassword) {
-      notification.error({
-        message: 'Error',
-        description: 'Passwords do not match.',
-      });
-      return;
+    if (!token || typeof token !== 'string' || token.trim() === '') {
+      throw new Error('Invalid reset token');
     }
 
-    await axiosInstance.post(`/auth/password-reset/${token}`, {
-      token,
-      password: newPassword,
-      confirm_password: confirmPassword,
-    });
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters long');
+    }
 
-    notification.success({
-      message: 'Password Reset Successful',
-      description: 'Your password has been updated.',
-    });
+    if (newPassword !== confirmPassword) {
+      throw new Error('Passwords do not match');
+    }
+
+    try {
+      await axiosInstance.post(`/auth/password-reset/${token}`, {
+        password: newPassword,
+      });
+
+      notification.success({
+        message: 'Password Reset Successful',
+        description: 'Your password has been updated successfully.',
+      });
+    } catch (error) {
+      console.error('Password reset error:', error);
+      throw error;
+    }
   };
   const logout = async () => {
     try {

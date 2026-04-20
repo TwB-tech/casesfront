@@ -5,6 +5,7 @@ import {
   sendVerificationEmail,
   sendPasswordResetEmail,
   generateVerificationToken,
+  generateSecureToken,
 } from './emailService';
 
 const delay = (ms = 120) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -1073,8 +1074,88 @@ export const standaloneApi = {
     }
 
     if (path === '/auth/register/') {
+      // Rate limiting: 5 registrations per IP per hour
+      const clientIP = payload.client_ip || 'unknown';
+      const rateLimitKey = `registration_rate_limit_${clientIP}`;
+      const now = Date.now();
+      const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+      const MAX_REGISTRATIONS = 5;
+
+      let rateLimitData = db.rateLimits?.[rateLimitKey] || { attempts: [], lastReset: now };
+
+      // Reset if window has passed
+      if (now - rateLimitData.lastReset > WINDOW_MS) {
+        rateLimitData = { attempts: [], lastReset: now };
+      }
+
+      // Clean old attempts
+      rateLimitData.attempts = rateLimitData.attempts.filter(
+        (timestamp) => now - timestamp < WINDOW_MS
+      );
+
+      if (rateLimitData.attempts.length >= MAX_REGISTRATIONS) {
+        const resetTime = new Date(rateLimitData.lastReset + WINDOW_MS);
+        return failure(
+          `Too many registration attempts. Try again after ${resetTime.toLocaleTimeString()}`,
+          429,
+          {
+            status_code: 429,
+            errors: { general: ['Rate limit exceeded. Please try again later.'] },
+            retry_after: Math.ceil((rateLimitData.lastReset + WINDOW_MS - now) / 1000),
+          }
+        );
+      }
+
+      // Add current attempt
+      rateLimitData.attempts.push(now);
+
+      // Update rate limit data
+      if (!db.rateLimits) db.rateLimits = {};
+      db.rateLimits[rateLimitKey] = rateLimitData;
+      writeDb(db);
+
+      // Validate required fields
+      if (!payload.email || typeof payload.email !== 'string' || payload.email.trim() === '') {
+        return failure('Email is required', 400, {
+          status_code: 400,
+          errors: { email: ['Email is required'] },
+        });
+      }
+
+      if (
+        !payload.password ||
+        typeof payload.password !== 'string' ||
+        payload.password.length < 6
+      ) {
+        return failure('Password must be at least 6 characters long', 400, {
+          status_code: 400,
+          errors: { password: ['Password must be at least 6 characters long'] },
+        });
+      }
+
+      if (
+        !payload.username ||
+        typeof payload.username !== 'string' ||
+        payload.username.trim() === ''
+      ) {
+        return failure('Username is required', 400, {
+          status_code: 400,
+          errors: { username: ['Username is required'] },
+        });
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(payload.email.trim())) {
+        return failure('Please enter a valid email address', 400, {
+          status_code: 400,
+          errors: { email: ['Invalid email format'] },
+        });
+      }
+
+      const normalizedEmail = payload.email.trim().toLowerCase();
       const exists = db.users.some(
-        (user) => user.email.toLowerCase() === String(payload.email).toLowerCase()
+        (user) => user.email && user.email.toLowerCase() === normalizedEmail
       );
       if (exists) {
         return failure('Registration failed', 400, {
@@ -1086,8 +1167,8 @@ export const standaloneApi = {
       const verificationToken = generateVerificationToken();
       const user = {
         id: nextId(db.users),
-        username: payload.username || payload.email,
-        email: payload.email,
+        username: payload.username.trim(),
+        email: payload.email.trim(),
         password: payload.password,
         role: payload.role || 'individual',
         phone_number: payload.phone_number || '',
@@ -1108,16 +1189,49 @@ export const standaloneApi = {
         deadlineNotifications: true,
         email_verified: false,
         verification_token: verificationToken,
+        verification_sent_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
       };
       db.users.push(user);
       writeDb(db);
 
       // Send verification email asynchronously (non-blocking)
-      sendVerificationEmail({ ...user, verification_token: verificationToken }).catch((err) =>
+      sendVerificationEmail(user, verificationToken).catch((err) =>
         console.error('Failed to send verification email:', err)
       );
 
       return success(publicUser(user), 201);
+    }
+
+    if (path === '/auth/verify-email/') {
+      if (!payload.token || typeof payload.token !== 'string') {
+        return failure('Verification token is required', 400, {
+          status_code: 400,
+          errors: { token: ['Verification token is required'] },
+        });
+      }
+
+      const user = db.users.find(
+        (u) => u.verification_token === payload.token && !u.email_verified
+      );
+      if (!user) {
+        return failure('Invalid or expired verification token', 400, {
+          status_code: 400,
+          errors: { token: ['Invalid or expired verification token'] },
+        });
+      }
+
+      // Mark email as verified
+      user.email_verified = true;
+      user.verified_at = new Date().toISOString();
+      delete user.verification_token; // Remove token after use
+
+      writeDb(db);
+
+      return success({
+        message: 'Email verified successfully',
+        user: publicUser(user),
+      });
     }
 
     if (path === '/auth/verify-token') {
@@ -1125,55 +1239,173 @@ export const standaloneApi = {
     }
 
     if (path === '/auth/request-reset-email/') {
-      db.passwordResetRequests.push({
+      // Validate email
+      if (!payload.email || typeof payload.email !== 'string' || payload.email.trim() === '') {
+        return failure('Email is required', 400, {
+          status_code: 400,
+          errors: { email: ['Email is required'] },
+        });
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(payload.email.trim())) {
+        return failure('Please enter a valid email address', 400, {
+          status_code: 400,
+          errors: { email: ['Invalid email format'] },
+        });
+      }
+
+      // Rate limiting: 3 reset requests per email per hour
+      const clientIP = payload.client_ip || 'unknown';
+      const rateLimitKey = `password_reset_rate_limit_${clientIP}`;
+      const now = Date.now();
+      const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+      const MAX_REQUESTS = 3;
+
+      let rateLimitData = db.rateLimits?.[rateLimitKey] || { attempts: [], lastReset: now };
+
+      // Reset if window has passed
+      if (now - rateLimitData.lastReset > WINDOW_MS) {
+        rateLimitData = { attempts: [], lastReset: now };
+      }
+
+      // Clean old attempts
+      rateLimitData.attempts = rateLimitData.attempts.filter(
+        (timestamp) => now - timestamp < WINDOW_MS
+      );
+
+      if (rateLimitData.attempts.length >= MAX_REQUESTS) {
+        const resetTime = new Date(rateLimitData.lastReset + WINDOW_MS);
+        return failure(
+          `Too many password reset requests. Try again after ${resetTime.toLocaleTimeString()}`,
+          429,
+          {
+            status_code: 429,
+            errors: { general: ['Rate limit exceeded. Please try again later.'] },
+            retry_after: Math.ceil((rateLimitData.lastReset + WINDOW_MS - now) / 1000),
+          }
+        );
+      }
+
+      // Check if user exists
+      const normalizedEmail = payload.email.trim().toLowerCase();
+      const user = db.users.find((u) => u.email && u.email.toLowerCase() === normalizedEmail);
+      if (!user) {
+        // Don't reveal if email exists or not for security
+        return success({ detail: 'If the email exists, reset instructions have been sent.' });
+      }
+
+      // Check for existing unused reset requests for this email
+      const existingRequest = db.passwordResetRequests?.find(
+        (req) =>
+          req.email.toLowerCase() === normalizedEmail &&
+          !req.used &&
+          (new Date() - new Date(req.created_at)) / (1000 * 60 * 60) < 24
+      );
+
+      if (existingRequest) {
+        // Don't create duplicate requests
+        return success({ detail: 'Reset instructions already sent. Please check your email.' });
+      }
+
+      // Create new reset request
+      const resetToken = generateSecureToken();
+      const resetRequest = {
         id: nextId(db.passwordResetRequests),
-        email: payload.email,
-        token: `reset-${Date.now()}`,
+        email: normalizedEmail,
+        token: resetToken,
         created_at: new Date().toISOString(),
-      });
+        expires_at: new Date(now + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+        used: false,
+      };
+
+      if (!db.passwordResetRequests) db.passwordResetRequests = [];
+      db.passwordResetRequests.push(resetRequest);
+
+      // Update rate limiting
+      rateLimitData.attempts.push(now);
+      if (!db.rateLimits) db.rateLimits = {};
+      db.rateLimits[rateLimitKey] = rateLimitData;
+
       writeDb(db);
 
       // Send password reset email asynchronously
-      const lastToken = db.passwordResetRequests[db.passwordResetRequests.length - 1].token;
-      sendPasswordResetEmail(payload.email, lastToken).catch((err) =>
+      sendPasswordResetEmail(normalizedEmail, resetToken).catch((err) =>
         console.error('Failed to send reset email:', err)
       );
 
-      return success({ detail: 'Reset instructions generated.' });
+      return success({ detail: 'If the email exists, reset instructions have been sent.' });
     }
 
     if (path.startsWith('/auth/password-reset/')) {
       // Extract token from path: /auth/password-reset/{token}
       const token = path.split('/').filter(Boolean).pop();
       if (!token) {
-        return failure('Reset token is required', 400);
+        return failure('Reset token is required', 400, {
+          status_code: 400,
+          errors: { token: ['Reset token is required'] },
+        });
       }
-      // Validate token exists in password reset requests
+
+      // Validate new password
+      if (
+        !payload.password ||
+        typeof payload.password !== 'string' ||
+        payload.password.length < 6
+      ) {
+        return failure('Password must be at least 6 characters long', 400, {
+          status_code: 400,
+          errors: { password: ['Password must be at least 6 characters long'] },
+        });
+      }
+
+      // Validate token exists and is not used
       const resetRequest = db.passwordResetRequests?.find(
         (req) => req.token === token && !req.used
       );
       if (!resetRequest) {
-        return failure('Invalid or expired reset token', 400);
+        return failure('Invalid or expired reset token', 400, {
+          status_code: 400,
+          errors: { token: ['Invalid or expired reset token'] },
+        });
       }
-      // Check token expiry (24 hours)
-      const created = new Date(resetRequest.created_at);
+
+      // Check token expiry using expires_at field
       const now = new Date();
-      const hoursPassed = (now - created) / (1000 * 60 * 60);
-      if (hoursPassed > 24) {
-        return failure('Reset token has expired', 400);
+      const expiresAt = new Date(resetRequest.expires_at);
+      if (now > expiresAt) {
+        return failure('Reset token has expired', 400, {
+          status_code: 400,
+          errors: { token: ['Reset token has expired'] },
+        });
       }
-      // Mark token as used
-      resetRequest.used = true;
-      writeDb(db);
-      // Find user by email from payload
-      const userIndex = db.users.findIndex((u) => u.email === payload.email);
+
+      // Find user by email from reset request
+      const userIndex = db.users.findIndex(
+        (u) => u.email && u.email.toLowerCase() === resetRequest.email.toLowerCase()
+      );
       if (userIndex === -1) {
-        return failure('User not found', 404);
+        return failure('User not found', 404, {
+          status_code: 404,
+          errors: { user: ['User not found'] },
+        });
       }
+
       // Update password
       db.users[userIndex].password = payload.password;
+      db.users[userIndex].password_updated_at = new Date().toISOString();
+
+      // Mark token as used
+      resetRequest.used = true;
+      resetRequest.used_at = new Date().toISOString();
+
       writeDb(db);
-      return success({ detail: 'Password updated successfully.' });
+
+      return success({
+        detail: 'Password updated successfully.',
+        message:
+          'Your password has been reset successfully. You can now log in with your new password.',
+      });
     }
 
     if (path === '/case/') {
@@ -1451,7 +1683,7 @@ export const standaloneApi = {
       writeDb(db);
 
       // Send verification email asynchronously
-      sendVerificationEmail({ ...user, verification_token: verificationToken }).catch((err) =>
+      sendVerificationEmail(user, verificationToken).catch((err) =>
         console.error('Failed to send verification email:', err)
       );
 

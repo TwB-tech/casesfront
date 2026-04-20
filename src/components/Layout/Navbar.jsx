@@ -111,16 +111,6 @@ const Navbar = () => {
       <Menu.Item onClick={() => navigate('/settings')} style={{ color: '#8b5cf6' }}>
         Settings
       </Menu.Item>
-      <Menu.Item
-        onClick={() => {
-          navigate('/settings');
-          // Could also open activation modal via state
-        }}
-        style={{ color: activation?.activated ? '#52c41a' : '#8b5cf6' }}
-        icon={activation?.activated ? <CheckCircleOutlined /> : <KeyOutlined />}
-      >
-        {activation?.activated ? 'Manage License' : 'Activate License'}
-      </Menu.Item>
       {(user?.role === 'admin' || user?.role === 'administrator') && (
         <Menu.Item onClick={() => navigate('/admin-dashboard')} style={{ color: '#8b5cf6' }}>
           Admin Dashboard

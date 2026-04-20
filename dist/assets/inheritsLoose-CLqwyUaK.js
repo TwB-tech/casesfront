@@ -1,1 +1,0 @@
-import{ht as e}from"./render-CSz5UrC5.js";function t(t,n){t.prototype=Object.create(n.prototype),t.prototype.constructor=t,e(t,n)}export{t};

@@ -10,17 +10,30 @@ function RegisterSuccess() {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'linear-gradient(135deg, #512DA8 0%, #C2185B 100%)', marginTop:"120px" }}>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        background: 'linear-gradient(135deg, #512DA8 0%, #C2185B 100%)',
+        marginTop: '120px',
+      }}
+    >
       <Result
         status="success"
         title="Registration Successful"
-        subTitle="An activation Email has been sent to your email. Please Activate your account within 30 minutes."
+        subTitle="A verification email has been sent to your email address. Please check your inbox and click the verification link to activate your account."
         extra={[
           <Button type="primary" key="login" onClick={handleLoginRedirect}>
             Go to Login
           </Button>,
         ]}
-        style={{ background: '#fff', padding: '40px', borderRadius: '8px', boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)' }}
+        style={{
+          background: '#fff',
+          padding: '40px',
+          borderRadius: '8px',
+          boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
+        }}
       />
     </div>
   );

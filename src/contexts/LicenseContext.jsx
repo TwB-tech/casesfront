@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState, useMemo } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import {
   getActivationStatus,
   getTrialStatus,
@@ -188,7 +188,7 @@ export const LicenseProvider = ({ children }) => {
 };
 
 export const useLicense = () => {
-  const context = LicenseContext;
+  const context = useContext(LicenseContext);
   if (!context) {
     throw new Error('useLicense must be used within a LicenseProvider');
   }

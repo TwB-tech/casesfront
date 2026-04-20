@@ -701,6 +701,85 @@ export const supabaseApi = {
     }
 
     if (path === 'auth/register/') {
+      // Rate limiting: 5 registrations per IP per hour
+      const clientIP = payload.client_ip || payload.ip || 'unknown';
+      const rateLimitKey = `registration_rate_limit_${clientIP}`;
+      const now = Date.now();
+      const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+      const MAX_REGISTRATIONS = 5;
+
+      // Use localStorage for rate limiting in browser environment
+      // In production, this should be done at the server level
+      try {
+        if (typeof window !== 'undefined') {
+          const rateLimitData = JSON.parse(
+            localStorage.getItem(rateLimitKey) || '{"attempts":[],"lastReset":0}'
+          );
+
+          // Reset if window has passed
+          if (now - rateLimitData.lastReset > WINDOW_MS) {
+            rateLimitData.attempts = [];
+            rateLimitData.lastReset = now;
+          }
+
+          // Clean old attempts
+          rateLimitData.attempts = rateLimitData.attempts.filter(
+            (timestamp) => now - timestamp < WINDOW_MS
+          );
+
+          if (rateLimitData.attempts.length >= MAX_REGISTRATIONS) {
+            const resetTime = new Date(rateLimitData.lastReset + WINDOW_MS);
+            return failure(
+              `Too many registration attempts. Try again after ${resetTime.toLocaleTimeString()}`,
+              429,
+              {
+                status_code: 429,
+                errors: { general: ['Rate limit exceeded. Please try again later.'] },
+                retry_after: Math.ceil((rateLimitData.lastReset + WINDOW_MS - now) / 1000),
+              }
+            );
+          }
+
+          // Add current attempt
+          rateLimitData.attempts.push(now);
+          localStorage.setItem(rateLimitKey, JSON.stringify(rateLimitData));
+        }
+      } catch (error) {
+        // If localStorage fails, log but continue (don't block registration)
+        console.warn('Rate limiting storage failed:', error);
+      }
+
+      // Validate required fields
+      if (!payload.email || typeof payload.email !== 'string' || payload.email.trim() === '') {
+        return failure('Email is required', 400, { email: ['Email is required'] });
+      }
+
+      if (
+        !payload.password ||
+        typeof payload.password !== 'string' ||
+        payload.password.length < 6
+      ) {
+        return failure('Password must be at least 6 characters long', 400, {
+          password: ['Password must be at least 6 characters long'],
+        });
+      }
+
+      if (
+        !payload.username ||
+        typeof payload.username !== 'string' ||
+        payload.username.trim() === ''
+      ) {
+        return failure('Username is required', 400, { username: ['Username is required'] });
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(payload.email)) {
+        return failure('Please enter a valid email address', 400, {
+          email: ['Invalid email format'],
+        });
+      }
+
       const requestedRole = (payload.role || 'individual').toLowerCase();
       if (!SELF_SERVICE_ROLES.has(requestedRole)) {
         return failure('This role must be provisioned by an administrator.', 403);
@@ -711,15 +790,22 @@ export const supabaseApi = {
         (requestedRole === 'firm' || requestedRole === 'organization') &&
         !resolvedOrganizationId
       ) {
+        if (!payload.username) {
+          return failure('Organization/Law firm name is required', 400, {
+            username: ['Organization name is required'],
+          });
+        }
+
         const { data: org, error: orgErr } = await supabase
           .from(TABLES.ORGANIZATIONS)
           .insert({
-            name: payload.username || payload.email,
+            name: payload.username,
             email: payload.email,
             plan_type: 'free',
           })
           .select();
         if (orgErr || !org?.[0]) {
+          console.error('Organization creation error:', orgErr);
           return failure('Unable to create organization profile', 400, orgErr);
         }
         if (org[0]) {
@@ -729,19 +815,29 @@ export const supabaseApi = {
         }
       }
 
-      const signUpData = await auth.create(
-        undefined,
-        payload.email,
-        payload.password,
-        payload.username || payload.email,
-        {
-          role: requestedRole,
-          organization_id: resolvedOrganizationId,
+      try {
+        const signUpData = await auth.create(
+          undefined,
+          payload.email.trim(),
+          payload.password,
+          payload.username.trim(),
+          {
+            role: requestedRole,
+            organization_id: resolvedOrganizationId,
+          }
+        );
+        const registeredUser = signUpData?.user;
+        if (!registeredUser?.id) {
+          console.error('Auth creation failed:', signUpData);
+          return failure('Registration failed', 400, signUpData);
         }
-      );
-      const registeredUser = signUpData?.user;
-      if (!registeredUser?.id) {
-        return failure('Registration failed', 400, signUpData);
+      } catch (authError) {
+        console.error('Supabase auth error:', authError);
+        return failure(
+          'Registration failed. Please check your information and try again.',
+          400,
+          authError
+        );
       }
 
       // Create user profile
@@ -779,6 +875,57 @@ export const supabaseApi = {
         email: registeredUser.email,
         username: payload.username,
       });
+    }
+
+    if (path === 'auth/verify-email/') {
+      // For Supabase, email verification is typically handled by Supabase Auth
+      // But we can provide a custom verification endpoint
+      if (!payload.token || typeof payload.token !== 'string') {
+        return failure('Verification token is required', 400, {
+          status_code: 400,
+          errors: { token: ['Verification token is required'] },
+        });
+      }
+
+      try {
+        // Verify the user with Supabase
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: payload.token,
+          type: 'email',
+        });
+
+        if (error) {
+          return failure('Invalid or expired verification token', 400, {
+            status_code: 400,
+            errors: { token: ['Invalid or expired verification token'] },
+          });
+        }
+
+        // Update user profile to mark as verified
+        const { error: updateError } = await supabase
+          .from(TABLES.USERS)
+          .update({
+            email_verified: true,
+            verified_at: new Date().toISOString(),
+          })
+          .eq('id', data.user.id);
+
+        if (updateError) {
+          console.warn('Failed to update email verification status:', updateError);
+        }
+
+        return success({
+          message: 'Email verified successfully',
+          user: {
+            id: data.user.id,
+            email: data.user.email,
+            email_verified: true,
+          },
+        });
+      } catch (error) {
+        console.error('Email verification error:', error);
+        return failure('Email verification failed', 500, error);
+      }
     }
 
     if (path === 'case/') {

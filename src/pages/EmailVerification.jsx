@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { notification } from 'antd';
-import axiosInstance from '../axiosConfig'; 
-
+import axiosInstance from '../axiosConfig';
 
 const EmailVerification = () => {
   const [verifying, setVerifying] = useState(true);
@@ -17,42 +16,37 @@ const EmailVerification = () => {
       if (!token) {
         notification.error({
           message: 'Verification Failed',
-          description: 'No verification token found.',
+          description: 'No verification token found in the URL.',
         });
         setVerifying(false);
         return;
       }
 
       try {
-        const response = await axiosInstance.get(`/auth/email-verify/?token=${token}`);
-        
-        if (response.status === 200) {
-          notification.success({
-            message: 'Email Verified',
-            description: 'Your email has been successfully activated.',
-          });
-          navigate('/login');
-        }
+        const response = await axiosInstance.post('/auth/verify-email/', { token });
+
+        notification.success({
+          message: 'Email Verified',
+          description:
+            'Your email has been successfully verified. You can now log in to your account.',
+        });
+        navigate('/login');
       } catch (error) {
-        if (error.response) {
-          if (error.response.status === 400) {
-            const errorMessage = error.response.data.error;
-            notification.error({
-              message: 'Verification Failed',
-              description: errorMessage,
-            });
-          } else {
-            notification.error({
-              message: 'Verification Failed',
-              description: 'An unexpected error occurred. Please try again.',
-            });
-          }
-        } else {
-          notification.error({
-            message: 'Verification Failed',
-            description: 'Unable to connect to the server. Please try again later.',
-          });
+        console.error('Email verification error:', error);
+
+        let errorMessage = 'An unexpected error occurred during verification.';
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response?.data?.errors) {
+          errorMessage = Object.values(error.response.data.errors).flat().join(', ');
+        } else if (error.message) {
+          errorMessage = error.message;
         }
+
+        notification.error({
+          message: 'Verification Failed',
+          description: errorMessage,
+        });
       } finally {
         setVerifying(false);
       }

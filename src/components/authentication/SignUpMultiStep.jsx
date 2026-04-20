@@ -89,35 +89,32 @@ function SignUpMultiStep() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     try {
-      if (formData.password !== formData['confirm password']) {
-        notification.error({
-          message: 'Password Mismatch',
-          description: 'The passwords you entered do not match. Please try again.',
-        });
-        return;
+      // Basic validation before calling register
+      if (!formData.email || formData.email.trim() === '') {
+        throw new Error('Email is required');
       }
 
-      const registrationData = {
-        ...formData,
-        role: mapRoleToBackend(userType),
-      };
+      if (!formData.password || formData.password.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
+      }
+
+      if (formData.password !== formData['confirm password']) {
+        throw new Error('Passwords do not match');
+      }
 
       const lower_userType = mapRoleToBackend(userType);
-      await register(registrationData, lower_userType);
+      await register(formData, lower_userType);
 
-      notification.success({
-        message: 'Registration Successful',
-        description: 'Your account has been created successfully.',
-      });
       setLoading(false);
-      setStep(5);
+      // Navigate to success page instead of showing step 5
+      window.location.href = '/register-success';
     } catch (error) {
+      console.error('Signup error:', error);
       notification.error({
         message: 'Registration Failed',
-        description: error.response
-          ? error.response.data.message
-          : 'Something went wrong. Please try again.',
+        description: error.message || 'Something went wrong. Please try again.',
       });
       setLoading(false);
     }
@@ -419,7 +416,6 @@ function SignUpMultiStep() {
             {step === 0 && renderUserTypeSelection()}
             {step >= 1 && step <= 3 && renderFormFields()}
             {step === 4 && renderSummary()}
-            {step === 5 && renderConfirmation()}
           </form>
         </div>
       </div>

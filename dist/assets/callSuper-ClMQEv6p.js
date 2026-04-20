@@ -1,0 +1,1 @@
+import{ft as e,pt as t,ut as n}from"./render-ByGHeMOx.js";function r(r,i,a){return i=t(i),n(r,e()?Reflect.construct(i,a||[],t(r).constructor):i.apply(r,a))}export{r as t};

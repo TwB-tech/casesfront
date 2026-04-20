@@ -65,10 +65,17 @@ export const generateResetToken = () => {
 };
 
 /**
+ * Generate secure token (alias for generateResetToken for broader use)
+ */
+export const generateSecureToken = () => {
+  return `secure-${Date.now()}-${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+};
+
+/**
  * Build verification email HTML
  */
 const buildVerificationEmail = (username, token) => {
-  const verifyUrl = `${SITE_URL}/email-verify/?token=${token}`;
+  const verifyUrl = `${SITE_URL}/verify-email?token=${token}`;
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
       <h2 style="color: #1e40af; margin-bottom: 20px;">Welcome to WakiliWorld</h2>
@@ -116,8 +123,8 @@ const buildPasswordResetEmail = (username, token) => {
 /**
  * Send verification email to new user
  */
-export const sendVerificationEmail = async (user) => {
-  const token = generateVerificationToken();
+export const sendVerificationEmail = async (user, providedToken = null) => {
+  const token = providedToken || generateVerificationToken();
   const html = buildVerificationEmail(user.username || user.email, token);
 
   // In standalone mode, store token for verification flow

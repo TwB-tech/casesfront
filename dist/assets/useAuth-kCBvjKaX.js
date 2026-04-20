@@ -1,1 +1,0 @@
-import{o as e}from"./chunk-zsgVPwQN.js";import{n as t}from"./jsx-runtime-C_z8YJsg.js";import{t as n}from"./authContext-BLt7dn7B.js";var r=e(t()),i=()=>(0,r.useContext)(n);export{i as t};
