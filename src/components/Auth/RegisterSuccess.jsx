@@ -6,7 +6,7 @@ function RegisterSuccess() {
   const navigate = useNavigate();
 
   const handleLoginRedirect = () => {
-    navigate('/');
+    navigate('/login', { state: { from: '/register-success' } });
   };
 
   return (

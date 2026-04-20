@@ -34,7 +34,13 @@ function SignIn() {
       await login(formData.email, formData.password);
       message.success('Login successful!');
       setLoading(false);
-      navigate('/home');
+      // Check for redirect state or go to home
+      const redirect = window.history.state?.usr?.from;
+      if (redirect === '/register-success') {
+        navigate('/home', { replace: true });
+      } else {
+        navigate('/home');
+      }
     } catch (error) {
       message.error('Login failed!');
       setLoading(false);

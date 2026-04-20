@@ -57,6 +57,8 @@ const Features = lazy(() => import('./pages/Features'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 const OnboardingRequest = lazy(() => import('./components/OnboardingRequest'));
+const ClientRegister = lazy(() => import('./pages/ClientRegister'));
+const ClientDashboard = lazy(() => import('./pages/ClientDashboard'));
 const FirmsMarketplace = lazy(() => import('./pages/FirmsMarketplace'));
 const AccountingDashboard = lazy(() => import('./pages/AccountingDashboard'));
 const ExpenseManagement = lazy(() => import('./pages/ExpenseManagement'));
@@ -191,6 +193,14 @@ function AppContent() {
                       element={
                         <ProtectedRoute>
                           <Home />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/client-home"
+                      element={
+                        <ProtectedRoute roles={['client']}>
+                          <ClientDashboard />
                         </ProtectedRoute>
                       }
                     />
@@ -424,6 +434,7 @@ function AppContent() {
                     <Route path="/privacy" element={<Privacy />} />
                     <Route path="/terms" element={<Terms />} />
                     <Route path="/onboarding" element={<OnboardingRequest />} />
+                    <Route path="/client-register" element={<ClientRegister />} />
                     <Route path="/firms" element={<FirmsMarketplace />} />
                     <Route
                       path="/accounting"

@@ -37,7 +37,7 @@ const BASE_ROUTES = [
     path: '/home',
     label: 'Dashboard',
     icon: DashboardOutlined,
-    routes: ['/home'],
+    routes: ['/home', '/client-home'],
   },
   {
     key: 'cases',
@@ -159,6 +159,9 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   // Combine base routes with admin routes if user is admin
   const ROUTE_CONFIG = useMemo(() => {
     let routes = [...BASE_ROUTES];
+    if (user && user.role === 'client') {
+      routes = routes.filter(r => ['dashboard', 'cases', 'documents'].includes(r.key));
+    }
     if (user && (user.role === 'admin' || user.role === 'administrator')) {
       routes = [...routes, ...ADMIN_ROUTES];
     }

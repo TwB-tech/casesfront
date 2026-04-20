@@ -5,6 +5,7 @@
 
 const RESEND_API_KEY = import.meta.env.RESEND_API_KEY;
 const ADMIN_EMAIL = import.meta.env.ADMIN_EMAIL || 'admin@techwithbrands.com';
+const NOREPLY_EMAIL = import.meta.env.NOREPLY_EMAIL || 'noreply@techwithbrands.com';
 const SITE_URL =
   import.meta.env.SITE_URL ||
   (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
@@ -52,7 +53,7 @@ export const sendEmail = async ({ to, subject, html, text }) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `WakiliWorld <${ADMIN_EMAIL}>`,
+        from: `WakiliWorld <${NOREPLY_EMAIL}>`,
         to: Array.isArray(to) ? to : [to],
         subject,
         html,
@@ -95,6 +96,94 @@ export const generateResetToken = () => {
  */
 export const generateSecureToken = () => {
   return `secure-${Date.now()}-${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+};
+
+/**
+ * Build client invitation email HTML
+ */
+const buildClientInviteEmail = (inviterName, clientName, inviteToken) => {
+  const inviteUrl = `${SITE_URL}/client-register?token=${inviteToken}`;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #6366f1; margin: 0;">WakiliWorld</h1>
+        <p style="color: #8b5cf6; margin: 5px 0 0 0;">Legal CRM Platform</p>
+      </div>
+      <h2 style="color: #1e40af; margin-bottom: 20px;">You're Invited!</h2>
+      <p>Hi ${clientName || 'there'},</p>
+      <p><strong>${inviterName}</strong> has invited you to join WakiliWorld as their client.</p>
+      <p>WakiliWorld helps legal professionals manage cases, documents, tasks, and billing - all in one place.</p>
+      <div style="margin: 30px 0; text-align: center;">
+        <a href="${inviteUrl}"
+           style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+          Accept Invitation
+        </a>
+      </div>
+      <p style="color: #666; font-size: 14px;">Or copy and paste this link:</p>
+      <p style="color: #666; font-size: 12px; word-break: break-all;">${inviteUrl}</p>
+      <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+      <p style="color: #999; font-size: 12px;">
+        If you don't know ${inviterName}, you can safely ignore this email.<br>
+        © ${new Date().getFullYear()} WakiliWorld - Tech with Brands
+      </p>
+    </div>
+  `;
+};
+
+/**
+ * Send client invitation email
+ */
+export const sendClientInvite = async ({ clientEmail, clientName, inviterName, inviteToken }) => {
+  const html = buildClientInviteEmail(inviterName, clientName, inviteToken);
+  return sendEmail({
+    to: clientEmail,
+    subject: `${inviterName} invited you to WakiliWorld`,
+    html,
+  });
+};
+
+/**
+ * Build employee invitation email HTML
+ */
+const buildEmployeeInviteEmail = (inviterName, employeeName, role, inviteToken) => {
+  const inviteUrl = `${SITE_URL}/employee-register?token=${inviteToken}`;
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #6366f1; margin: 0;">WakiliWorld</h1>
+        <p style="color: #8b5cf6; margin: 5px 0 0 0;">Legal CRM Platform</p>
+      </div>
+      <h2 style="color: #1e40af; margin-bottom: 20px;">You're Invited to Join a Law Firm!</h2>
+      <p>Hi ${employeeName || 'there'},</p>
+      <p><strong>${inviterName}</strong> has invited you to join their law firm on WakiliWorld as a <strong>${role || 'employee'}</strong>.</p>
+      <p>WakiliWorld helps legal teams manage cases, documents, tasks, and billing - all in one place.</p>
+      <div style="margin: 30px 0; text-align: center;">
+        <a href="${inviteUrl}"
+           style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+          Accept Invitation
+        </a>
+      </div>
+      <p style="color: #666; font-size: 14px;">Or copy and paste this link:</p>
+      <p style="color: #666; font-size: 12px; word-break: break-all;">${inviteUrl}</p>
+      <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+      <p style="color: #999; font-size: 12px;">
+        If you don't know ${inviterName}, you can safely ignore this email.<br>
+        © ${new Date().getFullYear()} WakiliWorld - Tech with Brands
+      </p>
+    </div>
+  `;
+};
+
+/**
+ * Send employee invitation email
+ */
+export const sendEmployeeInvite = async ({ employeeEmail, employeeName, inviterName, role, inviteToken }) => {
+  const html = buildEmployeeInviteEmail(inviterName, employeeName, role, inviteToken);
+  return sendEmail({
+    to: employeeEmail,
+    subject: `${inviterName} invited you to join their law firm`,
+    html,
+  });
 };
 
 /**
@@ -211,6 +300,9 @@ export default {
   sendEmail,
   sendVerificationEmail,
   sendPasswordResetEmail,
+  sendContactEmail,
+  sendClientInvite,
   generateVerificationToken,
   generateResetToken,
+  generateSecureToken,
 };

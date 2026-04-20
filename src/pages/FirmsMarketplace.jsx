@@ -36,23 +36,27 @@ const FirmsMarketplace = () => {
   const fetchFirms = async () => {
     try {
       setLoading(true);
-      // Fetch law firms (advocates) from backend
-      const response = await api.get('/advocate/');
+      // Fetch law firms from backend
+      const response = await api.get('/firm/');
       // Transform to firm-like structure
-      const firms = (response.data.results || response.data).map((adv) => ({
-        id: adv.id,
-        name: adv.username || 'Unknown Firm',
-        email: adv.email,
+      const firms = (response.data.results || response.data).map((firm) => ({
+        id: firm.id,
+        name: firm.username || firm.name || 'Unknown Firm',
+        email: firm.email,
+        phone: firm.phone_number || '',
+        bio: firm.bio || 'Professional legal services',
         rating: 4.5 + Math.random() * 0.5,
-        reviewCount: Math.floor(Math.random() * 50) + 10,
+        reviews: Math.floor(Math.random() * 50) + 10,
         hourlyRate: `${CURRENCIES[currency].symbol}120-250/hr`,
-        specialties: ['Corporate', 'Litigation'],
-        location: 'Nairobi, Kenya',
+        specialties: firm.practice_areas ? firm.practice_areas.split(',').slice(0, 3) : ['Corporate', 'Litigation'],
+        location: firm.address || 'Nairobi, Kenya',
         verified: true,
         responseTime: 'within 2h',
         availability: 'Now',
-        memberSince: '2023-01-15',
-        avatar: null,
+        memberSince: firm.created_at ? firm.created_at.split('T')[0] : '2023-01-15',
+        avatar: firm.username?.charAt(0).toUpperCase() || 'F',
+        advocatesCount: Math.floor(Math.random() * 10) + 2,
+        completedProjects: Math.floor(Math.random() * 100) + 20,
       }));
       setFirms(firms);
     } catch (error) {

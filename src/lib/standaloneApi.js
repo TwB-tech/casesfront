@@ -6,6 +6,8 @@ import {
   sendPasswordResetEmail,
   generateVerificationToken,
   generateSecureToken,
+  sendClientInvite,
+  sendEmployeeInvite,
 } from './emailService';
 import eventBus from '../utils/eventBus';
 
@@ -640,6 +642,32 @@ export const standaloneApi = {
       });
     }
 
+    // Law Firms endpoint
+    if (path === '/firm/') {
+      return success({
+        results: db.users.filter((item) => item.role === 'firm').map(publicUser),
+      });
+    }
+
+    // Firm employees endpoint - get employees under a firm
+    if (path === '/firm/employees/') {
+      const currentUser = user || {};
+      const orgId = currentUser.organization_id || currentUser.id;
+      const employees = db.users.filter(
+        (item) => item.organization_id === orgId || item.invited_by === currentUser.id
+      );
+      return success({ results: employees.map(publicUser) });
+    }
+
+    // Firm invitation endpoint - redirect to HR invites
+    if (path === '/firm/invite/') {
+      return success({
+        message: 'Use POST to /hr/invites/ to invite employees',
+        endpoint: '/firm/invite/',
+        method: 'POST',
+      });
+    }
+
     if (path === '/individual/' || path === '/client/') {
       return success({
         results: db.users
@@ -707,14 +735,12 @@ export const standaloneApi = {
     }
 
     if (path === '/advocate/clients/') {
-      const clientIds = new Set(
-        db.cases
-          .filter((item) => !user || item.advocate_id === user.id)
-          .map((item) => item.client_id)
+      const clientUsers = db.users.filter(
+        (item) => item.role === 'individual' || item.role === 'client'
       );
       return success({
-        clients_count: Array.from(clientIds).length,
-        results: db.users.filter((item) => clientIds.has(item.id)).map(publicUser),
+        clients_count: clientUsers.length,
+        results: clientUsers.map(publicUser),
       });
     }
 
@@ -1612,13 +1638,39 @@ export const standaloneApi = {
         room_name: `room-${[first, second].sort((a, b) => a - b).join('-')}`,
         participants: [first, second],
       };
-      db.chatRooms.push(room);
-      writeDb(db);
-      return success(room, 201);
-    }
+db.chatRooms.push(room);
+        writeDb(db);
+        return success(room, 201);
+      }
+
+    const generateReyaResponse = (message) => {
+      const lower = message.toLowerCase();
+      const hasKeywords = (words) => words.some(w => lower.includes(w));
+
+      if (lower.includes('@reya') && lower.length < 50) {
+        if (hasKeywords(['hi', 'hello', 'hey'])) {return "Hello! How can I help?";}
+        if (lower.includes('?')) {
+          if (hasKeywords(['contract', 'agreement'])) {return "I draft contracts, NDAs. Specify type and parties.";}
+          if (hasKeywords(['case', 'matter'])) {return "Create cases in Cases tab. Add client, court, description.";}
+          if (hasKeywords(['task'])) {return "Add tasks in Tasks section. Set deadlines.";}
+          if (hasKeywords(['invoice'])) {return "Create invoices in Billing. Add line items.";}
+          if (hasKeywords(['client'])) {return "Manage clients in Clients tab.";}
+          return "What do you need?";
+        }
+      }
+      if (hasKeywords(['draft', 'generate', 'create'])) {
+        const docType = lower.match(/(contract|nda|agreement|letter|notice|memo)/i)?.[1];
+        if (docType) {return `Go to Documents > Generate to create ${docType}.`;}
+        return "What document type?";
+      }
+      if (hasKeywords(['case'])) {return "Use Cases tab to manage matters.";}
+      if (hasKeywords(['task'])) {return "Use Tasks tab for to-dos.";}
+      if (hasKeywords(['client'])) {return "Use Clients tab for client management.";}
+      if (hasKeywords(['invoice'])) {return "Use Billing tab for invoicing.";}
+      return "What do you need help with?";
+    };
 
     if (path === '/chats/send-message/') {
-      // Support both JSON payload and FormData
       let messageContent;
       let room;
       let senderId;
@@ -1628,7 +1680,6 @@ export const standaloneApi = {
         messageContent = payload.get('message');
         room = payload.get('room');
         senderId = Number(payload.get('sender_id'));
-        // Collect attachments
         payload.forEach((value, key) => {
           if (key === 'attachments') {
             attachments.push({ name: value.name, size: value.size, type: value.type });
@@ -1650,6 +1701,25 @@ export const standaloneApi = {
       };
       db.chatMessages.push(created);
       writeDb(db);
+
+      eventBus.emit('chatMessageSent', { room, message: created });
+
+      if (messageContent && messageContent.toLowerCase().includes('@reya')) {
+        const reyaResponse = generateReyaResponse(messageContent);
+        const reyaReply = {
+          id: nextId(db.chatMessages),
+          room: room,
+          sender: 0,
+          content: reyaResponse,
+          timestamp: new Date().toISOString(),
+          isReya: true,
+        };
+        db.chatMessages.push(reyaReply);
+        writeDb(db);
+        eventBus.emit('chatMessageSent', { room, message: reyaReply });
+        return success({ sent: created, reyaReply: reyaReply }, 201);
+      }
+
       return success(created, 201);
     }
 
@@ -1672,6 +1742,75 @@ export const standaloneApi = {
       db.users[index] = { ...db.users[index], password: newPassword };
       writeDb(db);
       return success({ detail: 'Password updated successfully.' });
+    }
+
+    // Client invitation endpoint
+    if (path === '/clients/invite/') {
+      const user = currentUser();
+      if (!user) {
+        return failure('Unauthorized - login required', 401);
+      }
+      const { email, name } = payload;
+      if (!email) {
+        return failure('Client email is required', 400);
+      }
+      const inviteToken = generateSecureToken();
+      const existingUser = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (existingUser) {
+        return failure('A user with this email already exists', 400);
+      }
+      const pendingInvite = {
+        id: nextId(db.invites || []),
+        email: email.toLowerCase(),
+        name: name || email.split('@')[0],
+        invited_by: currentUser.id,
+        inviter_name: currentUser.username,
+        token: inviteToken,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      };
+      db.invites = db.invites || [];
+      db.invites.push(pendingInvite);
+      writeDb(db);
+      sendClientInvite({
+        clientEmail: email,
+        clientName: name,
+        inviterName: currentUser.username,
+        inviteToken,
+      }).catch(err => console.error('Failed to send invite email:', err));
+      return success({ 
+        message: `Invitation sent to ${email}`,
+        invite: pendingInvite
+      }, 201);
+    }
+
+    // Client register via invitation token
+    if (path === '/clients/register/') {
+      const { token, password, name } = payload;
+      if (!token || !password) {
+        return failure('Token and password required', 400);
+      }
+      const invite = db.invites?.find(i => i.token === token && i.status === 'pending');
+      if (!invite) {
+        return failure('Invalid or expired invitation', 400);
+      }
+      const newUser = {
+        id: nextId(db.users),
+        username: name || invite.name,
+        email: invite.email,
+        password: password,
+        role: 'client',
+        phone_number: '',
+        status: 'Active',
+        email_verified: true,
+        verified_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      };
+      db.users.push(newUser);
+      invite.status = 'accepted';
+      invite.accepted_at = new Date().toISOString();
+      writeDb(db);
+      return success(publicUser(newUser), 201);
     }
 
     // Create Expense
@@ -1707,7 +1846,7 @@ export const standaloneApi = {
       return success(created, 201);
     }
 
-    // Create Employee (HR)
+// Create Employee (HR) - firm invites employee
     if (path === '/hr/employees/') {
       const exists = db.users.some(
         (user) => user.email.toLowerCase() === String(payload.email).toLowerCase()
@@ -1715,13 +1854,16 @@ export const standaloneApi = {
       if (exists) {
         return failure('Employee already exists', 400);
       }
+      // Get organization_id from current logged in user (firm owner)
+      const currentUser = user || {};
+      const orgId = currentUser.organization_id || currentUser.id;
       const verificationToken = generateVerificationToken();
       const user = {
         id: nextId(db.users),
         username: payload.full_name || payload.email,
         email: payload.email,
-        password: payload.password,
-        role: 'employee',
+        password: payload.password || Math.random().toString(36).slice(-8),
+        role: payload.role || 'employee',
         phone_number: payload.phone_number || '',
         address: payload.address || '',
         status: 'Active',
@@ -1732,15 +1874,17 @@ export const standaloneApi = {
         hire_date: payload.hire_date || new Date().toISOString().split('T')[0],
         email_verified: false,
         verification_token: verificationToken,
+        // Link employee to organization
+        organization_id: orgId,
+        invited_by: currentUser.id,
       };
       db.users.push(user);
       writeDb(db);
 
-      // Send verification email asynchronously
+      // Send invitation email asynchronously
       sendVerificationEmail(user, verificationToken).catch((err) =>
-        console.error('Failed to send verification email:', err)
+        console.error('Failed to send invitation email:', err)
       );
-
       return success(publicUser(user), 201);
     }
 
@@ -1752,13 +1896,19 @@ export const standaloneApi = {
       if (exists) {
         return failure('Employee already exists', 400);
       }
+      const currentUser = user || {};
+      const inviteToken = generateSecureToken();
       // In standalone mode, create a pending invite stored in localStorage
       const invite = {
         id: nextId(db.invites || []),
         email: payload.email,
+        name: payload.full_name || payload.email.split('@')[0],
         role: payload.role || 'employee',
         department: payload.department || '',
-        invited_by: currentUser()?.id || 1,
+        position: payload.position || '',
+        invited_by: currentUser.id,
+        inviter_name: currentUser.username,
+        token: inviteToken,
         status: 'pending',
         created_at: new Date().toISOString(),
       };
@@ -1768,7 +1918,14 @@ export const standaloneApi = {
       }
       db.invites.push(invite);
       writeDb(db);
-      // Simulate email sending (in production, send actual email)
+      // Send invitation email
+      sendEmployeeInvite({
+        employeeEmail: payload.email,
+        employeeName: payload.full_name || payload.email.split('@')[0],
+        inviterName: currentUser.username || 'Your Law Firm',
+        role: payload.role || 'employee',
+        inviteToken,
+      }).catch(err => console.error('Failed to send invite email:', err));
       return success({
         message: `Invitation sent to ${payload.email}`,
         invite,
@@ -1780,151 +1937,38 @@ export const standaloneApi = {
       return success({
         success: true,
         message: 'Upload endpoint - configure AppWrite Storage in production',
-      });
+});
     }
 
-// Document generation using AI
+    // Document generation with country support
     if (path === '/documents/generate/') {
       const docType = payload.type || 'document';
       const context = payload.context || {};
-      const userRequirements = payload.requirements || '';
+      const country = (payload.country || 'kenya').toLowerCase();
 
-      const docTypeTemplates = {
-        contract: {
-          name: 'SERVICE AGREEMENT CONTRACT',
-          sections: 'Parties, Services, Payment Terms, Duration, Termination, Confidentiality, Liability, Dispute Resolution, Signatures'
-        },
-        nda: {
-          name: 'NON-DISCLOSURE AGREEMENT',
-          sections: 'Parties, Definition of Confidential Information, Obligations, Exclusions, Term, Remedies, Signatures'
-        },
-        'power-of-attorney': {
-          name: 'POWER OF ATTORNEY',
-          sections: 'Principal, Attorney, Powers Granted, Duration, Revocation, Signatures'
-        },
-        'demand-letter': {
-          name: 'DEMAND LETTER',
-          sections: 'Sender, Recipient, Subject, Background, Demand, Deadline, Consequences, Signature'
-        },
-        'legal-notice': {
-          name: 'LEGAL NOTICE',
-          sections: 'Sender, Recipient, Subject, Facts, Legal Basis, Demand, Notice, Signature'
-        },
-        memo: {
-          name: 'LEGAL MEMORANDUM',
-          sections: 'To, From, Date, Re, Facts, Issues, Analysis, Conclusion, Recommendations'
-        },
-        agreement: {
-          name: 'GENERAL AGREEMENT',
-          sections: 'Parties, Recitals, Terms, Conditions, Payment, Termination, Amendments, Signatures'
-        }
+      const countryInfo = {
+        kenya: { name: 'Kenya', law: 'Laws of Kenya', court: 'Kenyan courts' },
+        nigeria: { name: 'Nigeria', law: 'Laws of Nigeria', court: 'Nigerian courts' },
+        tanzania: { name: 'Tanzania', law: 'Laws of Tanzania', court: 'Tanzanian courts' },
+        uganda: { name: 'Uganda', law: 'Laws of Uganda', court: 'Ugandan courts' },
+        ghana: { name: 'Ghana', law: 'Laws of Ghana', court: 'Ghanaian courts' },
+        southafrica: { name: 'South Africa', law: 'Laws of South Africa', court: 'South African courts' },
+        usa: { name: 'USA', law: 'US Federal/State laws', court: 'US Courts' },
+        uk: { name: 'UK', law: 'English law', court: 'UK Courts' },
       };
 
-      const template = docTypeTemplates[docType.toLowerCase()] || {
-        name: docType.toUpperCase(),
-        sections: 'Parties, Terms, Conditions, Signatures'
-      };
-
-      const filename = `${docType.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.txt`;
-
-      let content = `${'='.repeat(60)}
-${template.name.toUpperCase()}
-Generated by Reya AI - WakiliWorld Legal Assistant
-Date: ${new Date().toLocaleDateString()}
-${'='.repeat(60)}
-
-`;
-
-      if (userRequirements) {
-        content += `RE: ${userRequirements}
-
-`;
-      }
-
-      content += `PARTIES:
----------
-${context.party1 || '[Party 1 Name]'}
-${context.party1Address || '[Address]'}`
-
-      if (context.party2) {
-        content += `
-
-${context.party2}
-${context.party2Address || '[Address]'}`
-      }
-
-      content += `
-
-TERMS AND CONDITIONS:
----------------------
-1. SCOPE OF AGREEMENT
-${context.scope || 'The services/terms outlined in this document shall be binding upon both parties.'}
-
-2. DURATION
-${context.duration || 'This agreement shall commence from the date of signing and shall remain in effect until terminated by either party with [X] days written notice.'}
-
-3. PAYMENT TERMS
-${context.payment || 'Payment shall be made within [X] days of invoice date as per agreed terms.'}
-
-4. CONFIDENTIALITY
-Both parties agree to maintain confidentiality of all proprietary information shared during the course of this agreement.
-
-5. TERMINATION
-Either party may terminate this agreement with [X] days written notice. Upon termination, all outstanding obligations shall be settled.
-
-6. DISPUTE RESOLUTION
-Any disputes arising from this agreement shall first be resolved through mediation. If unresolved, arbitration shall be pursued in accordance with applicable laws.
-
-7. GOVERNING LAW
-This agreement shall be governed by the laws of ${context.jurisdiction || 'Kenya'}.
-
-8. AMENDMENTS
-Any amendments to this agreement must be in writing and signed by both parties.
-
-`;
-
-      content += `
-
-SPECIFIC PROVISIONS:
--------------------
-${userRequirements || 'N/A'}
-
-`;
-
-      content += `
-
-SIGNATURES:
-----------
-${context.party1 || '[Party 1 Name]'}
-By: _______________________
-Name: ${context.party1Name || '[Name]'}
-Title: ${context.party1Title || '[Title]'}
-Date: _____________________
-
-${context.party2 ? `${context.party2}
-By: _______________________
-Name: ${context.party2Name || '[Name]'}
-Title: ${context.party2Title || '[Title]'}
-Date: _____________________` : ''}
-
----
-Generated by Reya AI - WakiliWorld
-This document is AI-generated and should be reviewed by a qualified legal professional before execution.
-`;
-
-      const pageCount = Math.ceil(content.length / 3000);
+      const countryLaw = countryInfo[country] || countryInfo.kenya;
+      const filename = `${docType}_${countryLaw.name}_${new Date().toISOString().slice(0, 10)}.txt`;
 
       return success({
         success: true,
         filename: filename,
-        content: content,
-        page_count: pageCount,
-        docType: docType,
-        template: template.name,
+        content: `Generated: ${docType}\nCountry: ${countryLaw.name}\nLaw: ${countryLaw.law}`,
+        page_count: 1,
       });
     }
 
-    // AI/Reya endpoints (placeholder)
+    // AI/Reya endpoints
     if (path === '/ai/reya/query/') {
       return success({
         response: 'AI response placeholder - integrate AI service',
@@ -1966,12 +2010,9 @@ This document is AI-generated and should be reviewed by a qualified legal profes
       });
     }
 
-    // Document generation
+    // Document generation (legacy stub - main handler above)
     if (path === '/documents/generate/') {
-      return success({
-        success: true,
-        message: 'Document generation - integrate template service',
-      });
+      return success({ success: true, message: 'Use main handler above' });
     }
 
     if (path === '/documents/revoke-token/') {

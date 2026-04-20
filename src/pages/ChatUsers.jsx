@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import axiosInstance from '../axiosConfig';
+import { Bot } from 'lucide-react';
 
 export default function UserList() {
   const { user } = useAuth();
@@ -53,6 +54,31 @@ export default function UserList() {
     <div className="p-6 bg-white dark:bg-zinc-800 rounded-lg shadow-md mt-10">
       <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Start a Chat</h2>
       <ul className="space-y-4">
+        {/* Reya AI Chat Option */}
+        <li
+          className="border border-purple-200 dark:border-purple-700 p-4 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors"
+        >
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 flex items-center justify-center">
+                <Bot className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <span className="font-medium text-gray-900 dark:text-white">Reya AI Assistant</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Legal AI - Generate documents, get help
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate(`/chat/reya`)}
+              className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white py-2 px-4 rounded-lg transition-colors"
+            >
+              Chat
+            </button>
+          </div>
+        </li>
+
         {/* Display Clients for Advocates */}
         {user.role === 'advocate' && clients.length > 0 && (
           <>

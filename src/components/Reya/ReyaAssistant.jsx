@@ -289,13 +289,12 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
       {/* Proactive Notification Banner */}
       {!isOpen && pendingNotificationCount > 0 && (
         <div
-          className="fixed bottom-20 right-4 md:bottom-24 md:right-6 z-[999] px-3 md:px-4 py-2 rounded-full animate-pulse cursor-pointer text-xs md:text-sm"
+          className="fixed bottom-24 right-6 z-[999] px-4 py-2 rounded-full animate-pulse cursor-pointer"
           style={{
             background: 'linear-gradient(135deg, #ef4444 0%, #f59e0b 100%)',
             color: 'white',
             fontWeight: 600,
             boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
-            maxWidth: 'calc(100vw - 32px)',
           }}
           onClick={() => setIsOpen(true)}
         >
@@ -304,18 +303,20 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
       )}
 
       {/* Main Assistant Interface */}
-      <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[1000] w-[calc(100vw-32px)] md:w-96 max-w-[384px]">
+      <div className="fixed bottom-6 right-6 z-[1000] md:w-96 w-[90vw] max-w-[384px]">
         {!isOpen ? (
-          // Closed state - show floating button
+          // Closed state - show floating button with brand gradient
           <button
             onClick={() => setIsOpen(true)}
-            className={`w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center ${
-              isFuturistic
-                ? 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600'
-                : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
-            }`}
+            className="w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center relative"
+            style={{
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #3b82f6 100%)',
+            }}
           >
             <Bot className="w-6 h-6 text-white" />
+            <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] font-bold text-white bg-black/50 px-1 rounded whitespace-nowrap">
+              REYA
+            </span>
             {pendingNotificationCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
                 {pendingNotificationCount}
@@ -325,7 +326,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
         ) : (
           // Open state - show chat interface
           <div
-            className={`w-full h-[calc(100vh-120px)] md:h-[600px] max-h-[600px] rounded-2xl shadow-2xl border flex flex-col ${
+            className={`w-full h-[70vh] md:h-[600px] max-h-[600px] rounded-2xl shadow-2xl border flex flex-col ${
               isFuturistic ? 'bg-cyber-card border-cyber-border' : 'bg-white border-gray-200'
             }`}
           >
