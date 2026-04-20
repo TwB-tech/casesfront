@@ -3,6 +3,7 @@ import { Form, Input, Button, Upload, Select, Card, Tooltip, notification } from
 import { UploadOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import axiosInstance from '../../axiosConfig';
 import { useNavigate } from 'react-router-dom';
+import eventBus from '../../utils/eventBus';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -43,11 +44,12 @@ function NewDocument() {
     (values.shared_with || []).forEach((user) => formData.append('shared_with', user));
 
     try {
-      await axiosInstance.post('/document_management/api/documents/', formData, {
+      const response = await axiosInstance.post('/document_management/api/documents/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+      eventBus.emit('documentCreated', { id: response.data?.id });
       navigate('/documents');
     } catch (error) {
       console.error('Error uploading document:', error);

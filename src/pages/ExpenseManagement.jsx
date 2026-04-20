@@ -28,7 +28,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import axiosInstance from '../axiosConfig';
 import { formatCurrency } from '../utils/currency';
-/* eslint-disable no-console */
+import eventBus from '../utils/eventBus';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -45,7 +45,23 @@ const ExpenseManagement = () => {
   useEffect(() => {
     const abortController = new AbortController();
     fetchExpenses(abortController.signal);
-    return () => abortController.abort();
+
+    const handleExpenseChange = () => {
+      // Create a new AbortController for this fetch
+      const controller = new AbortController();
+      fetchExpenses(controller.signal);
+    };
+
+    const unsub = [
+      eventBus.on('expenseCreated', handleExpenseChange),
+      eventBus.on('expenseUpdated', handleExpenseChange),
+      eventBus.on('expenseDeleted', handleExpenseChange),
+    ];
+
+    return () => {
+      abortController.abort();
+      unsub.forEach((fn) => fn());
+    };
   }, []);
 
   const fetchExpenses = async (signal) => {
@@ -153,6 +169,7 @@ const ExpenseManagement = () => {
       values.date = values.date.format('YYYY-MM-DD');
       await axiosInstance.post('/expenses/', values);
       message.success('Expense submitted successfully');
+      eventBus.emit('expenseCreated');
       setIsModalVisible(false);
       form.resetFields();
       fetchExpenses();

@@ -4,6 +4,7 @@ import axiosInstance from '../../axiosConfig';
 import moment from 'moment';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { CURRENCIES } from '../../utils/currency';
+import eventBus from '../../utils/eventBus';
 
 const generateInvoiceNumber = () => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -31,6 +32,7 @@ const NewInvoice = () => {
       .post('/api/invoices', values)
       .then(() => {
         message.success('Invoice created successfully!');
+        eventBus.emit('invoiceCreated');
         form.resetFields();
         setInvoiceNumber(generateInvoiceNumber());
       })

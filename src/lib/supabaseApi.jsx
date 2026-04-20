@@ -354,20 +354,30 @@ export const supabaseApi = {
 
     if (path === 'auth/profile/') {
       const user = JSON.parse(localStorage.getItem('userInfo') || '{}');
-      const { data, error } = await supabase
-        .from(TABLES.USERS)
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      if (error) {
-        throw error;
-      }
-      const { ...safeUser } = data;
+      const [{ data: userData }, { data: profileData }] = await Promise.all([
+        supabase.from(TABLES.USERS).select('*').eq('id', user.id).single(),
+        supabase
+          .from('profiles')
+          .select('role, username, email, name')
+          .eq('id', user.id)
+          .maybeSingle(),
+      ]);
+
+      // Prefer profile data, fallback to auth data
+      const finalRole =
+        profileData?.role || userData?.user_metadata?.role || userData?.role || 'individual';
+
       return success({
-        ...safeUser,
-        id: data.id,
-        username: data.name,
-        role: data.user_metadata?.role || data.role || 'individual',
+        ...profileData,
+        ...userData,
+        id: user.id,
+        username:
+          profileData?.name ||
+          profileData?.username ||
+          userData?.name ||
+          userData?.email ||
+          user.email,
+        role: finalRole,
       });
     }
 
@@ -658,20 +668,31 @@ export const supabaseApi = {
         return failure('Invalid email or password', 401, error);
       }
 
-      const { data: userData } = await supabase
-        .from(TABLES.USERS)
-        .select('*')
+      // Also check the profiles table for role (new schema)
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role')
         .eq('id', data.user.id)
         .single();
-      if (userData?.user_metadata?.organization_id) {
-        localStorage.setItem('organization_id', userData.user_metadata.organization_id);
-      }
+
+      // Prefer profile.role, fallback to user_metadata.role, then 'individual'
+      const roleFromProfile = profileData?.role;
+      const roleFromMetadata = data.user?.user_metadata?.role;
+
+      // Also check user_metadata has admin/adminstrator variations
+      const normalizedMetadataRole = roleFromMetadata?.toLowerCase();
+      const isAdminViaMetadata =
+        normalizedMetadataRole === 'admin' || normalizedMetadataRole === 'administrator';
+
+      const finalRole =
+        roleFromProfile || (isAdminViaMetadata ? 'admin' : roleFromMetadata) || 'individual';
+
       return success({
         id: data.user.id,
         email: data.user.email,
-        username: userData?.name || data.user.email,
-        role: userData?.user_metadata?.role || userData?.role || 'individual',
-        organization_id: userData?.user_metadata?.organization_id,
+        username: data.user?.user_metadata?.name || data.user.email,
+        role: finalRole,
+        organization_id: data.user?.user_metadata?.organization_id || profileData?.organization_id,
         tokens: JSON.stringify({
           access: data.session?.access_token,
           refresh: data.session?.refresh_token,
@@ -777,6 +798,7 @@ export const supabaseApi = {
     }
 
     if (['tasks/create/', 'tasks/create'].includes(path)) {
+      const { user, organizationId: storedOrganizationId } = getRequestContext();
       const { data, error } = await supabase
         .from(TABLES.TASKS)
         .insert({
@@ -787,7 +809,8 @@ export const supabaseApi = {
           priority: payload.priority || 'low',
           deadline: payload.deadline,
           status: Boolean(payload.status),
-          organization_id,
+          organization_id: storedOrganizationId || user?.organization_id,
+          created_by: user?.id,
         })
         .select();
       if (error) {

@@ -5,6 +5,7 @@ import ViewSwitcher from '../../components/TaskViews/viewSwitcher';
 import TaskForm from './taskForm';
 import TaskPreview from './taskPreview';
 import axiosInstance from '../../axiosConfig';
+import eventBus from '../../utils/eventBus';
 
 const Tasks = () => {
   const [currentView, setCurrentView] = useState('list');
@@ -19,11 +20,25 @@ const Tasks = () => {
         const response = await axiosInstance.get('tasks/');
         setTasks(response.data.results);
       } catch (error) {
-        void error;
+        console.error('Error fetching tasks:', error);
       }
     };
 
     fetchTasks();
+
+    const handleTaskChange = () => {
+      fetchTasks();
+    };
+
+    const unsub1 = eventBus.on('taskCreated', handleTaskChange);
+    const unsub2 = eventBus.on('taskUpdated', handleTaskChange);
+    const unsub3 = eventBus.on('taskDeleted', handleTaskChange);
+
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+    };
   }, []);
 
   const handleViewChange = (view) => {

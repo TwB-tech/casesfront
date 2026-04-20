@@ -1,0 +1,1 @@
+import{o as e}from"./chunk-zsgVPwQN.js";import{n as t}from"./jsx-runtime-C_z8YJsg.js";var n=e(t());function r(){let[,e]=n.useReducer(e=>e+1,0);return e}export{r as t};

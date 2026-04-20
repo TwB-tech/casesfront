@@ -18,6 +18,7 @@ import Breadcrumbs from '../ui/Breadcrumbs';
 import EmptyState from '../ui/EmptyState';
 import axiosInstance from '../../axiosConfig';
 import { formatCurrency } from '../../utils/currency';
+import eventBus from '../../utils/eventBus';
 
 const InvoiceList = () => {
   const [invoices, setInvoices] = useState([]);
@@ -45,6 +46,20 @@ const InvoiceList = () => {
       }
     };
     fetchInvoices();
+
+    const handleInvoiceChange = () => {
+      fetchInvoices();
+    };
+
+    const unsub = [
+      eventBus.on('invoiceCreated', handleInvoiceChange),
+      eventBus.on('invoiceUpdated', handleInvoiceChange),
+      eventBus.on('invoiceDeleted', handleInvoiceChange),
+    ];
+
+    return () => {
+      unsub.forEach((fn) => fn());
+    };
   }, []);
 
   const filteredInvoices = invoices.filter((invoice) => {

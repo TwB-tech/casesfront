@@ -1,25 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Dropdown, Avatar, Button } from 'antd';
+import { Menu, Dropdown, Avatar, Button, Badge, Space, Tooltip } from 'antd';
 import {
   UserOutlined,
   MenuOutlined,
   LogoutOutlined,
   HomeOutlined,
   SettingOutlined,
+  KeyOutlined,
+  LockOutlined,
+  CheckCircleOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import Logo from '../../assets/LogoNoBg.png';
 import { useNavigate, Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLicense } from '../../contexts/LicenseContext';
 
 const Navbar = () => {
-  const [dropdownVisible, setDropdownVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth <= 768 : false
   );
   const navigate = useNavigate();
   const { isFuturistic } = useTheme();
   const { logout, user } = useAuth();
+  const { activation, trial } = useLicense();
 
   useEffect(() => {
     const handleResize = () => {
@@ -59,6 +64,43 @@ const Navbar = () => {
           {user?.username}
         </h2>
         <p style={{ color: '#aaaaaa', fontSize: '13px' }}>{user?.email}</p>
+        {activation?.activated ? (
+          <div style={{ marginTop: 8 }}>
+            <Tooltip title="Licensed Software">
+              <Badge
+                status="success"
+                text={
+                  <span style={{ color: '#52c41a', fontSize: '12px' }}>
+                    Licensed –{' '}
+                    {activation.daysRemaining > 0 ? `${activation.daysRemaining}d left` : 'Expired'}
+                  </span>
+                }
+              />
+            </Tooltip>
+          </div>
+        ) : trial?.inTrial ? (
+          <div style={{ marginTop: 8 }}>
+            <Tooltip title="Trial Period">
+              <Badge
+                status="processing"
+                text={
+                  <span style={{ color: '#faad14', fontSize: '12px' }}>
+                    Trial – {trial.daysRemaining}d remaining
+                  </span>
+                }
+              />
+            </Tooltip>
+          </div>
+        ) : (
+          <div style={{ marginTop: 8 }}>
+            <Tooltip title="Action Required">
+              <Badge
+                status="error"
+                text={<span style={{ color: '#f5222d', fontSize: '12px' }}>Unlicensed</span>}
+              />
+            </Tooltip>
+          </div>
+        )}
       </div>
       <Menu.Item onClick={() => navigate('/home')} style={{ color: '#8b5cf6' }}>
         Dashboard
@@ -68,6 +110,16 @@ const Navbar = () => {
       </Menu.Item>
       <Menu.Item onClick={() => navigate('/settings')} style={{ color: '#8b5cf6' }}>
         Settings
+      </Menu.Item>
+      <Menu.Item
+        onClick={() => {
+          navigate('/settings');
+          // Could also open activation modal via state
+        }}
+        style={{ color: activation?.activated ? '#52c41a' : '#8b5cf6' }}
+        icon={activation?.activated ? <CheckCircleOutlined /> : <KeyOutlined />}
+      >
+        {activation?.activated ? 'Manage License' : 'Activate License'}
       </Menu.Item>
       {(user?.role === 'admin' || user?.role === 'administrator') && (
         <Menu.Item onClick={() => navigate('/admin-dashboard')} style={{ color: '#8b5cf6' }}>
@@ -139,7 +191,23 @@ const Navbar = () => {
       <div className="flex items-center gap-4">
         {user ? (
           <Dropdown overlay={userMenu} trigger={['click']}>
-            <Avatar icon={<UserOutlined />} style={{ background: '#8b5cf6', cursor: 'pointer' }} />
+            <Badge
+              dot
+              color={activation?.activated ? '#52c41a' : trial?.inTrial ? '#faad14' : '#f5222d'}
+            >
+              <Avatar
+                icon={<UserOutlined />}
+                style={{
+                  background: '#8b5cf6',
+                  cursor: 'pointer',
+                  border: activation?.activated
+                    ? '2px solid #52c41a'
+                    : trial?.inTrial
+                      ? '2px solid #faad14'
+                      : '2px solid #f5222d',
+                }}
+              />
+            </Badge>
           </Dropdown>
         ) : (
           <div className="flex items-center gap-3">

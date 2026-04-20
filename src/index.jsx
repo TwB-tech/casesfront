@@ -1,3 +1,9 @@
+/**
+ * WakiliWorld CRM - Main Entry Point
+ * Copyright (c) 2024-2025 Anthony Kerige (Tony Kamau), Tech with Brands (TwB)
+ * Version 2.0 - All Rights Reserved
+ */
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -8,9 +14,15 @@ import intitializeAnalytics from './analytics';
 import { AuthProvider } from './contexts/authContext.jsx';
 import ThemeProvider from './contexts/ThemeContext.jsx';
 import { CurrencyProvider } from './contexts/CurrencyContext.jsx';
+import { LicenseProvider } from './contexts/LicenseContext.jsx';
+import LicenseVerification from './components/LicenseManager/LicenseVerification.jsx';
 import { initializeSentry } from './config/sentry';
+import { initializeSecurity } from './utils/enhancedSecurity';
 
 initializeSentry();
+
+// Initialize enhanced security systems
+initializeSecurity();
 
 window.addEventListener('error', (event) => {
   console.error('Global error caught:', event.error);
@@ -28,7 +40,11 @@ root.render(
     <AuthProvider>
       <ThemeProvider>
         <CurrencyProvider>
-          <App />
+          <LicenseProvider>
+            <LicenseVerification>
+              <App />
+            </LicenseVerification>
+          </LicenseProvider>
         </CurrencyProvider>
       </ThemeProvider>
     </AuthProvider>

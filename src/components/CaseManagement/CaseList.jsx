@@ -32,6 +32,7 @@ import axiosInstance from '../../axiosConfig';
 import { useMediaQuery } from 'react-responsive';
 import { useTheme } from '../../contexts/ThemeContext';
 import moment from 'moment';
+import eventBus from '../../utils/eventBus';
 
 const CaseList = () => {
   const navigate = useNavigate();
@@ -85,10 +86,27 @@ const CaseList = () => {
 
     fetchCases();
 
+    const handleCaseChange = () => {
+      fetchCases();
+    };
+
+    const unsub = [
+      eventBus.on('caseCreated', handleCaseChange),
+      eventBus.on('caseUpdated', handleCaseChange),
+      eventBus.on('caseDeleted', handleCaseChange),
+    ];
+
     // Auto-refresh cases every 5 minutes if enabled
     if (autoRefresh) {
       const interval = setInterval(fetchCases, 300000);
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        unsub.forEach((fn) => fn());
+      };
+    } else {
+      return () => {
+        unsub.forEach((fn) => fn());
+      };
     }
   }, [autoRefresh]);
 

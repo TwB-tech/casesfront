@@ -1,0 +1,1 @@
+var e={emit(e,t={}){let n=new CustomEvent(e,{detail:t});window.dispatchEvent(n)},on(e,t){return window.addEventListener(e,t),()=>window.removeEventListener(e,t)},off(e,t){window.removeEventListener(e,t)}};export{e as t};

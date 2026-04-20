@@ -28,6 +28,7 @@ import {
 import axiosInstance from '../../axiosConfig';
 import { useMediaQuery } from 'react-responsive';
 import { useTheme } from '../../contexts/ThemeContext';
+import eventBus from '../../utils/eventBus';
 
 function ClientList() {
   const [clients, setClients] = useState([]);
@@ -66,6 +67,20 @@ function ClientList() {
     };
 
     fetchClients();
+
+    const handleClientChange = () => {
+      fetchClients();
+    };
+
+    const unsub = [
+      eventBus.on('clientCreated', handleClientChange),
+      eventBus.on('clientUpdated', handleClientChange),
+      eventBus.on('clientDeleted', handleClientChange),
+    ];
+
+    return () => {
+      unsub.forEach((fn) => fn());
+    };
   }, []);
 
   const handleRowClick = (client) => {

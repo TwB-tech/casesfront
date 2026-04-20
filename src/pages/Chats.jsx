@@ -212,7 +212,7 @@
 // }
 
 import { useParams } from 'react-router-dom';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from 'antd';
 import { Input, Upload } from 'antd';
 import { Card } from 'antd';
@@ -222,6 +222,7 @@ import useAuth from '../hooks/useAuth';
 import axiosInstance from '../axiosConfig';
 import { useMediaQuery } from 'react-responsive';
 import { useTheme } from '../contexts/ThemeContext';
+import eventBus from '../utils/eventBus';
 
 export default function Chats() {
   const { roomName } = useParams();
@@ -241,6 +242,28 @@ export default function Chats() {
 
   // Determine if this is a team room
   const isTeamRoom = roomName && roomName.startsWith('team_');
+
+  // Fetch messages function - memoized to avoid unnecessary re-creations
+  const fetchMessages = useCallback(async () => {
+    if (!user || !roomName) {
+      return;
+    }
+    try {
+      setLoading(true);
+      const messagesResponse = await axiosInstance.get(`chats/get-messages/${roomName}/`);
+      const formattedMessages = messagesResponse.data.map((msg) => ({
+        sender_id: msg.sender,
+        message: msg.content,
+        timestamp: msg.timestamp,
+        room: roomName,
+      }));
+      setMessages(formattedMessages);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      setLoading(false);
+    }
+  }, [user, roomName]);
 
   // Fetch room info
   useEffect(() => {
@@ -265,30 +288,23 @@ export default function Chats() {
     }
   }, [user, roomName, isTeamRoom]);
 
-  // Fetch previous messages
+  // Fetch previous messages on mount/user/room change
   useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        setLoading(true);
-        const messagesResponse = await axiosInstance.get(`chats/get-messages/${roomName}/`);
-        const formattedMessages = messagesResponse.data.map((msg) => ({
-          sender_id: msg.sender,
-          message: msg.content,
-          timestamp: msg.timestamp,
-          room: roomName,
-        }));
-        setMessages(formattedMessages);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-        setLoading(false);
-      }
-    };
-
     if (user && roomName) {
       fetchMessages();
     }
-  }, [user, roomName]);
+  }, [user, roomName]); // Remove fetchMessages from dependencies to avoid setState in effect
+
+  // Listen for new chat messages sent from this or other tabs
+  useEffect(() => {
+    const handleChatMessageSent = () => {
+      if (user && roomName) {
+        fetchMessages();
+      }
+    };
+    const unsub = eventBus.on('chatMessageSent', handleChatMessageSent);
+    return () => unsub();
+  }, [user, roomName]); // Use user and roomName instead of fetchMessages
 
   // WebSocket connection for real-time messaging
   useEffect(() => {
@@ -369,6 +385,7 @@ export default function Chats() {
           sender_id: user.id,
         };
         socket.send(JSON.stringify(messageData));
+        eventBus.emit('chatMessageSent', { room: roomName, message: messageData });
       } else {
         // Fallback to HTTP if WebSocket not available
         const formData = new FormData();
@@ -397,6 +414,8 @@ export default function Chats() {
               : msg
           )
         );
+
+        eventBus.emit('chatMessageSent', { room: roomName, message: response.data });
       }
     } catch (error) {
       console.error('Failed to send message:', error);

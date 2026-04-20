@@ -1,0 +1,1 @@
+import{at as e}from"./render-CSz5UrC5.js";var t=()=>e()&&window.document.documentElement;export{t};

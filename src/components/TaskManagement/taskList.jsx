@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import TaskPreview from './taskPreview';
 import axiosInstance from '../../axiosConfig';
+import eventBus from '../../utils/eventBus';
 
 const { Title } = Typography;
 
@@ -48,6 +49,20 @@ const TaskList = () => {
       }
     };
     fetchData();
+
+    const handleTaskChange = () => {
+      fetchData();
+    };
+
+    const unsub1 = eventBus.on('taskCreated', handleTaskChange);
+    const unsub2 = eventBus.on('taskUpdated', handleTaskChange);
+    const unsub3 = eventBus.on('taskDeleted', handleTaskChange);
+
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+    };
   }, []);
 
   const columns = [
@@ -158,6 +173,7 @@ const TaskList = () => {
       setFilteredTasks(filteredTasks.filter((task) => task.id !== taskId));
 
       message.success('Task deleted successfully');
+      eventBus.emit('taskDeleted', { id: taskId });
       setIsPreviewVisible(false);
     } catch (error) {
       console.error('Error deleting task:', error);

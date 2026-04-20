@@ -1,7 +1,12 @@
+/**
+ * WakiliWorld CRM - Main Application Component
+ * Copyright (c) 2024-2025 Anthony Kerige (Tony Kamau), Tech with Brands (TwB)
+ * Version 2.0 - All Rights Reserved
+ */
+
 import { Route, Routes, useLocation } from 'react-router-dom';
 import './App.css';
 import React, { lazy, Suspense, useState, useEffect } from 'react';
-// import Loading from './components/Loader';
 import useAuth from './hooks/useAuth';
 import 'antd/dist/reset.css';
 import Navbar from './components/Layout/Navbar';
@@ -86,7 +91,6 @@ function AppContent() {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth <= 768 : false
   );
-  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleResize = () => {

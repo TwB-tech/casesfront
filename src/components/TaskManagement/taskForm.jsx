@@ -17,10 +17,11 @@ import { formatCurrency } from '../../utils/currency';
 import axiosInstance from '../../axiosConfig';
 import { useNavigate, useLocation } from 'react-router-dom';
 import moment from 'moment';
+import eventBus from '../../utils/eventBus';
 
 const { Option } = Select;
 
-function TaskForm() {
+function TaskForm({ onClose }) {
   const [users, setUsers] = useState([]);
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -90,7 +91,18 @@ function TaskForm() {
           description: 'Task created successfully!',
         });
       }
-      navigate(-1);
+      // Notify all task views to refresh
+      if (isEditing) {
+        eventBus.emit('taskUpdated', { id: editTask.id });
+      } else {
+        eventBus.emit('taskCreated');
+      }
+      // Close form if inline, otherwise go back
+      if (onClose) {
+        onClose();
+      } else {
+        navigate(-1);
+      }
     } catch (error) {
       console.error('Failed to save task:', error);
       notification.error({

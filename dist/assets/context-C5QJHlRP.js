@@ -1,1 +1,0 @@
-import{c as e,n as t}from"./jsx-runtime-6_byoLYo.js";import{C as n}from"./asyncToGenerator-CvFaienx.js";var r=e(t());function i(){}var a=r.createContext({add:i,remove:i});function o(e){let t=r.useContext(a),i=r.useRef();return n(n=>{if(n){let r=e?n.querySelector(e):n;t.add(r),i.current=r}else t.remove(i.current)})}export{o as t};

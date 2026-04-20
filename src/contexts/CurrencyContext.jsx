@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { CURRENCIES, getSupportedCurrencies, getCurrencyName } from '../utils/currency';
+import { getSupportedCurrencies, getCurrencyName } from '../utils/currency';
 
 const CurrencyContext = createContext();
 

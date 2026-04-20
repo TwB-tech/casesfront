@@ -1,1 +1,0 @@
-import{c as e,n as t}from"./jsx-runtime-6_byoLYo.js";var n=e(t());function r(){let[,e]=n.useReducer(e=>e+1,0);return e}export{r as t};

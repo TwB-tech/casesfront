@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import Breadcrumbs from '../components/ui/Breadcrumbs';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { message } from 'antd';
 
 const plans = [
   {
@@ -68,6 +69,7 @@ const faqs = [
 ];
 
 const Pricing = () => {
+  const navigate = useNavigate();
   return (
     <div style={{ background: '#000000', minHeight: '100vh', paddingTop: '64px' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px 24px' }}>
@@ -186,6 +188,20 @@ const Pricing = () => {
               </div>
 
               <button
+                onClick={() => {
+                  if (plan.kPrice) {
+                    // Start subscription flow
+                    message.info(`Starting ${plan.name} subscription...`);
+                    // Navigate to subscription setup or trigger API
+                    navigate('/subscription/setup', { state: { plan } });
+                  } else {
+                    // Contact sales for enterprise
+                    window.open(
+                      'mailto:sales@wakiliworld.com?subject=Enterprise Plan Inquiry',
+                      '_blank'
+                    );
+                  }
+                }}
                 style={{
                   width: '100%',
                   padding: '14px',

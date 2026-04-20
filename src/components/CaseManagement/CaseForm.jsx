@@ -5,6 +5,7 @@ import axiosInstance from '../../axiosConfig';
 import { useNavigate, useLocation } from 'react-router-dom';
 import moment from 'moment';
 import useAuth from '../../hooks/useAuth';
+import eventBus from '../../utils/eventBus';
 
 const { Option } = Select;
 
@@ -82,9 +83,11 @@ function CaseForm() {
 
       if (isEditing) {
         await axiosInstance.put(`/case/${editCase.id}/`, values);
+        eventBus.emit('caseUpdated', { id: editCase.id });
       } else {
         values.case_number = caseNumber;
         await axiosInstance.post('/case/', values);
+        eventBus.emit('caseCreated');
       }
 
       form.resetFields();

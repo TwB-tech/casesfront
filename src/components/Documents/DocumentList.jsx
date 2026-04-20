@@ -26,6 +26,7 @@ import axiosInstance from '../../axiosConfig';
 import { useMediaQuery } from 'react-responsive';
 import { useTheme } from '../../contexts/ThemeContext';
 import moment from 'moment';
+import eventBus from '../../utils/eventBus';
 
 function DocumentList() {
   const navigate = useNavigate();
@@ -44,6 +45,21 @@ function DocumentList() {
       try {
         const response = await axiosInstance.get('/document_management/api/documents/');
         const data = response.data.results || response.data || [];
+
+        // Validate that we received document data, not user data
+        if (data.length > 0 && data[0]) {
+          const firstItem = data[0];
+          // Check if this looks like user data (has username, email, etc.)
+          if (firstItem.username || firstItem.email || firstItem.password) {
+            console.error('API returned user data instead of documents!', firstItem);
+            throw new Error('API returned invalid data - user data instead of documents');
+          }
+          // Check if this looks like document data (has title, owner, etc.)
+          if (!firstItem.title && !firstItem.description) {
+            console.warn('API returned data that does not look like documents', firstItem);
+          }
+        }
+
         setDocuments(data);
         setLoading(false);
       } catch (error) {
@@ -55,6 +71,20 @@ function DocumentList() {
     };
 
     fetchDocuments();
+
+    const handleDocumentChange = () => {
+      fetchDocuments();
+    };
+
+    const unsub = [
+      eventBus.on('documentCreated', handleDocumentChange),
+      eventBus.on('documentUpdated', handleDocumentChange),
+      eventBus.on('documentDeleted', handleDocumentChange),
+    ];
+
+    return () => {
+      unsub.forEach((fn) => fn());
+    };
   }, []);
 
   const handleUploadClick = () => {
@@ -313,6 +343,78 @@ function DocumentList() {
             allowClear
           />
         </div>
+
+        {/* Reya AI Document Assistant */}
+        <Card
+          style={{
+            marginBottom: '24px',
+            borderRadius: '12px',
+            background: isFuturistic ? '#1a1a24' : '#ffffff',
+            border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
+          }}
+          bodyStyle={{ padding: '20px' }}
+        >
+          <Row align="middle" gutter={12}>
+            <Col>
+              <Avatar
+                style={{
+                  background: isFuturistic ? '#6366f1' : '#3b82f6',
+                  borderRadius: '50%',
+                }}
+                size={40}
+              >
+                <span style={{ color: 'white', fontWeight: 'bold' }}>R</span>
+              </Avatar>
+            </Col>
+            <Col flex="auto">
+              <h4
+                style={{
+                  margin: 0,
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: isFuturistic ? '#f8fafc' : '#1e293b',
+                }}
+              >
+                Need Help with Documents?
+              </h4>
+              <p
+                style={{
+                  margin: '4px 0 0 0',
+                  fontSize: '14px',
+                  color: '#64748b',
+                }}
+              >
+                Ask Reya to draft contracts, generate legal documents, or help with document
+                management. All content is AI-generated with built-in safety and compliance checks.
+              </p>
+            </Col>
+            <Col>
+              <Button
+                type="primary"
+                ghost
+                style={{
+                  borderRadius: '8px',
+                  borderColor: isFuturistic ? '#6366f1' : '#3b82f6',
+                  color: isFuturistic ? '#6366f1' : '#3b82f6',
+                }}
+                onClick={() => {
+                  // Trigger Reya assistant with document context
+                  if (window.reyaAssistant) {
+                    window.reyaAssistant.openWithPrompt(
+                      'I need help with legal documents. Can you assist me?'
+                    );
+                  } else {
+                    message.info(
+                      'Reya assistant will help you create and manage documents safely.'
+                    );
+                  }
+                }}
+              >
+                Ask Reya
+              </Button>
+            </Col>
+          </Row>
+        </Card>
 
         {/* Content */}
         {loading ? (

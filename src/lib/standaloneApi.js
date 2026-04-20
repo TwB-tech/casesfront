@@ -1,6 +1,7 @@
 const DB_KEY = 'wakiliworld.frontend.db.v1';
 import DOMPurify from 'dompurify';
 import {
+  sendEmail,
   sendVerificationEmail,
   sendPasswordResetEmail,
   generateVerificationToken,
@@ -899,8 +900,7 @@ export const standaloneApi = {
     // Payroll: List (fallback)
     if (path === '/payroll/') {
       const userOrg = user?.organization_id || user?.id;
-      const filtered =
-        db.payroll_runs?.filter((pr) => canAccessOrgRecord(pr, user, userOrg)) || [];
+      const filtered = db.payroll_runs?.filter((pr) => canAccessOrgRecord(pr, user, userOrg)) || [];
       return success(filtered);
     }
 
@@ -1236,12 +1236,26 @@ export const standaloneApi = {
     }
 
     if (path === '/clientcomm/api/clientcommunications/') {
+      // Send the email first
+      const emailResult = await sendEmail({
+        to: payload.email,
+        subject: payload.subject,
+        html: payload.message,
+        text: payload.message.replace(/<[^>]*>/g, ''), // Strip HTML for text version
+      });
+
+      if (!emailResult.success) {
+        return failure(`Failed to send email: ${emailResult.error}`, 500);
+      }
+
+      // Save to database
       const created = {
         id: nextId(db.communications),
         email: payload.email,
         subject: payload.subject,
         message: payload.message,
         google_meet_link: payload.google_meet_link || '',
+        email_id: emailResult.id, // Store the email service ID
         created_at: new Date().toISOString(),
       };
       db.communications.push(created);
