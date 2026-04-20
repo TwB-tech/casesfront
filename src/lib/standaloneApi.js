@@ -1110,7 +1110,9 @@ export const standaloneApi = {
       rateLimitData.attempts.push(now);
 
       // Update rate limit data
-      if (!db.rateLimits) db.rateLimits = {};
+      if (!db.rateLimits) {
+        db.rateLimits = {};
+      }
       db.rateLimits[rateLimitKey] = rateLimitData;
       writeDb(db);
 
@@ -1319,12 +1321,16 @@ export const standaloneApi = {
         used: false,
       };
 
-      if (!db.passwordResetRequests) db.passwordResetRequests = [];
+      if (!db.passwordResetRequests) {
+        db.passwordResetRequests = [];
+      }
       db.passwordResetRequests.push(resetRequest);
 
       // Update rate limiting
       rateLimitData.attempts.push(now);
-      if (!db.rateLimits) db.rateLimits = {};
+      if (!db.rateLimits) {
+        db.rateLimits = {};
+      }
       db.rateLimits[rateLimitKey] = rateLimitData;
 
       writeDb(db);

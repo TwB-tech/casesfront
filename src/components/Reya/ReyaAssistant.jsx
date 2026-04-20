@@ -202,7 +202,9 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
   // Send message function
   const sendMessage = useCallback(async () => {
     const userMessage = input.trim();
-    if (!userMessage) return;
+    if (!userMessage) {
+      return;
+    }
 
     setInput('');
     setMessages((prev) => [...prev, { id: Date.now(), type: 'user', content: userMessage }]);

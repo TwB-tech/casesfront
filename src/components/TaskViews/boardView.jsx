@@ -63,12 +63,16 @@ const BoardView = ({ tasks, onTaskClick, onDragEnd }) => {
   function handleDragEnd(event) {
     const { active, over } = event;
 
-    if (!over) return;
+    if (!over) {
+      return;
+    }
 
     const activeTask = tasks.find((task) => task.id === active.id);
     const overContainer = over.data.current?.sortable?.containerId || over.id;
 
-    if (!activeTask) return;
+    if (!activeTask) {
+      return;
+    }
 
     // If dropping on a different status column
     if (overContainer !== activeTask.status) {
