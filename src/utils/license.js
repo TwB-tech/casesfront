@@ -14,7 +14,7 @@ const STORAGE_KEYS = {
   LICENSE_VERIFICATION: 'twb_license_last_check',
 };
 
-const GRACE_PERIOD_DAYS = 30;
+const GRACE_PERIOD_DAYS = import.meta.env.DEV ? 30 : 365; // 1 year trial for production/demo
 
 /**
  * Generate a cryptographically secure random string

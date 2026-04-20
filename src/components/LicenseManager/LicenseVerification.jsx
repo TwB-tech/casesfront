@@ -31,6 +31,9 @@ const LicenseVerification = ({ children }) => {
   }, []);
 
   const performVerification = useCallback(() => {
+    // Allow app to render by default - don't block unless explicitly needed
+    setIsBlocked(false);
+
     if (!installationId) {
       return;
     }
@@ -44,19 +47,20 @@ const LicenseVerification = ({ children }) => {
       if (verification.valid) {
         setIsBlocked(false);
       } else {
-        // Activation invalid - show modal but allow trial
+        // Activation invalid - show modal but don't block the app
         if (!trialStatus.inTrial) {
+          // Only block if both license is invalid AND trial is expired
           setIsBlocked(true);
         } else {
           setShowActivation(true);
         }
       }
     } else {
-      // Not activated
-      if (!trialStatus.inTrial) {
+      // Not activated - only block if trial has actually expired
+      if (!trialStatus.inTrial && trialStatus.daysRemaining === 0) {
         setIsBlocked(true);
       } else {
-        // Show activation modal after trial expires in future
+        // Don't show activation modal constantly, just allow the app to work
         setShowActivation(false);
       }
     }
