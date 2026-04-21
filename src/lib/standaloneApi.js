@@ -967,6 +967,18 @@ export const standaloneApi = {
       return success({ results: filtered.map(publicUser) });
     }
 
+    // HR: List Invitations
+    if (path === '/hr/invites/') {
+      const invites = db.invites || [];
+      // Filter: only show invites relevant to current user's org/role
+      const filtered = invites.filter((inv) => {
+        if (!user) return false;
+        if (user.role === 'admin') return true;
+        return inv.invited_by === user.id || inv.organization_id === user.organization_id;
+      });
+      return success({ results: filtered });
+    }
+
     // Accounting Dashboard Summary (alias for /accounting/dashboard in standalone)
     if (path === '/accounting/dashboard' || path === '/accounting/dashboard/summary/') {
       const userOrg = user?.organization_id || user?.id;
