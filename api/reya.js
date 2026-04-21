@@ -151,8 +151,8 @@ async function callExternalAPI(url, apiKey, body, retries = 2) {
         req.end();
       });
 
-      const { status, body } = result;
-      const parsed = JSON.parse(body);
+      const { status, body: responseBody } = result;
+      const parsed = JSON.parse(responseBody);
 
       if (![200, 201].includes(status)) {
         throw new Error(`API returned ${status}: ${JSON.stringify(parsed)}`);
