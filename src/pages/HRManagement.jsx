@@ -48,9 +48,11 @@ const HRManagement = () => {
   const [filterDept, setFilterDept] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
+  const [invitations, setInvitations] = useState([]);
 
   useEffect(() => {
     fetchEmployees();
+    fetchInvitations();
   }, []);
 
   const fetchEmployees = async () => {
@@ -58,15 +60,21 @@ const HRManagement = () => {
       setLoading(true);
       const response = await axiosInstance.get('/hr/employees/');
       const employeesData = response.data.results || response.data;
+
+      // Filter out firms and only show employees (security check on frontend too)
+      const filteredData = employeesData.filter(emp =>
+        emp.role !== 'firm' && emp.role !== 'individual' && emp.role !== 'client'
+      );
+
       // Map API user object to table row shape
-      const mapped = employeesData.map((emp) => ({
+      const mapped = filteredData.map((emp) => ({
         id: emp.id,
-        name: emp.username || emp.email,
+        name: emp.username || emp.name || emp.email,
         email: emp.email,
         role: emp.role || 'employee',
         department: emp.department || 'General',
-        billableRate: emp.billable_rate
-          ? `${formatCurrency(emp.billable_rate, currency)}/hr`
+        billableRate: emp.billable_rate || emp.salary
+          ? `${formatCurrency(emp.billable_rate || emp.salary, currency)}/hr`
           : `${formatCurrency(150, currency)}/hr`,
         utilization: emp.utilization || 85,
         status: emp.status || 'Active',
@@ -79,6 +87,21 @@ const HRManagement = () => {
       console.error('Error fetching employees:', error);
       message.error('Failed to load employees. Please try again.');
       setEmployees([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchInvitations = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get('/hr/invites/');
+      const invitesData = response.data.results || response.data || [];
+      setInvitations(invitesData);
+    } catch (error) {
+      console.error('Error fetching invitations:', error);
+      message.error('Failed to load invitations. Please try again.');
+      setInvitations([]);
     } finally {
       setLoading(false);
     }
@@ -152,6 +175,10 @@ const HRManagement = () => {
       label: 'Employees',
     },
     {
+      key: 'invitations',
+      label: 'Invitations',
+    },
+    {
       key: 'leave',
       label: 'Leave Requests',
     },
@@ -168,18 +195,26 @@ const HRManagement = () => {
   const handleAddEmployee = async (values) => {
     try {
       setLoading(true);
-      // Map form values to API payload - match what supabase expects
+      // Send invitation instead of direct employee creation
       const payload = {
-        name: values.name,
         email: values.email,
         role: values.role || 'employee',
         department: values.department || '',
-        hire_date: values.joinDate ? values.joinDate.format('YYYY-MM-DD') : new Date().toISOString().slice(0, 10),
-        salary: values.salary || 0,
-        phone_number: values.phone || '',
-        address: values.address || '',
-        organization_id: localStorage.getItem('organization_id'),
+        full_name: values.name,
       };
+
+      await axiosInstance.post('/hr/invites/', payload);
+      message.success(`Invitation sent to ${values.email}`);
+      setIsModalVisible(false);
+      form.resetFields();
+      // Refresh invites list if we add that functionality
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      message.error(error.response?.data?.message || 'Failed to send invitation. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
       await axiosInstance.post('/hr/employees/', payload);
       message.success('Employee added successfully');
       setIsModalVisible(false);
@@ -283,11 +318,11 @@ const HRManagement = () => {
                 Invite Employee
               </Button>
               <Button
-                size="large"
-                icon={<Download className="w-4 h-4" />}
-                className={isFuturistic ? 'border-cyber-border' : ''}
+                type="primary"
+                icon={<UserPlus />}
+                onClick={() => setIsModalVisible(true)}
               >
-                Export
+                Invite Employee
               </Button>
             </div>
           </div>
@@ -403,6 +438,66 @@ const HRManagement = () => {
         />
 
         <div className="p-6">
+          {activeTab === 'invitations' && (
+            <>
+              <div className="mb-6 flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-semibold mb-2">Pending Invitations</h2>
+                  <p className="text-gray-600">Manage employee invitations and track their status</p>
+                </div>
+                <Button
+                  type="primary"
+                  icon={<UserPlus />}
+                  onClick={() => setIsModalVisible(true)}
+                >
+                  Send Invitation
+                </Button>
+              </div>
+
+              <Table
+                dataSource={invitations}
+                columns={[
+                  {
+                    title: 'Email',
+                    dataIndex: 'email',
+                    key: 'email',
+                  },
+                  {
+                    title: 'Role',
+                    dataIndex: 'role',
+                    key: 'role',
+                    render: (role) => <Tag color="blue">{role}</Tag>,
+                  },
+                  {
+                    title: 'Status',
+                    dataIndex: 'status',
+                    key: 'status',
+                    render: (status) => (
+                      <Tag color={status === 'pending' ? 'orange' : status === 'accepted' ? 'green' : 'red'}>
+                        {status}
+                      </Tag>
+                    ),
+                  },
+                  {
+                    title: 'Sent',
+                    dataIndex: 'created_at',
+                    key: 'created_at',
+                    render: (date) => moment(date).format('MMM DD, YYYY'),
+                  },
+                  {
+                    title: 'Expires',
+                    dataIndex: 'expires_at',
+                    key: 'expires_at',
+                    render: (date) => moment(date).format('MMM DD, YYYY'),
+                  },
+                ]}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+              />
+            </>
+          )}
+
           {activeTab === 'employees' && (
             <>
               <div className="mb-4 flex flex-wrap gap-4">
@@ -640,9 +735,9 @@ const HRManagement = () => {
         </div>
       </Card>
 
-      {/* Add Employee Modal */}
+      {/* Invite Employee Modal */}
       <Modal
-        title="Add New Employee"
+        title="Invite New Employee"
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}

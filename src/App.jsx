@@ -30,6 +30,7 @@ const Home = lazy(() => import('./pages/Home'));
 const LandingPage = lazy(() => import('./pages/LandingPage2.jsx'));
 const EmailVerification = lazy(() => import('./pages/EmailVerification'));
 const RegisterSuccess = lazy(() => import('./components/Auth/RegisterSuccess'));
+const AcceptInvite = lazy(() => import('./pages/AcceptInvite'));
 const CaseForm = lazy(() => import('./components/CaseManagement/CaseForm'));
 const CaseList = lazy(() => import('./components/CaseManagement/CaseList'));
 const Chats = lazy(() => import('./pages/Chats'));
@@ -425,6 +426,7 @@ function AppContent() {
                     <Route path="/signup" element={<SignUp />} />
                     <Route path="/register-success" element={<RegisterSuccess />} />
                     <Route path="/verify-email" element={<EmailVerification />} />
+                    <Route path="/auth/accept-invite" element={<AcceptInvite />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password/:token" element={<ResetPassword />} />
                     <Route path="/password-reset-success" element={<PasswordResetSuccess />} />

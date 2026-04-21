@@ -1,4 +1,5 @@
 import { supabase, TABLES, auth } from './supabase';
+import { sendEmail } from './emailService';
 
 const delay = (ms = 50) => new Promise((resolve) => setTimeout(resolve, ms));
 const SELF_SERVICE_ROLES = new Set(['individual', 'advocate', 'firm', 'organization']);
@@ -571,10 +572,27 @@ export const supabaseApi = {
     }
 
     if (path === 'hr/employees/') {
-      const { data, error } = await supabase
+      // Get current user's organization
+      const currentUser = JSON.parse(localStorage.getItem('userInfo') || '{}');
+      const userOrganizationId =
+        localStorage.getItem('organization_id') || currentUser?.organization_id;
+
+      if (!userOrganizationId) {
+        return failure('Organization context not found', 403);
+      }
+
+      // Only show employees from the same organization
+      let query = supabase
         .from(TABLES.USERS)
         .select('*')
         .not('role', 'in', ['individual', 'client']);
+
+      // Filter by organization for non-admin users
+      if (currentUser?.role !== 'admin') {
+        query = query.eq('organization_id', userOrganizationId);
+      }
+
+      const { data, error } = await query;
       if (error) {
         throw error;
       }
@@ -1091,8 +1109,13 @@ export const supabaseApi = {
       const organizationId = localStorage.getItem('organization_id') || payload.organization_id;
 
       // Check if current user has permission to add employees
-      if (!user?.id || user.role === 'client' || user.role === 'individual') {
+      if (!user?.id || !['advocate', 'firm', 'admin'].includes(user.role)) {
         return failure('You do not have permission to add employees', 403);
+      }
+
+      // Ensure organization context exists
+      if (!organizationId) {
+        return failure('Organization context required to add employees', 400);
       }
 
       const employeeData = {
@@ -1135,13 +1158,25 @@ export const supabaseApi = {
     if (path === 'hr/invites/') {
       const organizationId = localStorage.getItem('organization_id') || payload.organization_id;
 
+      // Check permissions
+      if (!user?.id || !['advocate', 'firm', 'admin'].includes(user.role)) {
+        return failure('You do not have permission to send invitations', 403);
+      }
+
+      // Generate secure token for invite
+      const inviteToken =
+        Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
       const inviteData = {
         email: payload.email,
         role: payload.role || 'employee',
+        department: payload.department || '',
         organization_id: organizationId,
         status: 'pending',
         invited_by: user?.id || null,
+        token: inviteToken,
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+        created_at: new Date().toISOString(),
       };
 
       const { data, error } = await supabase.from(TABLES.INVITES).insert(inviteData).select();
@@ -1151,18 +1186,104 @@ export const supabaseApi = {
         return failure('Failed to send invitation: ' + error.message, 400);
       }
 
+      // Send invitation email asynchronously
+      const inviteUrl = `${window.location.origin}/auth/accept-invite?token=${inviteToken}`;
+      sendEmail({
+        to: payload.email,
+        subject: `You're invited to join ${user?.name || 'our team'} on WakiliWorld`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Welcome to WakiliWorld!</h2>
+            <p>You've been invited to join our team as a ${payload.role || 'employee'}.</p>
+            <p>Click the link below to set up your account and get started:</p>
+            <a href="${inviteUrl}" style="display: inline-block; padding: 12px 24px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Accept Invitation & Set Up Account
+            </a>
+            <p>This invitation expires in 7 days.</p>
+            <p>If you have any questions, please contact your administrator.</p>
+            <p>Best regards,<br>The WakiliWorld Team</p>
+          </div>
+        `,
+      }).catch((err) => console.error('Failed to send invitation email:', err));
+
       return success(
         {
           message: `Invitation sent to ${payload.email}`,
-          invite: data[0] || {
-            id: Date.now(),
-            email: payload.email,
-            role: payload.role || 'employee',
-            status: 'pending',
-          },
+          invite: data[0],
         },
         201
       );
+    }
+
+    if (path === 'auth/accept-invite/') {
+      const { token, password, fullName } = payload;
+
+      if (!token || !password) {
+        return failure('Token and password are required', 400);
+      }
+
+      // Find the invite
+      const { data: invites, error: inviteError } = await supabase
+        .from(TABLES.INVITES)
+        .select('*')
+        .eq('token', token)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString());
+
+      if (inviteError || !invites || invites.length === 0) {
+        return failure('Invalid or expired invitation token', 400);
+      }
+
+      const invite = invites[0];
+
+      // Create the user account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: invite.email,
+        password: password,
+        options: {
+          data: {
+            name: fullName || invite.email.split('@')[0],
+            role: invite.role,
+            department: invite.department,
+            organization_id: invite.organization_id,
+          },
+        },
+      });
+
+      if (authError) {
+        console.error('User creation error:', authError);
+        return failure('Failed to create account: ' + authError.message, 400);
+      }
+
+      // Update invite status
+      await supabase.from(TABLES.INVITES).update({ status: 'accepted' }).eq('id', invite.id);
+
+      // Create user profile in users table
+      const userData = {
+        id: authData.user?.id,
+        name: fullName || invite.email.split('@')[0],
+        username: fullName || invite.email.split('@')[0],
+        email: invite.email,
+        role: invite.role,
+        department: invite.department,
+        organization_id: invite.organization_id,
+        status: 'active',
+        email_verified: true,
+        invited_by: invite.invited_by,
+        created_at: new Date().toISOString(),
+      };
+
+      const { error: profileError } = await supabase.from(TABLES.USERS).insert(userData);
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        // Don't fail the whole process, user can still log in
+      }
+
+      return success({
+        message: 'Account created successfully! You can now log in.',
+        user: authData.user,
+      });
     }
 
     if (path === 'auth/change-password/') {

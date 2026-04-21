@@ -2,26 +2,26 @@ const https = require('https');
 const http = require('http');
 
 module.exports = async function handler(req, res) {
-  console.log('🤖 Reya API called');
-
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    console.log('✅ Preflight request handled');
-    return res.status(200).end();
-  }
-
-  // Only allow POST
-  if (req.method !== 'POST') {
-    console.log('❌ Method not allowed:', req.method);
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
+    console.log('🤖 Reya API called with method:', req.method);
+
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+      console.log('✅ Preflight request handled');
+      return res.status(200).end();
+    }
+
+    // Only allow POST
+    if (req.method !== 'POST') {
+      console.log('❌ Method not allowed:', req.method);
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+
     // Parse body
     let payload = {};
     try {
@@ -32,44 +32,159 @@ module.exports = async function handler(req, res) {
       console.log('⚠️ Body parse error:', parseError.message);
     }
 
-    const { message = 'Hello' } = payload;
+    // Parse message and context
+    const { message = '', context = {} } = payload;
     console.log('📝 Processing message:', message.substring(0, 50) + '...');
 
-    // Check API keys
+    // Get API keys from server-side environment (not exposed to client)
     const GROQ_API_KEY = process.env.GROQ_API_KEY;
-    const hasGroq = !!GROQ_API_KEY && GROQ_API_KEY.length > 10;
-    console.log('🔑 GROQ key present:', hasGroq);
+    const ZAI_API_KEY = process.env.ZAI_API_KEY;
 
-    // Simple response for testing
-    const response = {
+    console.log('🔑 Checking API keys...');
+    console.log('GROQ present:', !!GROQ_API_KEY, GROQ_API_KEY ? 'YES' : 'NO');
+    console.log('ZAI present:', !!ZAI_API_KEY, ZAI_API_KEY ? 'YES' : 'NO');
+
+    // Determine provider: Try GROQ first since it's more reliable
+    const useGroq = GROQ_API_KEY && GROQ_API_KEY.length > 10;
+    const useZai = ZAI_API_KEY && ZAI_API_KEY.length > 10;
+
+    console.log('🎯 Providers available - GROQ:', useGroq, 'ZAI:', useZai);
+
+    // If no providers, return fallback immediately
+    if (!useGroq && !useZai) {
+      console.log('❌ No AI providers available');
+      return res.status(503).json({
+        error: 'AI services unavailable',
+        content:
+          "I'm having trouble connecting to my AI brain right now. Please check that API keys are configured.",
+        actions: [{ label: 'View Cases', action: 'cases' }],
+        suggestions: [],
+      });
+    }
+
+    // Build system prompt with context
+    const userContextPrompt = `Current user context:
+- Active cases: ${context.cases_count || 0}
+- Clients: ${context.clients_count || 0}
+- Pending tasks: ${context.pending_tasks || 0}
+- Upcoming deadlines: ${context.upcoming_deadlines || 0}
+- User role: ${context.user_role || 'lawyer'}`;
+
+    const fullSystemPrompt = systemPrompt.replace(
+      "Current user context:\n- Active cases: ${context.cases_count || 0}\n- Clients: ${context.clients_count || 0}\n- Pending tasks: ${context.pending_tasks || 0}\n- Upcoming deadlines: ${context.upcoming_deadlines || 0}\n- User role: ${context.user_role || 'lawyer'}",
+      userContextPrompt
+    );
+
+    // Try GROQ first
+    if (useGroq) {
+      try {
+        console.log('🔄 Calling GROQ API...');
+
+        const groqResponse = await callExternalAPI(
+          'https://api.groq.com/openai/v1/chat/completions',
+          GROQ_API_KEY,
+          {
+            model: 'llama3-8b-8192',
+            messages: [
+              {
+                role: 'system',
+                content: fullSystemPrompt,
+              },
+              { role: 'user', content: message },
+            ],
+            temperature: 0.7,
+            max_tokens: 500,
+          }
+        );
+
+        console.log('✅ GROQ API success');
+        const actions = extractActions(groqResponse.content);
+        const suggestions = extractSuggestions(groqResponse.content);
+
+        return res.status(200).json({
+          success: true,
+          provider: 'GROQ',
+          content: groqResponse.content,
+          actions:
+            actions.length > 0
+              ? actions
+              : [
+                  { label: 'View Cases', action: 'cases', icon: 'file' },
+                  { label: 'View Clients', action: 'clients', icon: 'users' },
+                ],
+          suggestions:
+            suggestions.length > 0
+              ? suggestions
+              : [{ label: 'Create new case', action: 'new-case' }],
+        });
+      } catch (groqError) {
+        console.error('❌ GROQ API failed:', groqError.message);
+      }
+    }
+
+    // Try ZAI as fallback
+    if (useZai) {
+      try {
+        console.log('🔄 Calling ZAI API...');
+
+        const zaiResponse = await callExternalAPI(
+          'https://api.zai.com/v1/chat/completions',
+          ZAI_API_KEY,
+          {
+            model: 'zai-legal-v1',
+            messages: [
+              {
+                role: 'system',
+                content: fullSystemPrompt,
+              },
+              { role: 'user', content: message },
+            ],
+            temperature: 0.7,
+            max_tokens: 500,
+          }
+        );
+
+        console.log('✅ ZAI API success');
+        const actions = extractActions(zaiResponse.content);
+        const suggestions = extractSuggestions(zaiResponse.content);
+
+        return res.status(200).json({
+          success: true,
+          provider: 'ZAI',
+          content: zaiResponse.content,
+          actions,
+          suggestions,
+        });
+      } catch (zaiError) {
+        console.error('❌ ZAI API failed:', zaiError.message);
+      }
+    }
+
+    // Final fallback
+    console.log('📝 Using fallback response');
+    return res.status(200).json({
       success: true,
-      provider: hasGroq ? 'GROQ' : 'fallback',
-      content: `Hello! I'm Reya. You said: "${message}". I can help you with legal cases, documents, and client management.`,
+      provider: 'fallback',
+      content: getFallbackResponse(message, context),
       actions: [
         { label: 'View Cases', action: 'cases', icon: 'file' },
-        { label: 'View Clients', action: 'clients', icon: 'users' }
+        { label: 'View Clients', action: 'clients', icon: 'users' },
       ],
-      suggestions: [
-        { label: 'Create new case', action: 'new-case' }
-      ]
-    };
-
-    console.log('✅ API response ready');
-    return res.status(200).json(response);
-
-  } catch (error) {
-    console.error('🚨 API Error:', error);
+      suggestions: getSuggestions(message),
+    });
+  } catch (globalError) {
+    console.error('🚨 Global Reya API error:', globalError);
     return res.status(500).json({
-      error: 'Internal server error',
+      error: 'Critical server error',
       content: 'Server error occurred. Please try again later.',
       actions: [],
-      suggestions: []
+      suggestions: [],
     });
   }
-}
+};
 
-  // Build system prompt - comprehensive legal assistant
-  const systemPrompt = `You are Reya, an intelligent AI legal assistant for WakiliWorld - a comprehensive legal practice management platform.
+// Build system prompt - comprehensive legal assistant
+const systemPrompt = `You are Reya, an intelligent AI legal assistant for WakiliWorld - a comprehensive legal practice management platform.
 
 Your personality:
 - Friendly, warm, and professional
@@ -102,11 +217,11 @@ The WakiliWorld platform modules:
 - /profile - User profile settings
 
 Current user context:
-- Active cases: ${context.cases_count || 0}
-- Clients: ${context.clients_count || 0}
-- Pending tasks: ${context.pending_tasks || 0}
-- Upcoming deadlines: ${context.upcoming_deadlines || 0}
-- User role: ${context.user_role || 'lawyer'}
+- Active cases: \${context.cases_count || 0}
+- Clients: \${context.clients_count || 0}
+- Pending tasks: \${context.pending_tasks || 0}
+- Upcoming deadlines: \${context.upcoming_deadlines || 0}
+- User role: \${context.user_role || 'lawyer'}
 
 Guidelines:
 1. Keep responses conversational and natural
@@ -117,8 +232,9 @@ Guidelines:
 6. When user greets you, provide a brief introduction and offer help with key features
 7. When user asks to navigate somewhere, use action buttons instead of mentioning paths
 8. When user asks to create/generate documents, offer to generate them directly
-9. Keep responses under 200 words unless detailed explanation needed
-10. For greetings, offer 2-3 key actions they might want to take
+9. Use proper routing paths without trailing slashes
+10. Keep responses under 200 words unless detailed explanation needed
+11. For greetings, offer 2-3 key actions they might want to take
 
 Action Buttons Format:
 - Include clickable action buttons using this exact format: [ACTION:Button Label:action_name]
@@ -130,134 +246,6 @@ Action Buttons Format:
 Quick Suggestions Format:
 - Include quick suggestion buttons using: [SUG:Suggestion Label:action]
 - Examples: [SUG:Create Case:new-case] [SUG:View Tasks:tasks] [SUG:Generate NDA:generate_contract]`;
-
-  const userMessage = quick ? `Quick action: ${action || message}` : message;
-
-  try {
-    let responseContent;
-    let providerUsed;
-
-    // Try ZAI first (legal specialized)
-    if (useZai) {
-      try {
-        console.log('🔄 Calling ZAI API...');
-        const zaiResult = await callExternalAPI(
-          'https://api.zai.com/v1/chat/completions',
-          ZAI_API_KEY,
-          {
-            model: 'zai-legal-v1',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userMessage },
-            ],
-            temperature: 0.7,
-            max_tokens: 500,
-          }
-        );
-        responseContent = zaiResult.content;
-        providerUsed = 'ZAI';
-        console.log('✅ ZAI API call successful');
-      } catch (zaiError) {
-        console.warn('❌ ZAI API failed:', zaiError.message);
-        console.warn('🔄 Falling back to GROQ...');
-        if (!useGroq) throw zaiError;
-      }
-    }
-
-    // Fallback to GROQ
-    if (!responseContent && useGroq) {
-      console.log('🔄 Calling GROQ API...');
-      const groqResult = await callExternalAPI(
-        'https://api.groq.com/openai/v1/chat/completions',
-        GROQ_API_KEY,
-        {
-          model: 'llama3-8b-8192', // Updated to correct model name
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMessage },
-          ],
-          temperature: 0.7,
-          max_tokens: 500,
-        }
-      );
-      responseContent = groqResult.content;
-      providerUsed = 'GROQ';
-      console.log('✅ GROQ API call successful');
-    }
-
-    // If both failed, use fallback
-    if (!responseContent) {
-      return res.status(503).json({
-        error: 'AI services unavailable',
-        fallback: true,
-        content: getFallbackResponse(message, context),
-        actions: [],
-        suggestions: getSuggestions(message),
-      });
-    }
-
-    // Extract actions and suggestions
-    const actions = extractActions(responseContent);
-    const suggestions = extractSuggestions(responseContent);
-
-    // Add fallback actions if none were extracted
-    const fallbackActions = [];
-    if (actions.length === 0) {
-      const lowerMessage = userMessage.toLowerCase();
-
-      // Context-aware fallback actions
-      if (lowerMessage.includes('case') || lowerMessage.includes('matter') || lowerMessage.includes('file')) {
-        fallbackActions.push({ label: 'View Cases', action: 'cases', icon: 'file' });
-        fallbackActions.push({ label: 'Create Case', action: 'new-case', icon: 'plus' });
-      } else if (lowerMessage.includes('client') || lowerMessage.includes('customer')) {
-        fallbackActions.push({ label: 'View Clients', action: 'clients', icon: 'users' });
-        fallbackActions.push({ label: 'Add Client', action: 'new-client', icon: 'user' });
-      } else if (lowerMessage.includes('document') || lowerMessage.includes('contract') || lowerMessage.includes('draft')) {
-        fallbackActions.push({ label: 'View Documents', action: 'documents', icon: 'file' });
-        fallbackActions.push({ label: 'Generate Document', action: 'generate_contract', icon: 'plus' });
-      } else if (lowerMessage.includes('task') || lowerMessage.includes('todo') || lowerMessage.includes('deadline')) {
-        fallbackActions.push({ label: 'View Tasks', action: 'tasks', icon: 'check' });
-        fallbackActions.push({ label: 'Calendar', action: 'calendar', icon: 'calendar' });
-      } else if (lowerMessage.includes('invoice') || lowerMessage.includes('billing') || lowerMessage.includes('payment')) {
-        fallbackActions.push({ label: 'View Invoices', action: 'invoices', icon: 'dollar' });
-      } else if (lowerMessage.includes('chat') || lowerMessage.includes('message') || lowerMessage.includes('team')) {
-        fallbackActions.push({ label: 'Team Chat', action: 'chats', icon: 'users' });
-      } else {
-        // General fallback actions
-        fallbackActions.push({ label: 'View Cases', action: 'cases', icon: 'file' });
-        fallbackActions.push({ label: 'View Clients', action: 'clients', icon: 'users' });
-        fallbackActions.push({ label: 'View Tasks', action: 'tasks', icon: 'check' });
-      }
-    }
-    }
-
-    return res.status(200).json({
-      success: true,
-      provider: providerUsed,
-      content: responseContent,
-      actions: actions.length > 0 ? actions : fallbackActions,
-      suggestions,
-    });
-  } catch (error) {
-    console.error('Reya AI error:', error);
-    return res.status(500).json({
-      error: 'Internal server error',
-      content:
-        "I'm having trouble connecting to my AI brain right now. But I can still help! Try asking about your cases, documents, or deadlines.",
-      actions: [],
-      suggestions: [{ label: 'Show my cases', action: 'cases' }],
-    });
-  }
-  } catch (globalError) {
-    console.error('🚨 Global Reya API error:', globalError);
-    return res.status(500).json({
-      error: 'Critical server error',
-      content: 'Server error occurred. Please try again later.',
-      actions: [],
-      suggestions: [],
-    });
-  }
-}
 
 // Generic external API caller with retry
 async function callExternalAPI(url, apiKey, body, retries = 2) {

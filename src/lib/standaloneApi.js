@@ -948,15 +948,22 @@ export const standaloneApi = {
       return success(filtered);
     }
 
-    // HR: Employees (exclude individual/clients)
+    // HR: Employees (exclude individual/clients) - filter by organization
     if (path === '/hr/employees/') {
-      const filtered = db.users.filter(
-        (item) =>
-          item.role === 'advocate' ||
-          item.role === 'firm' ||
-          item.role === 'employee' ||
-          item.role === 'admin'
-      );
+      // Get current user's organization
+      const userOrganizationId = user?.organization_id || localStorage.getItem('organization_id');
+
+      if (!userOrganizationId && user?.role !== 'admin') {
+        return failure('Organization context not found', 403);
+      }
+
+      // Filter employees by organization (admins can see all)
+      const filtered = db.users.filter((item) => {
+        const isValidRole = ['advocate', 'firm', 'employee', 'admin'].includes(item.role);
+        const isSameOrg = user?.role === 'admin' || item.organization_id === userOrganizationId;
+        return isValidRole && isSameOrg;
+      });
+
       return success({ results: filtered.map(publicUser) });
     }
 
@@ -1638,36 +1645,58 @@ export const standaloneApi = {
         room_name: `room-${[first, second].sort((a, b) => a - b).join('-')}`,
         participants: [first, second],
       };
-db.chatRooms.push(room);
-        writeDb(db);
-        return success(room, 201);
-      }
+      db.chatRooms.push(room);
+      writeDb(db);
+      return success(room, 201);
+    }
 
     const generateReyaResponse = (message) => {
       const lower = message.toLowerCase();
-      const hasKeywords = (words) => words.some(w => lower.includes(w));
+      const hasKeywords = (words) => words.some((w) => lower.includes(w));
 
       if (lower.includes('@reya') && lower.length < 50) {
-        if (hasKeywords(['hi', 'hello', 'hey'])) {return "Hello! How can I help?";}
+        if (hasKeywords(['hi', 'hello', 'hey'])) {
+          return 'Hello! How can I help?';
+        }
         if (lower.includes('?')) {
-          if (hasKeywords(['contract', 'agreement'])) {return "I draft contracts, NDAs. Specify type and parties.";}
-          if (hasKeywords(['case', 'matter'])) {return "Create cases in Cases tab. Add client, court, description.";}
-          if (hasKeywords(['task'])) {return "Add tasks in Tasks section. Set deadlines.";}
-          if (hasKeywords(['invoice'])) {return "Create invoices in Billing. Add line items.";}
-          if (hasKeywords(['client'])) {return "Manage clients in Clients tab.";}
-          return "What do you need?";
+          if (hasKeywords(['contract', 'agreement'])) {
+            return 'I draft contracts, NDAs. Specify type and parties.';
+          }
+          if (hasKeywords(['case', 'matter'])) {
+            return 'Create cases in Cases tab. Add client, court, description.';
+          }
+          if (hasKeywords(['task'])) {
+            return 'Add tasks in Tasks section. Set deadlines.';
+          }
+          if (hasKeywords(['invoice'])) {
+            return 'Create invoices in Billing. Add line items.';
+          }
+          if (hasKeywords(['client'])) {
+            return 'Manage clients in Clients tab.';
+          }
+          return 'What do you need?';
         }
       }
       if (hasKeywords(['draft', 'generate', 'create'])) {
         const docType = lower.match(/(contract|nda|agreement|letter|notice|memo)/i)?.[1];
-        if (docType) {return `Go to Documents > Generate to create ${docType}.`;}
-        return "What document type?";
+        if (docType) {
+          return `Go to Documents > Generate to create ${docType}.`;
+        }
+        return 'What document type?';
       }
-      if (hasKeywords(['case'])) {return "Use Cases tab to manage matters.";}
-      if (hasKeywords(['task'])) {return "Use Tasks tab for to-dos.";}
-      if (hasKeywords(['client'])) {return "Use Clients tab for client management.";}
-      if (hasKeywords(['invoice'])) {return "Use Billing tab for invoicing.";}
-      return "What do you need help with?";
+      if (hasKeywords(['case'])) {
+        return 'Use Cases tab to manage matters.';
+      }
+      if (hasKeywords(['task'])) {
+        return 'Use Tasks tab for to-dos.';
+      }
+      if (hasKeywords(['client'])) {
+        return 'Use Clients tab for client management.';
+      }
+      if (hasKeywords(['invoice'])) {
+        return 'Use Billing tab for invoicing.';
+      }
+      return 'What do you need help with?';
     };
 
     if (path === '/chats/send-message/') {
@@ -1755,7 +1784,7 @@ db.chatRooms.push(room);
         return failure('Client email is required', 400);
       }
       const inviteToken = generateSecureToken();
-      const existingUser = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      const existingUser = db.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
       if (existingUser) {
         return failure('A user with this email already exists', 400);
       }
@@ -1777,11 +1806,14 @@ db.chatRooms.push(room);
         clientName: name,
         inviterName: currentUser.username,
         inviteToken,
-      }).catch(err => console.error('Failed to send invite email:', err));
-      return success({ 
-        message: `Invitation sent to ${email}`,
-        invite: pendingInvite
-      }, 201);
+      }).catch((err) => console.error('Failed to send invite email:', err));
+      return success(
+        {
+          message: `Invitation sent to ${email}`,
+          invite: pendingInvite,
+        },
+        201
+      );
     }
 
     // Client register via invitation token
@@ -1790,7 +1822,7 @@ db.chatRooms.push(room);
       if (!token || !password) {
         return failure('Token and password required', 400);
       }
-      const invite = db.invites?.find(i => i.token === token && i.status === 'pending');
+      const invite = db.invites?.find((i) => i.token === token && i.status === 'pending');
       if (!invite) {
         return failure('Invalid or expired invitation', 400);
       }
@@ -1846,12 +1878,10 @@ db.chatRooms.push(room);
       return success(created, 201);
     }
 
-// Create Employee (HR) - firm invites employee
+    // Create Employee (HR) - firm invites employee
     if (path === '/hr/employees/') {
       const email = payload.email || payload.Email || '';
-      const exists = db.users.some(
-        (u) => u.email && u.email.toLowerCase() === email.toLowerCase()
-      );
+      const exists = db.users.some((u) => u.email && u.email.toLowerCase() === email.toLowerCase());
       if (exists) {
         return failure('Employee with this email already exists', 400);
       }
@@ -1925,7 +1955,7 @@ db.chatRooms.push(room);
         inviterName: currentUser.username || 'Your Law Firm',
         role: payload.role || 'employee',
         inviteToken,
-      }).catch(err => console.error('Failed to send invite email:', err));
+      }).catch((err) => console.error('Failed to send invite email:', err));
       return success({
         message: `Invitation sent to ${payload.email}`,
         invite,
@@ -1937,7 +1967,7 @@ db.chatRooms.push(room);
       return success({
         success: true,
         message: 'Upload endpoint - configure AppWrite Storage in production',
-});
+      });
     }
 
     // Document generation with AI - real document generation
@@ -1949,11 +1979,26 @@ db.chatRooms.push(room);
 
       const countryInfo = {
         kenya: { name: 'Kenya', law: 'Laws of Kenya', court: 'Kenyan courts', format: 'A4' },
-        nigeria: { name: 'Nigeria', law: 'Laws of Nigeria', court: 'Nigerian courts', format: 'A4' },
-        tanzania: { name: 'Tanzania', law: 'Laws of Tanzania', court: 'Tanzanian courts', format: 'A4' },
+        nigeria: {
+          name: 'Nigeria',
+          law: 'Laws of Nigeria',
+          court: 'Nigerian courts',
+          format: 'A4',
+        },
+        tanzania: {
+          name: 'Tanzania',
+          law: 'Laws of Tanzania',
+          court: 'Tanzanian courts',
+          format: 'A4',
+        },
         uganda: { name: 'Uganda', law: 'Laws of Uganda', court: 'Ugandan courts', format: 'A4' },
         ghana: { name: 'Ghana', law: 'Laws of Ghana', court: 'Ghanaian courts', format: 'A4' },
-        southafrica: { name: 'South Africa', law: 'Laws of South Africa', court: 'South African courts', format: 'A4' },
+        southafrica: {
+          name: 'South Africa',
+          law: 'Laws of South Africa',
+          court: 'South African courts',
+          format: 'A4',
+        },
         usa: { name: 'USA', law: 'US Federal/State laws', court: 'US Courts', format: 'Letter' },
         uk: { name: 'UK', law: 'English law', court: 'UK Courts', format: 'A4' },
       };
@@ -1980,7 +2025,7 @@ Format requirements:
               message: prompt,
               context: { docType, country: countryLaw.name, ...context },
               quick: true,
-              action: 'generate_document'
+              action: 'generate_document',
             }),
           });
           const data = await response.json();
@@ -2007,7 +2052,10 @@ Format requirements:
       return success({
         success: true,
         filename: filename,
-        content: typeof generatedContent === 'string' ? generatedContent : `Generated: ${docType} for ${countryLaw.name}`,
+        content:
+          typeof generatedContent === 'string'
+            ? generatedContent
+            : `Generated: ${docType} for ${countryLaw.name}`,
         page_count: 1,
         ai_generated: true,
       });
@@ -2121,14 +2169,19 @@ Format requirements:
       return success(enrichTask(db, db.tasks[index]));
     }
 
-    if (path.startsWith('/api/documents/') || path.startsWith('/document_management/api/documents/')) {
+    if (
+      path.startsWith('/api/documents/') ||
+      path.startsWith('/document_management/api/documents/')
+    ) {
       const id = Number(path.split('/').filter(Boolean).pop());
       const index = db.documents.findIndex((item) => item.id === id);
       if (index === -1) {
         return failure('Document not found', 404);
       }
       if (payload.shared_with) {
-        const newShared = Array.isArray(payload.shared_with) ? payload.shared_with : [payload.shared_with];
+        const newShared = Array.isArray(payload.shared_with)
+          ? payload.shared_with
+          : [payload.shared_with];
         db.documents[index].shared_with = newShared.map(Number);
       }
       db.documents[index] = {
@@ -2199,7 +2252,10 @@ Format requirements:
       return success({ success: true });
     }
 
-    if (path.startsWith('/document_management/api/documents/') || path.startsWith('/api/documents/')) {
+    if (
+      path.startsWith('/document_management/api/documents/') ||
+      path.startsWith('/api/documents/')
+    ) {
       const id = Number(path.split('/').filter(Boolean).pop());
       const docIndex = db.documents.findIndex((doc) => doc.id === id);
       if (docIndex === -1) {
