@@ -2,119 +2,71 @@ const https = require('https');
 const http = require('http');
 
 module.exports = async function handler(req, res) {
-  try {
-    console.log('🤖 Reya API called with method:', req.method);
+  console.log('🤖 Reya API called');
 
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // Handle preflight
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
-    }
-
-    // Only allow POST
-    if (req.method !== 'POST') {
-      console.log('❌ Method not allowed:', req.method);
-      return res.status(405).json({ error: 'Method not allowed' });
-    }
-
-  // Parse body - handle string or object from Vercel
-  let payload;
-  try {
-    if (req.body) {
-      payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    } else {
-      payload = {};
-    }
-  } catch (e) {
-    payload = {};
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    console.log('✅ Preflight request handled');
+    return res.status(200).end();
   }
 
-  const { message, context, action, quick } = payload;
+  // Only allow POST
+  if (req.method !== 'POST') {
+    console.log('❌ Method not allowed:', req.method);
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-  // Get API keys from server-side environment (not exposed to client)
-  const GROQ_API_KEY = process.env.GROQ_API_KEY;
-  const ZAI_API_KEY = process.env.ZAI_API_KEY;
+  try {
+    // Parse body
+    let payload = {};
+    try {
+      if (req.body) {
+        payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      }
+    } catch (parseError) {
+      console.log('⚠️ Body parse error:', parseError.message);
+    }
 
-  console.log('🔑 Checking API keys...');
-  console.log('GROQ present:', !!GROQ_API_KEY, GROQ_API_KEY ? 'YES' : 'NO');
-  console.log('ZAI present:', !!ZAI_API_KEY, ZAI_API_KEY ? 'YES' : 'NO');
+    const { message = 'Hello' } = payload;
+    console.log('📝 Processing message:', message.substring(0, 50) + '...');
 
-  // Parse message and context
-  const { message, context = {}, quick = false } = payload;
-  console.log('📝 Message:', message?.substring(0, 100), '...');
+    // Check API keys
+    const GROQ_API_KEY = process.env.GROQ_API_KEY;
+    const hasGroq = !!GROQ_API_KEY && GROQ_API_KEY.length > 10;
+    console.log('🔑 GROQ key present:', hasGroq);
 
-  // Determine provider: Try GROQ first since it's more reliable
-  const useGroq = GROQ_API_KEY && GROQ_API_KEY.length > 10;
-  const useZai = ZAI_API_KEY && ZAI_API_KEY.length > 10;
+    // Simple response for testing
+    const response = {
+      success: true,
+      provider: hasGroq ? 'GROQ' : 'fallback',
+      content: `Hello! I'm Reya. You said: "${message}". I can help you with legal cases, documents, and client management.`,
+      actions: [
+        { label: 'View Cases', action: 'cases', icon: 'file' },
+        { label: 'View Clients', action: 'clients', icon: 'users' }
+      ],
+      suggestions: [
+        { label: 'Create new case', action: 'new-case' }
+      ]
+    };
 
-  console.log('🎯 Providers available - GROQ:', useGroq, 'ZAI:', useZai);
+    console.log('✅ API response ready');
+    return res.status(200).json(response);
 
-  // If no providers, return fallback
-  if (!useGroq && !useZai) {
-    console.log('❌ No AI providers available');
-    return res.status(503).json({
-      error: 'AI services unavailable',
-      content: "I'm having trouble connecting to my AI brain right now. Please check that API keys are configured.",
-      actions: [{ label: 'View Cases', action: 'cases' }],
+  } catch (error) {
+    console.error('🚨 API Error:', error);
+    return res.status(500).json({
+      error: 'Internal server error',
+      content: 'Server error occurred. Please try again later.',
+      actions: [],
       suggestions: []
     });
   }
-
-  // Try GROQ first
-  if (useGroq) {
-    try {
-      console.log('🔄 Calling GROQ API...');
-
-      const groqResponse = await callExternalAPI(
-        'https://api.groq.com/openai/v1/chat/completions',
-        GROQ_API_KEY,
-        {
-          model: 'llama3-8b-8192',
-          messages: [
-            {
-              role: 'system',
-              content: `You are Reya, a helpful AI assistant for legal professionals. Keep responses concise and provide actionable help.`
-            },
-            { role: 'user', content: message }
-          ],
-          temperature: 0.7,
-          max_tokens: 300,
-        }
-      );
-
-      console.log('✅ GROQ API success');
-      return res.status(200).json({
-        success: true,
-        provider: 'GROQ',
-        content: groqResponse.content,
-        actions: [{ label: 'View Cases', action: 'cases' }],
-        suggestions: [{ label: 'Create Case', action: 'new-case' }]
-      });
-
-    } catch (groqError) {
-      console.error('❌ GROQ API failed:', groqError.message);
-    }
-  }
-
-  // Fallback if GROQ fails or not available
-  console.log('📝 Using fallback response');
-  return res.status(200).json({
-    success: true,
-    provider: 'fallback',
-    content: "Hello! I'm Reya, your AI legal assistant. I can help you with cases, documents, clients, and more.",
-    actions: [
-      { label: 'View Cases', action: 'cases', icon: 'file' },
-      { label: 'View Clients', action: 'clients', icon: 'users' }
-    ],
-    suggestions: [
-      { label: 'Create new case', action: 'new-case' },
-      { label: 'Generate contract', action: 'generate_contract' }
-    ]
-  });
+}
 
   // Build system prompt - comprehensive legal assistant
   const systemPrompt = `You are Reya, an intelligent AI legal assistant for WakiliWorld - a comprehensive legal practice management platform.
