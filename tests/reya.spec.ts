@@ -1,135 +1,14 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Reya AI Assistant', () => {
-  // ... all the previous tests remain the same ...
-
-  test.describe('Reya Document Generation (UI)', () => {
-    test('Reya can generate document via chat', async ({ page }) => {
+  test.describe('Reya Widget', () => {
+    test('Reya button is visible on home page', async ({ page }) => {
       await page.goto('/home');
       await page.waitForLoadState('networkidle');
 
-      await page.getByTestId('reya-open-button').click();
-      await page.waitForTimeout(1000);
-
-      const input = page.getByTestId('reya-input');
-      await input.fill('Generate a service agreement for my software company');
-      await input.press('Enter');
-
-      await page.waitForTimeout(5000);
-
-      const messagesContainer = page.getByTestId('reya-messages-container');
-      const text = await messagesContainer.textContent();
-      expect(text).not.toContain('Generate a service agreement');
-      expect(text?.length).toBeGreaterThan(100);
+      const reyaButton = page.getByTestId('reya-open-button');
+      await expect(reyaButton).toBeVisible({ timeout: 5000 });
     });
-  });
-
-  test.describe('Reya Multi-turn Conversation', () => {
-    test('Reya maintains context across messages', async ({ page }) => {
-      await page.goto('/home');
-      await page.waitForLoadState('networkidle');
-
-      await page.getByTestId('reya-open-button').click();
-      await page.waitForTimeout(1000);
-
-      const input = page.getByTestId('reya-input');
-
-      await input.fill('I have 3 active cases');
-      await input.press('Enter');
-      await page.waitForTimeout(3000);
-
-      await input.fill('What are they?');
-      await input.press('Enter');
-      await page.waitForTimeout(3000);
-
-      const messagesContainer = page.getByTestId('reya-messages-container');
-      const text = await messagesContainer.textContent();
-      expect(text?.length).toBeGreaterThan(200);
-    });
-  });
-
-  test.describe('Reya Document Generation from Documents Page', () => {
-    test('Documents page generator uses Reya AI correctly', async ({ page }) => {
-      await page.goto('/documents');
-      await page.waitForLoadState('networkidle');
-
-      // Check that document generator is visible
-      const generatorCard = page.getByTestId('doc-generator-card');
-      await expect(generatorCard).toBeVisible({ timeout: 5000 });
-
-      // Fill in the prompt
-      const promptInput = page.getByTestId('doc-prompt-input');
-      await expect(promptInput).toBeVisible();
-      await promptInput.fill('Create an NDA for confidential software development');
-
-      // Click generate
-      const generateButton = page.getByTestId('generate-doc-button');
-      await generateButton.click();
-
-      // Wait for generation (may take a few seconds if using real AI)
-      await page.waitForTimeout(5000);
-
-      // Should see some content in the result area
-      const resultArea = page.getByTestId('generated-document-content');
-      const resultText = await resultArea.inputValue();
-      expect(resultText.length).toBeGreaterThan(50);
-    });
-  });
-});
-  });
-
-  test.describe('Reya Multi-turn Conversation', () => {
-    test('Reya maintains context across messages', async ({ page }) => {
-      await page.goto('/home');
-      await page.waitForLoadState('networkidle');
-
-      await page.getByTestId('reya-open-button').click();
-      await page.waitForTimeout(1000);
-
-      const input = page.getByTestId('reya-input');
-
-      await input.fill('I have 3 active cases');
-      await input.press('Enter');
-      await page.waitForTimeout(3000);
-
-      await input.fill('What are they?');
-      await input.press('Enter');
-      await page.waitForTimeout(3000);
-
-      const messagesContainer = page.getByTestId('reya-messages-container');
-      const text = await messagesContainer.textContent();
-      expect(text?.length).toBeGreaterThan(200);
-    });
-  });
-
-  test.describe('Reya Document Generation from Documents Page', () => {
-    test('Documents page generator uses Reya AI correctly', async ({ page }) => {
-      await page.goto('/documents');
-      await page.waitForLoadState('networkidle');
-
-      // Check that document generator is visible
-      const generatorCard = page.getByTestId('doc-generator-card');
-      await expect(generatorCard).toBeVisible({ timeout: 5000 });
-
-      // Fill in the prompt
-      const promptInput = page.getByTestId('doc-prompt-input');
-      await expect(promptInput).toBeVisible();
-      await promptInput.fill('Create an NDA for confidential software development');
-
-      // Click generate
-      const generateButton = page.getByTestId('generate-doc-button');
-      await generateButton.click();
-
-      // Wait for generation (may take a few seconds if using real AI)
-      await page.waitForTimeout(5000);
-
-      // Should see some content in the result area
-      const resultArea = page.getByTestId('generated-document-content');
-      const resultText = await resultArea.inputValue();
-      expect(resultText.length).toBeGreaterThan(50);
-    });
-  });
-});
 
     test('Reya widget opens when clicked', async ({ page }) => {
       await page.goto('/home');
@@ -306,23 +185,18 @@ test.describe('Reya AI Assistant', () => {
       await page.goto('/documents');
       await page.waitForLoadState('networkidle');
 
-      // Check that document generator is visible
       const generatorCard = page.getByTestId('doc-generator-card');
       await expect(generatorCard).toBeVisible({ timeout: 5000 });
 
-      // Fill in the prompt
       const promptInput = page.getByTestId('doc-prompt-input');
       await expect(promptInput).toBeVisible();
       await promptInput.fill('Create an NDA for confidential software development');
 
-      // Click generate
       const generateButton = page.getByTestId('generate-doc-button');
       await generateButton.click();
 
-      // Wait for generation (may take a few seconds if using real AI)
       await page.waitForTimeout(5000);
 
-      // Should see some content in the result area
       const resultArea = page.getByTestId('generated-document-content');
       const resultText = await resultArea.inputValue();
       expect(resultText.length).toBeGreaterThan(50);
