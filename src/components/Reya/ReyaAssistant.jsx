@@ -75,6 +75,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
   const { isFuturistic } = useTheme();
   const { currency } = useCurrency();
   const navigate = useNavigate();
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Core state
   const [isOpen, setIsOpen] = useState(false);
@@ -222,30 +223,65 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
       return;
     }
 
+    const isDocGen = /generate|create|draft|write/i.test(userMessage) && 
+      /document|contract|nda|agreement|letter/i.test(userMessage);
+
     setInput('');
     setMessages((prev) => [...prev, { id: Date.now(), type: 'user', content: userMessage }]);
     setIsTyping(true);
 
     try {
-      const aiResponse = await aiQuery(userMessage, {
-        cases_count: cases.length,
-        clients_count: clients.length,
-        invoices_count: invoices.length,
-        pending_tasks: tasks.filter((t) => !t.status).length,
-        upcoming_deadlines: deadlines.length,
-        user_role: user?.role,
-        user_id: user?.id,
-        is_authenticated: !!user,
-      });
+      if (isDocGen) {
+        setIsGenerating(true);
+        const response = await axiosInstance.post('/documents/generate/', {
+          type: userMessage.match(/(contract|nda|agreement|letter|notice|memo|deed)/i)?.[1] || 'document',
+          prompt: userMessage,
+          context: {
+            cases_count: cases.length,
+            clients_count: clients.length,
+            user_role: user?.role,
+          },
+          country: 'kenya',
+        });
+        
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            type: 'assistant',
+            content: response.data.content || 'Document generated successfully!',
+            actions: [
+              { label: 'View Documents', icon: 'file', path: '/documents' },
+              { label: 'Create Another', icon: 'plus', action: 'generate_more' },
+            ],
+            suggestions: [
+              { label: 'Generate Contract', action: 'generate_contract' },
+              { label: 'Generate NDA', action: 'generate_nda' },
+            ],
+          },
+        ]);
+        setIsGenerating(false);
+      } else {
+        const aiResponse = await aiQuery(userMessage, {
+          cases_count: cases.length,
+          clients_count: clients.length,
+          invoices_count: invoices.length,
+          pending_tasks: tasks.filter((t) => !t.status).length,
+          upcoming_deadlines: deadlines.length,
+          user_role: user?.role,
+          user_id: user?.id,
+          is_authenticated: !!user,
+        });
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          type: 'assistant',
-          ...aiResponse,
-        },
-      ]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            type: 'assistant',
+            ...aiResponse,
+          },
+        ]);
+      }
     } catch (error) {
       const fallbackResponse = getSimpleFallback(userMessage);
       setMessages((prev) => [
@@ -254,8 +290,14 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
           id: Date.now() + 1,
           type: 'assistant',
           content: fallbackResponse,
-          actions: [],
-          suggestions: [],
+          actions: [
+            { label: 'View Cases', icon: 'file', path: '/case-list' },
+            { label: 'View Tasks', icon: 'check', path: '/tasks' },
+          ],
+          suggestions: [
+            { label: 'Show my cases', action: 'cases' },
+            { label: 'Draft document', action: 'drafting' },
+          ],
         },
       ]);
     } finally {
@@ -281,10 +323,44 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
   };
 
   // Handle action clicks
-  const handleActionClick = (action) => {
+  const handleActionClick = async (action) => {
     if (action.path) {
       navigate(action.path);
       setIsOpen(false);
+    } else if (action.action) {
+      setInput(`generate ${action.action}`);
+      setIsTyping(true);
+      try {
+        const response = await axiosInstance.post('/documents/generate/', {
+          type: action.action.replace('generate_', ''),
+          prompt: `Generate ${action.action.replace('generate_', '')}`,
+          context: { user_role: user?.role },
+          country: 'kenya',
+        });
+        
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            type: 'assistant',
+            content: response.data.content || 'Generated successfully!',
+            actions: [
+              { label: 'View Documents', icon: 'file', path: '/documents' },
+            ],
+          },
+        ]);
+      } catch (e) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            type: 'assistant',
+            content: 'Processing your request...',
+          },
+        ]);
+      } finally {
+        setIsTyping(false);
+      }
     }
   };
 

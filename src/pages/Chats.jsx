@@ -384,19 +384,29 @@ export default function Chats() {
     try {
       // Handle Reya AI chat specially
       if (isReyaChat) {
-        const aiResponse = await fetch('/api/reya', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: currentMessage, context: {}, quick: false }),
-        });
-        const aiData = await aiResponse.json();
-        const reyaReply = {
-          sender_id: 'reya',
-          message: aiData.content || "I'm here to help with your legal practice.",
-          timestamp: new Date().toISOString(),
-          room: roomName,
-        };
-        setMessages((prev) => [...prev, reyaReply]);
+        try {
+          const aiResponse = await fetch('/api/reya', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: currentMessage, context: {}, quick: false }),
+          });
+          const aiData = await aiResponse.json();
+          const reyaReply = {
+            sender_id: 'reya',
+            message: aiData.error || aiData.content || "I'm here to help with your legal practice.",
+            timestamp: new Date().toISOString(),
+            room: roomName,
+          };
+          setMessages((prev) => [...prev, reyaReply]);
+        } catch (aiErr) {
+          const reyaReply = {
+            sender_id: 'reya',
+            message: "I'm having trouble connecting to my AI brain. Please try again.",
+            timestamp: new Date().toISOString(),
+            room: roomName,
+          };
+          setMessages((prev) => [...prev, reyaReply]);
+        }
         return;
       }
 

@@ -2,12 +2,34 @@ const https = require('https');
 const http = require('http');
 
 module.exports = async function handler(req, res) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { message, context, action, quick } = req.body;
+  // Parse body - handle string or object from Vercel
+  let payload;
+  try {
+    if (req.body) {
+      payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } else {
+      payload = {};
+    }
+  } catch (e) {
+    payload = {};
+  }
+
+  const { message, context, action, quick } = payload;
 
   // Get API keys from server-side environment (not exposed to client)
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
