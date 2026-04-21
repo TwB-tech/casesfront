@@ -1,23 +1,19 @@
-const https = require('https');
-const http = require('http');
+import https from 'https';
+import http from 'http';
 
-exports.handler = async function (req, res) {
-  // Only allow POST
+const handler = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { message, context, action, quick } = req.body;
 
-  // Get API keys from server-side environment (not exposed to client)
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
   const ZAI_API_KEY = process.env.ZAI_API_KEY;
 
-  // Determine provider: ZAI preferred for legal, fallback to GROQ
   const useZai = ZAI_API_KEY && ZAI_API_KEY.length > 0;
   const useGroq = GROQ_API_KEY && GROQ_API_KEY.length > 0;
 
-  // Build system prompt
   const systemPrompt = `You are Reya, an intelligent AI legal assistant for WakiliWorld.
 
 Your personality:
@@ -57,7 +53,6 @@ Guidelines:
     let responseContent;
     let providerUsed;
 
-    // Try ZAI first (legal specialized)
     if (useZai) {
       try {
         const zaiResult = await callExternalAPI(
@@ -81,7 +76,6 @@ Guidelines:
       }
     }
 
-    // Fallback to GROQ
     if (!responseContent && useGroq) {
       const groqResult = await callExternalAPI(
         'https://api.groq.com/openai/v1/chat/completions',
@@ -100,7 +94,6 @@ Guidelines:
       providerUsed = 'GROQ';
     }
 
-    // If both failed, use fallback
     if (!responseContent) {
       return res.status(503).json({
         error: 'AI services unavailable',
@@ -111,7 +104,6 @@ Guidelines:
       });
     }
 
-    // Extract actions and suggestions
     const actions = extractActions(responseContent);
     const suggestions = extractSuggestions(responseContent);
 
@@ -134,7 +126,6 @@ Guidelines:
   }
 };
 
-// Generic external API caller with retry
 async function callExternalAPI(url, apiKey, body, retries = 2) {
   const options = {
     method: 'POST',
@@ -142,7 +133,6 @@ async function callExternalAPI(url, apiKey, body, retries = 2) {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(body),
   };
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -176,13 +166,11 @@ async function callExternalAPI(url, apiKey, body, retries = 2) {
       return { content };
     } catch (err) {
       if (attempt === retries) throw err;
-      // Exponential backoff
       await new Promise((res) => setTimeout(res, 500 * Math.pow(2, attempt)));
     }
   }
 }
 
-// Simple extraction: [ACTION:label:action]
 function extractActions(content) {
   const actions = [];
   const regex = /\[ACTION:([^:]+):([^\]]+)\]/g;
@@ -193,7 +181,6 @@ function extractActions(content) {
   return actions;
 }
 
-// [SUG:label:action]
 function extractSuggestions(content) {
   const suggestions = [];
   const regex = /\[SUG:([^:]+):([^\]]+)\]/g;
@@ -231,3 +218,5 @@ function getSuggestions(message) {
     { label: 'Create new case', action: 'new-case' },
   ];
 }
+
+export default handler;
