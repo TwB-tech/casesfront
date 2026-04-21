@@ -17,7 +17,8 @@ import ProtectedRoute, { AdminRoute, AccountingRoute, HRRoute } from './utils/Pr
 import ReactGA from 'react-ga4';
 import ReyaAssistant from './components/Reya/ReyaAssistant';
 
-const isGAAvailable = typeof ReactGA !== 'undefined' && ReactGA.send && typeof ReactGA.send === 'function';
+const isGAAvailable =
+  typeof ReactGA !== 'undefined' && ReactGA.send && typeof ReactGA.send === 'function';
 import { useTheme } from './contexts/ThemeContext.jsx';
 import Breadcrumbs from './components/ui/Breadcrumbs';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -365,7 +366,7 @@ function AppContent() {
                       }
                     />
                     <Route
-                      path="tasks/"
+                      path="/tasks/"
                       element={
                         <ProtectedRoute>
                           <Tasks />
@@ -373,7 +374,7 @@ function AppContent() {
                       }
                     />
                     <Route
-                      path="tasks/create/"
+                      path="/tasks/create/"
                       element={
                         <ProtectedRoute>
                           <TaskCreate />

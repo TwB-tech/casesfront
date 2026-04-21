@@ -581,6 +581,25 @@ export const supabaseApi = {
       return success({ results: data.map((doc) => ({ ...doc, id: doc.id })) });
     }
 
+    // Get pending invitations
+    if (path === 'hr/invites/') {
+      const organizationId = localStorage.getItem('organization_id');
+      let query = supabase
+        .from(TABLES.INVITES)
+        .select('*')
+        .eq('status', 'pending');
+
+      if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) {
+        throw error;
+      }
+      return success({ results: data });
+    }
+
     if (path.startsWith('chats/room-info/')) {
       const roomName = path.split('/').pop();
       const { data, error } = await supabase
@@ -1070,19 +1089,83 @@ export const supabaseApi = {
     }
 
     if (path === 'hr/employees/') {
-      return failure('Employee provisioning must be handled by a trusted backend endpoint.', 501);
+      // Create new employee/user in the system
+      const user = JSON.parse(localStorage.getItem('userInfo') || '{}');
+      const organizationId = localStorage.getItem('organization_id') || payload.organization_id;
+      
+      // Check if current user has permission to add employees
+      if (!user?.id || user.role === 'client' || user.role === 'individual') {
+        return failure('You do not have permission to add employees', 403);
+      }
+
+      const employeeData = {
+        name: payload.name,
+        username: payload.name,
+        email: payload.email,
+        role: payload.role || 'employee',
+        phone_number: payload.phone_number || '',
+        department: payload.department || '',
+        hire_date: payload.hire_date || new Date().toISOString().slice(0, 10),
+        salary: payload.salary || 0,
+        status: 'active',
+        organization_id: organizationId,
+        email_verified: true,
+        messaging: true,
+        task_management: true,
+        deadline_notifications: true,
+      };
+
+      const { data, error } = await supabase
+        .from(TABLES.USERS)
+        .insert(employeeData)
+        .select();
+
+      if (error) {
+        console.error('Employee creation error:', error);
+        return failure('Failed to add employee: ' + error.message, 400);
+      }
+
+      return success({
+        id: data[0]?.id,
+        name: data[0]?.name,
+        email: data[0]?.email,
+        role: data[0]?.role,
+        department: data[0]?.department,
+        status: 'active',
+      }, 201);
     }
 
     if (path === 'hr/invites/') {
+      const organizationId = localStorage.getItem('organization_id') || payload.organization_id;
+      
+      const inviteData = {
+        email: payload.email,
+        role: payload.role || 'employee',
+        organization_id: organizationId,
+        status: 'pending',
+        invited_by: user?.id || null,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+      };
+
+      const { data, error } = await supabase
+        .from(TABLES.INVITES)
+        .insert(inviteData)
+        .select();
+
+      if (error) {
+        console.error('Invite creation error:', error);
+        return failure('Failed to send invitation: ' + error.message, 400);
+      }
+
       return success({
         message: `Invitation sent to ${payload.email}`,
-        invite: {
+        invite: data[0] || {
           id: Date.now(),
           email: payload.email,
           role: payload.role || 'employee',
           status: 'pending',
         },
-      });
+      }, 201);
     }
 
     if (path === 'auth/change-password/') {

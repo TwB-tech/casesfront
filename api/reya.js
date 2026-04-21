@@ -1,7 +1,7 @@
 const https = require('https');
 const http = require('http');
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -35,9 +35,15 @@ module.exports = async function handler(req, res) {
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
   const ZAI_API_KEY = process.env.ZAI_API_KEY;
 
-  // Determine provider: ZAI preferred for legal
-  const useZai = ZAI_API_KEY && ZAI_API_KEY.length > 0;
-  const useGroq = GROQ_API_KEY && GROQ_API_KEY.length > 0;
+  // Debug log for troubleshooting (remove in production)
+  console.log('🔑 GROQ_API_KEY present:', !!GROQ_API_KEY, GROQ_API_KEY?.slice(0, 5));
+  console.log('🔑 ZAI_API_KEY present:', !!ZAI_API_KEY, ZAI_API_KEY?.slice(0, 5));
+
+  // Determine provider: GROQ primary, ZAI secondary (if available)
+  const useZai = false; // Temporarily disable ZAI until confirmed working
+  const useGroq = GROQ_API_KEY && GROQ_API_KEY.length > 5;
+
+  console.log('🎯 AI Providers available - ZAI:', useZai, 'GROQ:', useGroq);
 
   // Build system prompt - comprehensive legal assistant
   const systemPrompt = `You are Reya, an intelligent AI legal assistant for WakiliWorld - a comprehensive legal practice management platform.
@@ -65,9 +71,9 @@ The WakiliWorld platform modules:
 - /case-form - Create new case
 - /clients - Client management
 - /documents - Document storage and generation
-- /tasks - Task management
+- /tasks/ - Task management
 - /invoices - Billing and invoicing
-- /calendar - Calendar and deadlines
+- /calendar-tasks - Calendar and deadlines
 - /chats - Team chat
 - /chat/reya - Direct AI chat with Reya
 - /profile - User profile settings
@@ -88,7 +94,17 @@ Guidelines:
 6. When user asks to navigate somewhere, use proper paths like /case-list, /clients, etc.
 7. When user asks to create/generate documents, guide them to use the Documents module
 8. Use proper routing paths without trailing slashes
-9. Keep responses under 200 words unless detailed explanation needed`;
+9. Keep responses under 200 words unless detailed explanation needed
+
+Action Buttons Format:
+- Include clickable action buttons using this exact format: [ACTION:Button Label:path_or_action]
+- Examples: [ACTION:View Cases:/case-list] [ACTION:Add New Case:/case-form] [ACTION:Generate Contract:generate_contract]
+- Use appropriate icons: file, plus, calendar, users, settings, etc.
+- Only include 1-3 most relevant actions per response
+
+Quick Suggestions Format:
+- Include quick suggestion buttons using: [SUG:Suggestion Label:action]
+- Examples: [SUG:Create Case:new-case] [SUG:View Tasks:tasks] [SUG:Generate NDA:generate_nda]`;
 
   const userMessage = quick ? `Quick action: ${action || message}` : message;
 
@@ -99,6 +115,7 @@ Guidelines:
     // Try ZAI first (legal specialized)
     if (useZai) {
       try {
+        console.log('🔄 Calling ZAI API...');
         const zaiResult = await callExternalAPI(
           'https://api.zai.com/v1/chat/completions',
           ZAI_API_KEY,
@@ -114,19 +131,22 @@ Guidelines:
         );
         responseContent = zaiResult.content;
         providerUsed = 'ZAI';
+        console.log('✅ ZAI API call successful');
       } catch (zaiError) {
-        console.warn('ZAI failed, trying GROQ:', zaiError.message);
+        console.warn('❌ ZAI API failed:', zaiError.message);
+        console.warn('🔄 Falling back to GROQ...');
         if (!useGroq) throw zaiError;
       }
     }
 
     // Fallback to GROQ
     if (!responseContent && useGroq) {
+      console.log('🔄 Calling GROQ API...');
       const groqResult = await callExternalAPI(
         'https://api.groq.com/openai/v1/chat/completions',
         GROQ_API_KEY,
         {
-          model: 'llama-3.1-8b-instant',
+          model: 'llama3-8b-8192', // Updated to correct model name
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userMessage },
@@ -137,6 +157,7 @@ Guidelines:
       );
       responseContent = groqResult.content;
       providerUsed = 'GROQ';
+      console.log('✅ GROQ API call successful');
     }
 
     // If both failed, use fallback
@@ -154,11 +175,31 @@ Guidelines:
     const actions = extractActions(responseContent);
     const suggestions = extractSuggestions(responseContent);
 
+    // Add fallback actions if none were extracted
+    const fallbackActions = [];
+    if (actions.length === 0) {
+      if (userMessage.toLowerCase().includes('case')) {
+        fallbackActions.push({ label: 'View Cases', action: 'cases', icon: 'file' });
+        fallbackActions.push({ label: 'Create Case', action: 'new-case', icon: 'plus' });
+      } else if (userMessage.toLowerCase().includes('client')) {
+        fallbackActions.push({ label: 'View Clients', action: 'clients', icon: 'users' });
+      } else if (userMessage.toLowerCase().includes('document')) {
+        fallbackActions.push({ label: 'View Documents', action: 'documents', icon: 'file' });
+        fallbackActions.push({ label: 'Generate Contract', action: 'generate_contract', icon: 'plus' });
+      } else if (userMessage.toLowerCase().includes('task')) {
+        fallbackActions.push({ label: 'View Tasks', action: 'tasks', icon: 'check' });
+      } else {
+        fallbackActions.push({ label: 'View Cases', action: 'cases', icon: 'file' });
+        fallbackActions.push({ label: 'View Clients', action: 'clients', icon: 'users' });
+      }
+    }
+    }
+
     return res.status(200).json({
       success: true,
       provider: providerUsed,
       content: responseContent,
-      actions,
+      actions: actions.length > 0 ? actions : fallbackActions,
       suggestions,
     });
   } catch (error) {
@@ -171,11 +212,13 @@ Guidelines:
       suggestions: [{ label: 'Show my cases', action: 'cases' }],
     });
   }
-};
+}
 
 // Generic external API caller with retry
 async function callExternalAPI(url, apiKey, body, retries = 2) {
   const payload = JSON.stringify(body);
+  console.log(`📤 Sending request to ${url} with model: ${body.model}`);
+
   const options = {
     method: 'POST',
     headers: {
@@ -183,6 +226,7 @@ async function callExternalAPI(url, apiKey, body, retries = 2) {
       'Content-Type': 'application/json',
       'Content-Length': Buffer.byteLength(payload),
     },
+    timeout: 30000, // 30 second timeout
   };
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -202,17 +246,28 @@ async function callExternalAPI(url, apiKey, body, retries = 2) {
       });
 
       const { status, body } = result;
-      const parsed = JSON.parse(body);
+      console.log(`📡 API Response Status: ${status}`);
 
       if (![200, 201].includes(status)) {
-        throw new Error(`API returned ${status}: ${JSON.stringify(parsed)}`);
+        console.error(`❌ API Error Response:`, body);
+        throw new Error(`API returned ${status}: ${body}`);
+      }
+
+      let parsed;
+      try {
+        parsed = JSON.parse(body);
+      } catch (parseError) {
+        console.error(`❌ JSON Parse Error:`, parseError.message, `Body:`, body);
+        throw new Error(`Invalid JSON response: ${parseError.message}`);
       }
 
       const content = parsed.choices?.[0]?.message?.content;
       if (!content) {
-        throw new Error('Invalid response format from AI provider');
+        console.error(`❌ Invalid response format:`, JSON.stringify(parsed, null, 2));
+        throw new Error('Invalid response format from AI provider - no content found');
       }
 
+      console.log(`✅ AI Response received (${content.length} chars)`);
       return { content };
     } catch (err) {
       if (attempt === retries) throw err;

@@ -92,7 +92,7 @@ const LicenseVerification = ({ children }) => {
         setIsBlocked(false); // Allow app to work even if verification fails
       });
     }
-  }, []); // Empty dependency array to run only once
+  }, [performVerification]); // Run when performVerification changes
 
   // Periodic verification effect
   useEffect(() => {
@@ -111,7 +111,7 @@ const LicenseVerification = ({ children }) => {
     );
 
     return () => clearInterval(interval);
-  }, [refreshData, installationId]); // Include installationId to restart interval if it changes
+  }, [refreshData, installationId, performVerification]); // Include installationId to restart interval if it changes
 
   // Listen for storage changes (tamper detection)
   useEffect(() => {

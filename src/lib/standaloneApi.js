@@ -1848,23 +1848,23 @@ db.chatRooms.push(room);
 
 // Create Employee (HR) - firm invites employee
     if (path === '/hr/employees/') {
+      const email = payload.email || payload.Email || '';
       const exists = db.users.some(
-        (user) => user.email.toLowerCase() === String(payload.email).toLowerCase()
+        (u) => u.email && u.email.toLowerCase() === email.toLowerCase()
       );
       if (exists) {
-        return failure('Employee already exists', 400);
+        return failure('Employee with this email already exists', 400);
       }
       // Get organization_id from current logged in user (firm owner)
       const currentUser = user || {};
       const orgId = currentUser.organization_id || currentUser.id;
-      const verificationToken = generateVerificationToken();
-      const user = {
+      const newUser = {
         id: nextId(db.users),
-        username: payload.full_name || payload.email,
-        email: payload.email,
+        username: payload.name || payload.full_name || email.split('@')[0],
+        email: email,
         password: payload.password || Math.random().toString(36).slice(-8),
         role: payload.role || 'employee',
-        phone_number: payload.phone_number || '',
+        phone_number: payload.phone_number || payload.phone_number || '',
         address: payload.address || '',
         status: 'Active',
         timezone: 'EAT',
@@ -1873,19 +1873,19 @@ db.chatRooms.push(room);
         salary: payload.salary || 0,
         hire_date: payload.hire_date || new Date().toISOString().split('T')[0],
         email_verified: false,
-        verification_token: verificationToken,
+        verification_token: generateVerificationToken(),
         // Link employee to organization
         organization_id: orgId,
         invited_by: currentUser.id,
       };
-      db.users.push(user);
+      db.users.push(newUser);
       writeDb(db);
 
       // Send invitation email asynchronously
-      sendVerificationEmail(user, verificationToken).catch((err) =>
+      sendVerificationEmail(newUser, newUser.verification_token).catch((err) =>
         console.error('Failed to send invitation email:', err)
       );
-      return success(publicUser(user), 201);
+      return success(publicUser(newUser), 201);
     }
 
     // Send Employee Invite

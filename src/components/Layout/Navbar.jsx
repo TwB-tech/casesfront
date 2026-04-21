@@ -180,7 +180,7 @@ const Navbar = () => {
 
       <div className="flex items-center gap-4">
         {user ? (
-          <Dropdown overlay={userMenu} trigger={['click']}>
+          <Dropdown menu={{}} overlay={userMenu} trigger={['click']}>
             <Badge
               dot
               color={activation?.activated ? '#52c41a' : trial?.inTrial ? '#faad14' : '#f5222d'}
@@ -212,26 +212,18 @@ const Navbar = () => {
 
         {isMobile && (
           <Dropdown
-            overlay={
-              <Menu 
-                style={{ 
-                  background: '#1a1a1a', 
-                  border: '1px solid #333',
-                  minWidth: '200px'
-                }}
-                selectedKeys={[]}
-              >
-                {menuItems.map((item) => (
-                  <Menu.Item 
-                    key={item.key} 
-                    onClick={() => navigate(item.path)}
-                    style={{ color: '#fff' }}
-                  >
-                    {item.label}
-                  </Menu.Item>
-                ))}
-              </Menu>
-            }
+            menu={{
+              items: menuItems.map((item) => ({
+                key: item.key,
+                label: item.label,
+                onClick: () => navigate(item.path),
+              })),
+              style: {
+                background: '#1a1a1a',
+                border: '1px solid #333',
+                minWidth: '200px',
+              },
+            }}
             trigger={['click']}
             placement="bottomRight"
           >

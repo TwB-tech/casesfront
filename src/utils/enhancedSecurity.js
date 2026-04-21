@@ -11,9 +11,9 @@ import axios from 'axios';
 
 // Configuration for license server
 const LICENSE_SERVER = {
-  BASE_URL: process.env.REACT_APP_LICENSE_SERVER || 'https://api.techwithbrands.com',
-  PUBLIC_KEY: process.env.REACT_APP_LICENSE_PUBLIC_KEY,
-  APP_SECRET: process.env.REACT_APP_LICENSE_APP_SECRET,
+  BASE_URL: import.meta.env.REACT_APP_LICENSE_SERVER || 'https://api.techwithbrands.com',
+  PUBLIC_KEY: import.meta.env.REACT_APP_LICENSE_PUBLIC_KEY,
+  APP_SECRET: import.meta.env.REACT_APP_LICENSE_APP_SECRET,
 };
 
 // Encrypted storage for sensitive license data

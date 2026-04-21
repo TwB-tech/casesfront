@@ -107,7 +107,7 @@ const createHybridApi = (primary, fallback) => {
     } catch (error) {
       if (isNetworkError(error)) {
         console.warn(`Supabase ${method}(${path}) failed:`, error.message);
-        console.info('Falling back to standalone API');
+        console.warn('Falling back to standalone API');
         const fallbackResult = await fallback[method](path, payload);
         return sanitizeApiResponse(fallbackResult);
       }
@@ -131,15 +131,15 @@ const ENABLE_STANDALONE_FALLBACK =
 
 if (USE_SUPABASE) {
   if (ENABLE_STANDALONE_FALLBACK) {
-    console.info('Initializing hybrid API: Supabase primary, standalone fallback');
+    console.warn('Initializing hybrid API: Supabase primary, standalone fallback');
     apiInstance = createHybridApi(supabaseApi, standaloneApi);
   } else {
-    console.info('Initializing Supabase API without standalone fallback');
+    console.warn('Initializing Supabase API without standalone fallback');
     apiInstance = supabaseApi;
   }
 } else {
   // Pure standalone mode (no Supabase)
-  console.info('Initializing standalone API (DATABASE_MODE=standalone)');
+  console.warn('Initializing standalone API (DATABASE_MODE=standalone)');
   apiInstance = standaloneApi;
 }
 

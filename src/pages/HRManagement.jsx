@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users,
   UserPlus,
@@ -168,16 +168,17 @@ const HRManagement = () => {
   const handleAddEmployee = async (values) => {
     try {
       setLoading(true);
-      // Map form values to API payload
+      // Map form values to API payload - match what supabase expects
       const payload = {
-        full_name: values.name,
+        name: values.name,
         email: values.email,
-        role: values.role,
-        department: values.department,
-        hire_date: values.joinDate.format('YYYY-MM-DD'),
-        salary: values.salary,
-        phone_number: '',
-        address: '',
+        role: values.role || 'employee',
+        department: values.department || '',
+        hire_date: values.joinDate ? values.joinDate.format('YYYY-MM-DD') : new Date().toISOString().slice(0, 10),
+        salary: values.salary || 0,
+        phone_number: values.phone || '',
+        address: values.address || '',
+        organization_id: localStorage.getItem('organization_id'),
       };
       await axiosInstance.post('/hr/employees/', payload);
       message.success('Employee added successfully');
@@ -186,7 +187,7 @@ const HRManagement = () => {
       fetchEmployees();
     } catch (error) {
       console.error('Error adding employee:', error);
-      message.error('Failed to add employee');
+      message.error('Failed to add employee. Please try again.');
     } finally {
       setLoading(false);
     }

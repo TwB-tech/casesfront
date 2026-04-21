@@ -98,7 +98,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
     return () => {
       delete window.reyaAssistant;
     };
-  }, []);
+  }, [isOpen]);
 
   // Context data
   const [cases, setCases] = useState([]);
@@ -106,7 +106,6 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
   const [deadlines, setDeadlines] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [clients, setClients] = useState([]);
-  const [documents, setDocuments] = useState([]);
 
   const messagesEndRef = useRef(null);
 
@@ -149,7 +148,6 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
         setTasks(tasksRes.data.results || []);
         setInvoices(invoicesRes.data.results || []);
         setClients(clientsRes.data.results || []);
-        setDocuments(docsRes.data.results || []);
 
         // Calculate deadlines
         const upcoming = (casesRes.data.results || [])
@@ -168,7 +166,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
           }));
 
         setDeadlines(upcoming);
-      } catch (error) {
+      } catch {
         // Silently handle errors
       }
     };
@@ -223,7 +221,8 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
       return;
     }
 
-    const isDocGen = /generate|create|draft|write/i.test(userMessage) && 
+    const isDocGen =
+      /generate|create|draft|write/i.test(userMessage) &&
       /document|contract|nda|agreement|letter/i.test(userMessage);
 
     setInput('');
@@ -234,7 +233,9 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
       if (isDocGen) {
         setIsGenerating(true);
         const response = await axiosInstance.post('/documents/generate/', {
-          type: userMessage.match(/(contract|nda|agreement|letter|notice|memo|deed)/i)?.[1] || 'document',
+          type:
+            userMessage.match(/(contract|nda|agreement|letter|notice|memo|deed)/i)?.[1] ||
+            'document',
           prompt: userMessage,
           context: {
             cases_count: cases.length,
@@ -243,7 +244,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
           },
           country: 'kenya',
         });
-        
+
         setMessages((prev) => [
           ...prev,
           {
@@ -282,7 +283,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
           },
         ]);
       }
-    } catch (error) {
+    } catch {
       const fallbackResponse = getSimpleFallback(userMessage);
       setMessages((prev) => [
         ...prev,
@@ -326,41 +327,68 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
   const handleActionClick = async (action) => {
     if (action.path) {
       const targetPath = action.path.startsWith('/') ? action.path : '/' + action.path;
-      navigate(targetPath, { replace: true });
-      setIsOpen(false);
+      console.log('Reya navigating to:', targetPath);
+      setIsOpen(false); // Close Reya first
+      setTimeout(() => navigate(targetPath), 100); // Small delay to ensure Reya closes
     } else if (action.action) {
-      setInput(`generate ${action.action}`);
-      setIsTyping(true);
-      try {
-        const response = await axiosInstance.post('/documents/generate/', {
-          type: action.action.replace('generate_', ''),
-          prompt: `Generate ${action.action.replace('generate_', '')}`,
-          context: { user_role: user?.role },
-          country: 'kenya',
-        });
-        
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            type: 'assistant',
-            content: response.data.content || 'Generated successfully!',
-            actions: [
-              { label: 'View Documents', icon: 'file', path: '/documents' },
-            ],
-          },
-        ]);
-      } catch (e) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            type: 'assistant',
-            content: 'Processing your request...',
-          },
-        ]);
-      } finally {
-        setIsTyping(false);
+      // Handle different action types
+      if (
+        action.action.startsWith('generate_') ||
+        action.action.includes('contract') ||
+        action.action.includes('nda') ||
+        action.action.includes('letter')
+      ) {
+        setInput(`generate ${action.action}`);
+        setIsTyping(true);
+        try {
+          const response = await axiosInstance.post('/documents/generate/', {
+            type: action.action.replace('generate_', ''),
+            prompt: `Generate ${action.action.replace('generate_', '')}`,
+            context: { user_role: user?.role },
+            country: 'kenya',
+          });
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              type: 'assistant',
+              content: response.data.content || 'Generated successfully!',
+              actions: [{ label: 'View Documents', icon: 'file', path: '/documents' }],
+            },
+          ]);
+        } catch (genError) {
+          console.error('Document generation error:', genError);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              type: 'assistant',
+              content:
+                'Document generation failed. Please try using the Documents section directly.',
+              actions: [{ label: 'Go to Documents', icon: 'file', path: '/documents' }],
+            },
+          ]);
+        } finally {
+          setIsTyping(false);
+        }
+      } else {
+        // Handle other actions like 'cases', 'clients', etc. by navigating
+        const actionToPath = {
+          cases: '/case-list',
+          clients: '/clients',
+          tasks: '/tasks/',
+          documents: '/documents',
+          invoices: '/invoices',
+          calendar: '/calendar-tasks',
+          'new-case': '/case-form',
+          'new-client': '/client-form',
+        };
+
+        const path = actionToPath[action.action] || `/${action.action}`;
+        console.log('Reya action navigation to:', path);
+        setIsOpen(false);
+        setTimeout(() => navigate(path), 100);
       }
     }
   };
@@ -404,7 +432,9 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
       )}
 
       {/* Main Assistant Interface */}
-      <div className={`fixed bottom-6 right-6 z-[1000] md:right-8 ${isOpen ? 'md:w-96 w-[90vw] max-w-[384px]' : ''}`}>
+      <div
+        className={`fixed bottom-6 right-6 z-[1000] md:right-8 ${isOpen ? 'md:w-96 w-[90vw] max-w-[384px]' : ''}`}
+      >
         {!isOpen ? (
           <button
             onClick={() => setIsOpen(true)}
@@ -415,9 +445,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
             }}
           >
             <Bot className="w-6 h-6 text-white flex-shrink-0" />
-            <span className="text-white font-bold text-sm whitespace-nowrap">
-              REYA
-            </span>
+            <span className="text-white font-bold text-sm whitespace-nowrap">REYA</span>
             {pendingNotificationCount > 0 && (
               <span className="bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center font-bold px-1">
                 {pendingNotificationCount}
