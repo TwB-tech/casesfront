@@ -1,7 +1,7 @@
 const https = require('https');
 const http = require('http');
 
-module.exports = async function handler(req, res) {
+exports.handler = async function (req, res) {
   // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -60,7 +60,6 @@ Guidelines:
     // Try ZAI first (legal specialized)
     if (useZai) {
       try {
-        console.log('🔄 Calling ZAI API...');
         const zaiResult = await callExternalAPI(
           'https://api.zai.com/v1/chat/completions',
           ZAI_API_KEY,
@@ -76,21 +75,19 @@ Guidelines:
         );
         responseContent = zaiResult.content;
         providerUsed = 'ZAI';
-        console.log('✅ ZAI success');
       } catch (zaiError) {
-        console.warn('❌ ZAI failed:', zaiError.message);
+        console.warn('ZAI failed, trying GROQ:', zaiError.message);
         if (!useGroq) throw zaiError;
       }
     }
 
     // Fallback to GROQ
     if (!responseContent && useGroq) {
-      console.log('🔄 Calling GROQ API...');
       const groqResult = await callExternalAPI(
         'https://api.groq.com/openai/v1/chat/completions',
         GROQ_API_KEY,
         {
-          model: 'llama3-8b-8192', // Correct model name
+          model: 'llama-3.1-8b-instant',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userMessage },
@@ -101,7 +98,6 @@ Guidelines:
       );
       responseContent = groqResult.content;
       providerUsed = 'GROQ';
-      console.log('✅ GROQ success');
     }
 
     // If both failed, use fallback
@@ -140,14 +136,13 @@ Guidelines:
 
 // Generic external API caller with retry
 async function callExternalAPI(url, apiKey, body, retries = 2) {
-  const payload = JSON.stringify(body);
   const options = {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(payload),
     },
+    body: JSON.stringify(body),
   };
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -162,7 +157,7 @@ async function callExternalAPI(url, apiKey, body, retries = 2) {
           });
         });
         req.on('error', reject);
-        req.write(payload);
+        req.write(JSON.stringify(body));
         req.end();
       });
 
