@@ -97,12 +97,7 @@ Generate a complete, ready-to-use legal document now.`
             model: 'zai-legal-v1',
             messages: [
               { role: 'system', content: systemPromptToUse },
-              {
-                role: 'user',
-                content: isDocGen
-                  ? userMessage
-                  : `User message: ${userMessage}\n\nRespond concisely as Reya.`,
-              },
+              { role: 'user', content: userMessage },
             ],
             temperature,
             max_tokens: maxTokens,
@@ -125,12 +120,7 @@ Generate a complete, ready-to-use legal document now.`
           model: 'llama-3.1-8b-instant',
           messages: [
             { role: 'system', content: systemPromptToUse },
-            {
-              role: 'user',
-              content: isDocGen
-                ? userMessage
-                : `User message: ${userMessage}\n\nRespond concisely as Reya.`,
-            },
+            { role: 'user', content: userMessage },
           ],
           temperature,
           max_tokens: maxTokens,
