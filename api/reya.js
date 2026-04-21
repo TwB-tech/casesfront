@@ -47,13 +47,14 @@ Guidelines:
 5. Offer specific, actionable next steps
 6. Keep responses under 200 words unless detailed explanation needed`;
 
-  const userMessage = quick ? `Quick action: ${action || message}` : message;
-
-  // Detect document generation requests
+  // Detect document generation requests using original message
   const isDocGen =
     action === 'generate_document' ||
-    (/generate|create|draft|write/i.test(userMessage) &&
-      /document|contract|nda|agreement|letter|pleading|memo|deed|will/i.test(userMessage));
+    (/generate|create|draft|write/i.test(message) &&
+      /document|contract|nda|agreement|letter|pleading|memo|deed|will/i.test(message));
+
+  // Build userMessage: preserve full message for doc gen; prefix for other quick actions
+  const userMessage = quick && !isDocGen ? `Quick action: ${action || message}` : message;
 
   // Choose system prompt and token limit based on mode
   const systemPromptToUse = isDocGen
@@ -90,7 +91,7 @@ Generate a complete, ready-to-use legal document now.`
     if (useZai) {
       try {
         const zaiResult = await callExternalAPI(
-          'https://api.zai.com/v1/chat/completions',
+          'https://api.z.ai/api/paas/v4/chat/completions',
           ZAI_API_KEY,
           {
             model: 'zai-legal-v1',
