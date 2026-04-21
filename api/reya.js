@@ -14,7 +14,7 @@ const handler = async (req, res) => {
   const useZai = ZAI_API_KEY && ZAI_API_KEY.length > 0;
   const useGroq = GROQ_API_KEY && GROQ_API_KEY.length > 0;
 
-  const systemPrompt = `You are Reya, an intelligent AI legal assistant for WakiliWorld.
+  const chatSystemPrompt = `You are Reya, an intelligent AI legal assistant for WakiliWorld.
 
 Your personality:
 - Friendly, warm, and professional
@@ -49,10 +49,44 @@ Guidelines:
 
   const userMessage = quick ? `Quick action: ${action || message}` : message;
 
+  // Detect document generation requests
+  const isDocGen =
+    action === 'generate_document' ||
+    (/generate|create|draft|write/i.test(userMessage) &&
+      /document|contract|nda|agreement|letter|pleading|memo|deed|will/i.test(userMessage));
+
+  // Choose system prompt and token limit based on mode
+  const systemPromptToUse = isDocGen
+    ? `You are Reya, an expert legal document drafting assistant for WakiliWorld.
+
+Your task: Generate complete, professional legal documents tailored to the user's requirements.
+
+Jurisdiction-aware: Adapt to ${context?.country || 'Kenya'} law (${context?.law || 'Laws of Kenya'}).
+
+CRITICAL INSTRUCTIONS:
+1. Generate the FULL document text, not a summary
+2. Use proper legal formatting with clear section headings
+3. Include all standard clauses relevant to the document type
+4. Mark placeholders clearly: [PARTY_NAME], [DATE], [ADDRESS], [AMOUNT], etc.
+5. Use formal legal language appropriate for ${context?.country || 'Kenya'}
+6. Structure with proper numbering (1. Definitions, 2. Terms, etc.)
+7. End with signature blocks for all parties
+8. Output ONLY the document text, no conversational filler
+
+Document type: ${context?.docType || 'legal document'}
+User requirements: ${userMessage}
+
+Generate a complete, ready-to-use legal document now.`
+    : chatSystemPrompt;
+
+  const maxTokens = isDocGen ? 3000 : 500;
+  const temperature = isDocGen ? 0.3 : 0.7;
+
   try {
     let responseContent;
     let providerUsed;
 
+    // Try ZAI first (legal specialized)
     if (useZai) {
       try {
         const zaiResult = await callExternalAPI(
@@ -61,11 +95,16 @@ Guidelines:
           {
             model: 'zai-legal-v1',
             messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userMessage },
+              { role: 'system', content: systemPromptToUse },
+              {
+                role: 'user',
+                content: isDocGen
+                  ? userMessage
+                  : `User message: ${userMessage}\n\nRespond concisely as Reya.`,
+              },
             ],
-            temperature: 0.7,
-            max_tokens: 500,
+            temperature,
+            max_tokens: maxTokens,
           }
         );
         responseContent = zaiResult.content;
@@ -76,6 +115,7 @@ Guidelines:
       }
     }
 
+    // Fallback to GROQ
     if (!responseContent && useGroq) {
       const groqResult = await callExternalAPI(
         'https://api.groq.com/openai/v1/chat/completions',
@@ -83,17 +123,23 @@ Guidelines:
         {
           model: 'llama-3.1-8b-instant',
           messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMessage },
+            { role: 'system', content: systemPromptToUse },
+            {
+              role: 'user',
+              content: isDocGen
+                ? userMessage
+                : `User message: ${userMessage}\n\nRespond concisely as Reya.`,
+            },
           ],
-          temperature: 0.7,
-          max_tokens: 500,
+          temperature,
+          max_tokens: maxTokens,
         }
       );
       responseContent = groqResult.content;
       providerUsed = 'GROQ';
     }
 
+    // If both failed, use fallback
     if (!responseContent) {
       return res.status(503).json({
         error: 'AI services unavailable',
@@ -104,8 +150,9 @@ Guidelines:
       });
     }
 
-    const actions = extractActions(responseContent);
-    const suggestions = extractSuggestions(responseContent);
+    // Extract actions and suggestions (skip for doc gen to avoid false positives)
+    const actions = isDocGen ? [] : extractActions(responseContent);
+    const suggestions = isDocGen ? [] : extractSuggestions(responseContent);
 
     return res.status(200).json({
       success: true,
