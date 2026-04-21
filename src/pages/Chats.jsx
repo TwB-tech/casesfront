@@ -224,6 +224,8 @@ import { useMediaQuery } from 'react-responsive';
 import { useTheme } from '../contexts/ThemeContext';
 import eventBus from '../utils/eventBus';
 
+import { Bot } from 'lucide-react';
+
 export default function Chats() {
   const { roomName } = useParams();
   const { user } = useAuth();
@@ -240,8 +242,10 @@ export default function Chats() {
   const chatContainerRef = useRef(null);
   const isSmallScreen = useMediaQuery({ maxWidth: 768 });
 
-  // Determine if this is a team room
+  // Determine if this is a team room or Reya chat
   const isTeamRoom = roomName && roomName.startsWith('team_');
+  const isReyaChat = roomName === 'reya';
+  const isReyaTeam = isTeamRoom && roomName.includes('reya');
 
   // Fetch messages function - memoized to avoid unnecessary re-creations
   const fetchMessages = useCallback(async () => {
@@ -355,7 +359,7 @@ export default function Chats() {
     }
   }, [messages]);
 
-  // Send message - use WebSocket first, fallback to HTTP
+  // Send message - use WebSocket first, fallback to HTTP, or Reya API for AI chat
   const sendMessage = async () => {
     if ((!message && fileList.length === 0) || !user) {
       return;
@@ -378,6 +382,61 @@ export default function Chats() {
     setFileList([]);
 
     try {
+      // Handle Reya AI chat specially
+      if (isReyaChat) {
+        const aiResponse = await fetch('/api/reya', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: currentMessage, context: {}, quick: false }),
+        });
+        const aiData = await aiResponse.json();
+        const reyaReply = {
+          sender_id: 'reya',
+          message: aiData.content || "I'm here to help with your legal practice.",
+          timestamp: new Date().toISOString(),
+          room: roomName,
+        };
+        setMessages((prev) => [...prev, reyaReply]);
+        return;
+      }
+
+      // Handle team chat with Reya assistant (AI participates)
+      if (isTeamRoom) {
+        const formData = new FormData();
+        formData.append('message', currentMessage);
+        formData.append('room', roomName);
+        formData.append('sender_id', user.id);
+        filesToUpload.forEach((file) => {
+          formData.append('attachments', file);
+        });
+        await axiosInstance.post('/chats/send-message/', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        // Check if message mentions @reya for AI response
+        if (currentMessage.toLowerCase().includes('@reya')) {
+          const aiResponse = await fetch('/api/reya', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: currentMessage,
+              context: { team_chat: true, room: roomName },
+              quick: false,
+            }),
+          });
+          const aiData = await aiResponse.json();
+          if (aiData.content) {
+            const reyaReply = {
+              sender_id: 'reya',
+              message: aiData.content,
+              timestamp: new Date().toISOString(),
+              room: roomName,
+            };
+            setMessages((prev) => [...prev, reyaReply]);
+          }
+        }
+        return;
+      }
+
       if (socket && socket.readyState === WebSocket.OPEN) {
         const messageData = {
           message: currentMessage,
@@ -549,7 +608,18 @@ export default function Chats() {
             gap: '12px',
           }}
         >
-          <Avatar src={otherUser?.profile} icon={<UserOutlined />} size={44} />
+          {isReyaChat ? (
+            <div
+              className="w-11 h-11 rounded-full flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #3b82f6 100%)',
+              }}
+            >
+              <Bot className="w-5 h-5 text-white" />
+            </div>
+          ) : (
+            <Avatar src={otherUser?.profile} icon={<UserOutlined />} size={44} />
+          )}
           <div style={{ flex: 1 }}>
             <h2
               style={{
@@ -559,20 +629,20 @@ export default function Chats() {
                 color: isFuturistic ? '#f8fafc' : '#1e293b',
               }}
             >
-              {isTeamRoom ? 'Team Chat' : otherUser?.username || 'Loading...'}
+              {isReyaChat ? 'Reya AI Assistant' : isTeamRoom ? 'Team Chat' : otherUser?.username || 'Loading...'}
             </h2>
             <span
               style={{
                 fontSize: '12px',
-                color: connectionStatus === 'connected' ? '#22c55e' : '#ef4444',
+                color: isReyaChat ? '#8b5cf6' : connectionStatus === 'connected' ? '#22c55e' : '#ef4444',
               }}
             >
-              {connectionStatus === 'connected' ? 'Online' : 'Reconnecting...'}
+              {isReyaChat ? 'AI Ready' : connectionStatus === 'connected' ? 'Online' : 'Reconnecting...'}
             </span>
           </div>
 
           {/* Mobile Search Button */}
-          {isSmallScreen && (
+          {isSmallScreen && !isReyaChat && (
             <Button
               type="text"
               icon={<SearchOutlined />}
@@ -729,21 +799,23 @@ export default function Chats() {
               gap: isSmallScreen ? '8px' : '12px',
             }}
           >
-            <Upload
-              beforeUpload={() => false}
-              onChange={handleFileUpload}
-              showUploadList={false}
-              multiple
-            >
-              <Button
-                type="text"
-                icon={<PaperClipOutlined />}
-                size="large"
-                style={{ color: '#64748b' }}
-              />
-            </Upload>
+            {!isReyaChat && (
+              <Upload
+                beforeUpload={() => false}
+                onChange={handleFileUpload}
+                showUploadList={false}
+                multiple
+              >
+                <Button
+                  type="text"
+                  icon={<PaperClipOutlined />}
+                  size="large"
+                  style={{ color: '#64748b' }}
+                />
+              </Upload>
+            )}
             <Input
-              placeholder="Type a message..."
+              placeholder={isReyaChat ? 'Ask Reya anything...' : 'Type a message...'}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyPress={handleKeyPress}
