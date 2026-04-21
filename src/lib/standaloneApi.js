@@ -2018,21 +2018,21 @@ Format requirements:
 - Include proper headings, date, and signature blocks`;
 
         try {
-           const response = await fetch('/api/reya', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({
-               message: prompt,
-               context: {
-                 docType,
-                 country: countryLaw.name,
-                 law: countryLaw.law,
-                 ...context,
-               },
-               quick: true,
-               action: 'generate_document',
-             }),
-           });
+          const response = await fetch('/api/reya', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: prompt,
+              context: {
+                docType,
+                country: countryLaw.name,
+                law: countryLaw.law,
+                ...context,
+              },
+              quick: true,
+              action: 'generate_document',
+            }),
+          });
           const data = await response.json();
           return data.content || `Generate ${docType} for ${countryLaw.name}`;
         } catch (e) {
@@ -2040,29 +2040,19 @@ Format requirements:
         }
       };
 
-      const generatedContent = generateDocWithAI().catch(() => `Failed to generate ${docType}`);
+      const generatedContent = await generateDocWithAI().catch(
+        () => `Failed to generate ${docType}`
+      );
       const filename = `${docType}_${countryLaw.name}_${new Date().toISOString().slice(0, 10)}.txt`;
-
-      if (generatedContent && typeof generatedContent.then === 'function') {
-        return {
-          success: true,
-          filename: filename,
-          content: 'Generating document with AI...',
-          ai_generated: true,
-          doc_type: docType,
-          country: countryLaw.name,
-        };
-      }
 
       return success({
         success: true,
         filename: filename,
-        content:
-          typeof generatedContent === 'string'
-            ? generatedContent
-            : `Generated: ${docType} for ${countryLaw.name}`,
+        content: generatedContent,
         page_count: 1,
         ai_generated: true,
+        doc_type: docType,
+        country: countryLaw.name,
       });
     }
 

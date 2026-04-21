@@ -410,8 +410,10 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
           tasks: '/tasks/',
           'check tasks': '/tasks/',
           'view tasks': '/tasks/',
+          priorities: '/tasks/',
           documents: '/documents',
           'view documents': '/documents',
+          drafting: '/documents',
           invoices: '/invoices',
           billing: '/invoices',
           calendar: '/calendar-tasks',
@@ -426,6 +428,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
           settings: '/settings',
           firms: '/firms',
           'find firms': '/firms',
+          firm_help: '/firms',
         };
 
         const path = actionToPath[action.action.toLowerCase()] || '/home';
