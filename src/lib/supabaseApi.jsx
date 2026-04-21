@@ -1450,7 +1450,12 @@ Format requirements:
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message: prompt,
-            context: { docType, country: countryLaw.name, ...context },
+            context: {
+              docType,
+              country: countryLaw.name,
+              law: countryLaw.law,
+              ...context,
+            },
             quick: true,
             action: 'generate_document',
           }),

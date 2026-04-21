@@ -2018,16 +2018,21 @@ Format requirements:
 - Include proper headings, date, and signature blocks`;
 
         try {
-          const response = await fetch('/api/reya', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message: prompt,
-              context: { docType, country: countryLaw.name, ...context },
-              quick: true,
-              action: 'generate_document',
-            }),
-          });
+           const response = await fetch('/api/reya', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({
+               message: prompt,
+               context: {
+                 docType,
+                 country: countryLaw.name,
+                 law: countryLaw.law,
+                 ...context,
+               },
+               quick: true,
+               action: 'generate_document',
+             }),
+           });
           const data = await response.json();
           return data.content || `Generate ${docType} for ${countryLaw.name}`;
         } catch (e) {
