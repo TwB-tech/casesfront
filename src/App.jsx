@@ -169,7 +169,7 @@ function AppContent() {
               transition: 'margin-left 0.2s, background 0.3s ease',
               minHeight: 'calc(100vh - 64px)',
               background: getLayoutBackground(),
-              overflowX: 'clip',
+              overflowX: 'hidden',
             }}
           >
             {!shouldHideSidebar && (

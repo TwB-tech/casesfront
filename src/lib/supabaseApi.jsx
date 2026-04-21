@@ -1347,6 +1347,15 @@ export const supabaseApi = {
       return success({ success: true });
     }
 
+    if (path.startsWith('document') || path.startsWith('api/document')) {
+      const id = parts[parts.length - 1];
+      const { error } = await supabase.from(TABLES.DOCUMENTS).delete().eq('id', id);
+      if (error) {
+        throw error;
+      }
+      return success({ success: true });
+    }
+
     return failure(`DELETE ${path} not implemented`, 404);
   },
 };

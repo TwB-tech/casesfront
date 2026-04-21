@@ -82,6 +82,22 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
+  const [initialPrompt, setInitialPrompt] = useState('');
+
+  // Expose openWithPrompt method to window for external triggers
+  useEffect(() => {
+    window.reyaAssistant = {
+      openWithPrompt: (prompt) => {
+        setInitialPrompt(prompt);
+        setIsOpen(true);
+      },
+      close: () => setIsOpen(false),
+      isOpen: () => isOpen,
+    };
+    return () => {
+      delete window.reyaAssistant;
+    };
+  }, []);
 
   // Context data
   const [cases, setCases] = useState([]);
@@ -284,12 +300,20 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Handle initial prompt from external trigger
+  useEffect(() => {
+    if (initialPrompt && isOpen) {
+      setInput(initialPrompt);
+      setInitialPrompt('');
+    }
+  }, [initialPrompt, isOpen]);
+
   return (
     <>
       {/* Proactive Notification Banner */}
       {!isOpen && pendingNotificationCount > 0 && (
         <div
-          className="fixed bottom-24 right-6 z-[999] px-4 py-2 rounded-full animate-pulse cursor-pointer"
+          className="fixed bottom-28 right-6 z-[999] px-4 py-2 rounded-full animate-pulse cursor-pointer hidden md:flex"
           style={{
             background: 'linear-gradient(135deg, #ef4444 0%, #f59e0b 100%)',
             color: 'white',
@@ -303,22 +327,22 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
       )}
 
       {/* Main Assistant Interface */}
-      <div className="fixed bottom-6 right-6 z-[1000] md:w-96 w-[90vw] max-w-[384px]">
+      <div className={`fixed bottom-6 right-6 z-[1000] md:right-8 ${isOpen ? 'md:w-96 w-[90vw] max-w-[384px]' : ''}`}>
         {!isOpen ? (
-          // Closed state - show floating button with brand gradient
           <button
             onClick={() => setIsOpen(true)}
-            className="w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center relative"
+            className="group flex items-center gap-3 px-5 py-3 rounded-full shadow-xl hover:shadow-2xl transition-all cursor-pointer"
             style={{
               background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #3b82f6 100%)',
+              minWidth: '140px',
             }}
           >
-            <Bot className="w-6 h-6 text-white" />
-            <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-[10px] font-bold text-white bg-black/50 px-1 rounded whitespace-nowrap">
+            <Bot className="w-6 h-6 text-white flex-shrink-0" />
+            <span className="text-white font-bold text-sm whitespace-nowrap">
               REYA
             </span>
             {pendingNotificationCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
+              <span className="bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center font-bold px-1">
                 {pendingNotificationCount}
               </span>
             )}
