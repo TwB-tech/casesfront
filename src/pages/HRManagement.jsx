@@ -317,7 +317,7 @@ const HRManagement = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" data-testid="hr-stats-cards">
         <Card className={`${isFuturistic ? 'bg-cyber-card border-cyber-border' : ''}`}>
           <div className="flex items-center gap-4">
             <div
@@ -483,6 +483,7 @@ const HRManagement = () => {
                 rowKey="id"
                 loading={loading}
                 pagination={{ pageSize: 10 }}
+                data-testid="hr-invitations-table"
               />
             </>
           )}
@@ -538,6 +539,7 @@ const HRManagement = () => {
                   pageSize: 10,
                   showSizeChanger: true,
                 }}
+                data-testid="hr-employees-table"
               />
             </>
           )}

@@ -267,6 +267,7 @@ const PayrollManagement = () => {
       <Card
         className={`${isFuturistic ? 'bg-cyber-card border-cyber-border' : ''}`}
         styles={{ body: { padding: '24px' } }}
+        data-testid="payroll-table-card"
       >
         <Table
           dataSource={payrolls}
@@ -277,6 +278,7 @@ const PayrollManagement = () => {
             pageSize: 10,
             showSizeChanger: true,
           }}
+          data-testid="payroll-table"
         />
       </Card>
 

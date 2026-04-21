@@ -480,6 +480,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
       {/* Main Assistant Interface */}
       <div
         className={`fixed bottom-6 right-6 z-[1000] md:right-8 ${isOpen ? 'md:w-96 w-[90vw] max-w-[384px]' : ''}`}
+        data-testid="reya-widget"
       >
         {!isOpen ? (
           <button
@@ -489,6 +490,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
               background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #3b82f6 100%)',
               minWidth: '140px',
             }}
+            data-testid="reya-open-button"
           >
             <Bot className="w-6 h-6 text-white flex-shrink-0" />
             <span className="text-white font-bold text-sm whitespace-nowrap">REYA</span>
@@ -552,11 +554,13 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
                   className={`flex-1 overflow-y-auto p-4 space-y-4 ${
                     isFuturistic ? 'bg-cyber-bg' : 'bg-gray-50'
                   }`}
+                  data-testid="reya-messages-container"
                 >
                   {messages.map((msg) => (
                     <div
                       key={msg.id}
                       className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                      data-testid={`message-${msg.type}`}
                     >
                       <div
                         className={`max-w-[85%] rounded-2xl px-4 py-3 ${
@@ -656,6 +660,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
                           : 'bg-white border-gray-300 focus:ring-blue-500 text-gray-900 placeholder-gray-500'
                       }`}
                       disabled={isTyping}
+                      data-testid="reya-input"
                     />
                     <button
                       onClick={sendMessage}
@@ -667,6 +672,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
                             : 'bg-blue-500 hover:bg-blue-600 text-white'
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
+                      data-testid="reya-send-button"
                     >
                       <SendHorizontal className="w-4 h-4" />
                     </button>

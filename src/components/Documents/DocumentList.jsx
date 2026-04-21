@@ -476,81 +476,35 @@ function DocumentList() {
             border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
           }}
           bodyStyle={{ padding: '20px' }}
+          data-testid="doc-generator-card"
         >
           <Row gutter={16}>
             <Col span={24}>
-              <div style={{ marginBottom: '12px' }}>
-                <Bot style={{ marginRight: '8px', color: '#6366f1' }} />
-                <span style={{ fontSize: '16px', fontWeight: 600 }}>AI Document Generator</span>
-              </div>
+              <Divider orientation="left">Generated Document</Divider>
               <Input.TextArea
-                rows={4}
-                value={docPrompt}
-                onChange={(e) => setDocPrompt(e.target.value)}
-                placeholder="Describe the document you need: e.g., 'Generate a service agreement for a software company with milestone payments' or 'Create an NDA between two parties for business discussions'"
+                rows={12}
+                value={generatedContent}
+                onChange={(e) => setGeneratedContent(e.target.value)}
                 style={{
-                  marginBottom: '12px',
-                  fontSize: '14px',
+                  fontFamily: 'monospace',
+                  fontSize: '13px',
+                  background: isFuturistic ? '#0d0d12' : '#fafafa',
                 }}
-                disabled={generatingDoc}
+                data-testid="generated-document-content"
               />
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
                 <Button
                   type="primary"
-                  icon={<FileTextOutlined />}
-                  loading={generatingDoc}
-                  onClick={generateDocument}
+                  icon={<SaveOutlined />}
+                  onClick={saveGeneratedDocument}
+                  disabled={!generatedContent}
                   style={{
-                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    background: '#22c55e',
                     border: 'none',
                   }}
+                  data-testid="save-generated-doc"
                 >
-                  {generatingDoc ? 'Generating...' : 'Generate Document'}
-                </Button>
-                <Select
-                  value={docCountry}
-                  onChange={setDocCountry}
-                  style={{ width: 140 }}
-                  disabled={generatingDoc}
-                >
-                  <Option value="kenya">🇰🇪 Kenya</Option>
-                  <Option value="nigeria">🇳🇬 Nigeria</Option>
-                  <Option value="tanzania">🇹🇿 Tanzania</Option>
-                  <Option value="uganda">🇺🇬 Uganda</Option>
-                  <Option value="ghana">🇬🇭 Ghana</Option>
-                  <Option value="southafrica">🇿🇦 South Africa</Option>
-                </Select>
-              </div>
-            </Col>
-          </Row>
-
-          {/* Generated Document Preview */}
-          {generatedContent && (
-            <Row gutter={16} style={{ marginTop: '20px' }}>
-              <Col span={24}>
-                <Divider orientation="left">Generated Document</Divider>
-                <Input.TextArea
-                  rows={12}
-                  value={generatedContent}
-                  onChange={(e) => setGeneratedContent(e.target.value)}
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: '13px',
-                    background: isFuturistic ? '#0d0d12' : '#fafafa',
-                  }}
-                />
-                <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
-                  <Button
-                    type="primary"
-                    icon={<SaveOutlined />}
-                    onClick={saveGeneratedDocument}
-                    disabled={!generatedContent}
-                    style={{
-                      background: '#22c55e',
-                      border: 'none',
-                    }}
-                  >
-                    Save to Documents
+                  Save to Documents
                   </Button>
                   <Button
                     icon={<CopyOutlined />}
