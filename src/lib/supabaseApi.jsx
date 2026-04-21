@@ -816,16 +816,21 @@ export const supabaseApi = {
       }
 
       try {
-        const signUpData = await auth.create(
-          undefined,
-          payload.email.trim(),
-          payload.password,
-          payload.username.trim(),
-          {
-            role: requestedRole,
-            organization_id: resolvedOrganizationId,
-          }
-        );
+        // Sign up with Supabase Auth - let Supabase handle email confirmation
+        // If you want auto-confirm, set "Confirm email" to OFF in Supabase dashboard
+        const signUpData = await auth.signUp({
+          email: payload.email.trim(),
+          password: payload.password,
+          options: {
+            data: {
+              username: payload.username.trim(),
+              role: requestedRole,
+              organization_id: resolvedOrganizationId,
+            },
+            // Redirect to verification page after click - set in Supabase dashboard
+            emailRedirectTo: window.location.origin + '/verify-email',
+          },
+        });
         const registeredUser = signUpData?.user;
         if (!registeredUser?.id) {
           console.error('Auth creation failed:', signUpData);

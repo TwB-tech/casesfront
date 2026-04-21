@@ -325,7 +325,8 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
   // Handle action clicks
   const handleActionClick = async (action) => {
     if (action.path) {
-      navigate(action.path);
+      const targetPath = action.path.startsWith('/') ? action.path : '/' + action.path;
+      navigate(targetPath, { replace: true });
       setIsOpen(false);
     } else if (action.action) {
       setInput(`generate ${action.action}`);

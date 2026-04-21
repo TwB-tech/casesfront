@@ -12,6 +12,8 @@ import {
   Skeleton,
   Pagination,
   message,
+  Select,
+  Divider,
 } from 'antd';
 import {
   UploadOutlined,
@@ -21,14 +23,20 @@ import {
   SearchOutlined,
   FileTextOutlined,
   DeleteOutlined,
+  SaveOutlined,
+  CopyOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
+import { Bot } from 'lucide-react';
 import { Popconfirm } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../axiosConfig';
 import { useMediaQuery } from 'react-responsive';
 import { useTheme } from '../../contexts/ThemeContext';
-import moment from 'moment';
 import eventBus from '../../utils/eventBus';
+import moment from 'moment';
+
+const { Option } = Select;
 
 function DocumentList() {
   const navigate = useNavigate();
@@ -40,6 +48,12 @@ function DocumentList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [entriesPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Document generation state
+  const [docPrompt, setDocPrompt] = useState('');
+  const [docCountry, setDocCountry] = useState('kenya');
+  const [generatingDoc, setGeneratingDoc] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState('');
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -88,6 +102,67 @@ function DocumentList() {
       unsub.forEach((fn) => fn());
     };
   }, []);
+
+  // Generate document with AI
+  const generateDocument = async () => {
+    if (!docPrompt.trim()) {
+      message.warning('Please describe the document you need');
+      return;
+    }
+    
+    setGeneratingDoc(true);
+    try {
+      const response = await axiosInstance.post('/documents/generate/', {
+        type: 'legal_document',
+        prompt: docPrompt,
+        country: docCountry,
+        context: {},
+      });
+      
+      if (response.data?.content) {
+        setGeneratedContent(response.data.content);
+        message.success('Document generated! Review and save below.');
+      } else {
+        setGeneratedContent(`Document: ${docPrompt}\n\nCountry: ${docCountry}\n\n[AI-generated content will appear here once connected to ZAI/GROQ API]`);
+        message.info('Document template created. Edit as needed.');
+      }
+    } catch (error) {
+      console.error('Document generation error:', error);
+      message.error('Failed to generate document');
+    } finally {
+      setGeneratingDoc(false);
+    }
+  };
+
+  // Save generated document
+  const saveGeneratedDocument = async () => {
+    if (!generatedContent.trim()) {
+      message.warning('No document content to save');
+      return;
+    }
+    
+    try {
+      const titleMatch = generatedContent.match(/^[^:\n]+/);
+      const title = titleMatch ? titleMatch[0].slice(0, 50) : `Generated Document ${new Date().toISOString().slice(0, 10)}`;
+      
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', docPrompt);
+      formData.append('owner', '1');
+      
+      await axiosInstance.post('/document_management/api/documents/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      
+      message.success('Document saved successfully!');
+      eventBus.emit('documentCreated', {});
+      setGeneratedContent('');
+      setDocPrompt('');
+    } catch (error) {
+      console.error('Save error:', error);
+      message.error('Failed to save document');
+    }
+  };
 
   const handleUploadClick = () => {
     navigate('/new-document');
@@ -383,7 +458,7 @@ function DocumentList() {
           />
         </div>
 
-        {/* Reya AI Document Assistant */}
+        {/* Reya AI Document Generator - Inline Editor */}
         <Card
           style={{
             marginBottom: '24px',
@@ -393,66 +468,105 @@ function DocumentList() {
           }}
           bodyStyle={{ padding: '20px' }}
         >
-          <Row align="middle" gutter={12}>
-            <Col>
-              <Avatar
+          <Row gutter={16}>
+            <Col span={24}>
+              <div style={{ marginBottom: '12px' }}>
+                <Bot style={{ marginRight: '8px', color: '#6366f1' }} />
+                <span style={{ fontSize: '16px', fontWeight: 600 }}>
+                  AI Document Generator
+                </span>
+              </div>
+              <Input.TextArea
+                rows={4}
+                value={docPrompt}
+                onChange={(e) => setDocPrompt(e.target.value)}
+                placeholder="Describe the document you need: e.g., 'Generate a service agreement for a software company with milestone payments' or 'Create an NDA between two parties for business discussions'"
                 style={{
-                  background: isFuturistic ? '#6366f1' : '#3b82f6',
-                  borderRadius: '50%',
-                }}
-                size={40}
-              >
-                <span style={{ color: 'white', fontWeight: 'bold' }}>R</span>
-              </Avatar>
-            </Col>
-            <Col flex="auto">
-              <h4
-                style={{
-                  margin: 0,
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  color: isFuturistic ? '#f8fafc' : '#1e293b',
-                }}
-              >
-                Need Help with Documents?
-              </h4>
-              <p
-                style={{
-                  margin: '4px 0 0 0',
+                  marginBottom: '12px',
                   fontSize: '14px',
-                  color: '#64748b',
                 }}
-              >
-                Ask Reya to draft contracts, generate legal documents, or help with document
-                management. All content is AI-generated with built-in safety and compliance checks.
-              </p>
-            </Col>
-            <Col>
-              <Button
-                type="primary"
-                ghost
-                style={{
-                  borderRadius: '8px',
-                  borderColor: isFuturistic ? '#6366f1' : '#3b82f6',
-                  color: isFuturistic ? '#6366f1' : '#3b82f6',
-                }}
-                onClick={() => {
-                  // Trigger Reya assistant with document context
-                  if (window.reyaAssistant) {
-                    window.reyaAssistant.openWithPrompt(
-                      'I need help with legal documents. Can you assist me?'
-                    );
-                  } else {
-                    message.info(
-                      'Reya assistant will help you create and manage documents safely.'
-                    );
-                  }
-                }}
-              >
-                Ask Reya
-              </Button>
+                disabled={generatingDoc}
+              />
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <Button
+                  type="primary"
+                  icon={<FileTextOutlined />}
+                  loading={generatingDoc}
+                  onClick={generateDocument}
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    border: 'none',
+                  }}
+                >
+                  {generatingDoc ? 'Generating...' : 'Generate Document'}
+                </Button>
+                <Select
+                  value={docCountry}
+                  onChange={setDocCountry}
+                  style={{ width: 140 }}
+                  disabled={generatingDoc}
+                >
+                  <Option value="kenya">🇰🇪 Kenya</Option>
+                  <Option value="nigeria">🇳🇬 Nigeria</Option>
+                  <Option value="tanzania">🇹🇿 Tanzania</Option>
+                  <Option value="uganda">🇺🇬 Uganda</Option>
+                  <Option value="ghana">🇬🇭 Ghana</Option>
+                  <Option value="southafrica">🇿🇦 South Africa</Option>
+                </Select>
+              </div>
             </Col>
           </Row>
+          
+          {/* Generated Document Preview */}
+          {generatedContent && (
+            <Row gutter={16} style={{ marginTop: '20px' }}>
+              <Col span={24}>
+                <Divider orientation="left">Generated Document</Divider>
+                <Input.TextArea
+                  rows={12}
+                  value={generatedContent}
+                  onChange={(e) => setGeneratedContent(e.target.value)}
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: '13px',
+                    background: isFuturistic ? '#0d0d12' : '#fafafa',
+                  }}
+                />
+                <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                  <Button
+                    type="primary"
+                    icon={<SaveOutlined />}
+                    onClick={saveGeneratedDocument}
+                    disabled={!generatedContent}
+                    style={{
+                      background: '#22c55e',
+                      border: 'none',
+                    }}
+                  >
+                    Save to Documents
+                  </Button>
+                  <Button
+                    icon={<CopyOutlined />}
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedContent);
+                      message.success('Copied to clipboard');
+                    }}
+                  >
+                    Copy
+                  </Button>
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={() => {
+                      setGeneratedContent('');
+                      setDocPrompt('');
+                    }}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </Col>
+            </Row>
+          )}
         </Card>
 
         {/* Content */}
