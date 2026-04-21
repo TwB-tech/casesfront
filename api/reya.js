@@ -1,7 +1,9 @@
-const https = require('https');
-const http = require('http');
+import https from 'https';
+import http from 'http';
 
 export default async function handler(req, res) {
+  console.log('🤖 Reya API called with method:', req.method);
+
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -14,6 +16,7 @@ export default async function handler(req, res) {
 
   // Only allow POST
   if (req.method !== 'POST') {
+    console.log('❌ Method not allowed:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -36,14 +39,26 @@ export default async function handler(req, res) {
   const ZAI_API_KEY = process.env.ZAI_API_KEY;
 
   // Debug log for troubleshooting (remove in production)
-  console.log('🔑 GROQ_API_KEY present:', !!GROQ_API_KEY, GROQ_API_KEY?.slice(0, 5));
-  console.log('🔑 ZAI_API_KEY present:', !!ZAI_API_KEY, ZAI_API_KEY?.slice(0, 5));
+  console.log('🔑 GROQ_API_KEY present:', !!GROQ_API_KEY, GROQ_API_KEY ? `${GROQ_API_KEY.slice(0, 5)}...` : 'null');
+  console.log('🔑 ZAI_API_KEY present:', !!ZAI_API_KEY, ZAI_API_KEY ? `${ZAI_API_KEY.slice(0, 5)}...` : 'null');
 
   // Determine provider: GROQ primary, ZAI secondary (if available)
   const useZai = false; // Temporarily disable ZAI until confirmed working
   const useGroq = GROQ_API_KEY && GROQ_API_KEY.length > 5;
 
   console.log('🎯 AI Providers available - ZAI:', useZai, 'GROQ:', useGroq);
+
+  // If no providers available, return fallback immediately
+  if (!useGroq && !useZai) {
+    console.log('❌ No AI providers available, returning fallback');
+    return res.status(503).json({
+      error: 'AI services unavailable',
+      fallback: true,
+      content: "I'm having trouble connecting to my AI brain right now. But I can still help! Try asking about your cases, documents, or deadlines.",
+      actions: [],
+      suggestions: [{ label: 'Show my cases', action: 'cases' }],
+    });
+  }
 
   // Build system prompt - comprehensive legal assistant
   const systemPrompt = `You are Reya, an intelligent AI legal assistant for WakiliWorld - a comprehensive legal practice management platform.
@@ -91,20 +106,22 @@ Guidelines:
 3. Get straight to the point while being warm
 4. If asked about things outside your knowledge, say so honestly
 5. Offer specific, actionable next steps
-6. When user asks to navigate somewhere, use proper paths like /case-list, /clients, etc.
-7. When user asks to create/generate documents, guide them to use the Documents module
-8. Use proper routing paths without trailing slashes
+6. When user greets you, provide a brief introduction and offer help with key features
+7. When user asks to navigate somewhere, use action buttons instead of mentioning paths
+8. When user asks to create/generate documents, offer to generate them directly
 9. Keep responses under 200 words unless detailed explanation needed
+10. For greetings, offer 2-3 key actions they might want to take
 
 Action Buttons Format:
-- Include clickable action buttons using this exact format: [ACTION:Button Label:path_or_action]
-- Examples: [ACTION:View Cases:/case-list] [ACTION:Add New Case:/case-form] [ACTION:Generate Contract:generate_contract]
+- Include clickable action buttons using this exact format: [ACTION:Button Label:action_name]
+- Map to these available actions: cases, clients, tasks, documents, invoices, calendar, new-case, new-client, generate_contract
+- Examples: [ACTION:View Cases:cases] [ACTION:Add New Case:new-case] [ACTION:Generate Contract:generate_contract]
 - Use appropriate icons: file, plus, calendar, users, settings, etc.
 - Only include 1-3 most relevant actions per response
 
 Quick Suggestions Format:
 - Include quick suggestion buttons using: [SUG:Suggestion Label:action]
-- Examples: [SUG:Create Case:new-case] [SUG:View Tasks:tasks] [SUG:Generate NDA:generate_nda]`;
+- Examples: [SUG:Create Case:new-case] [SUG:View Tasks:tasks] [SUG:Generate NDA:generate_contract]`;
 
   const userMessage = quick ? `Quick action: ${action || message}` : message;
 
@@ -178,19 +195,30 @@ Quick Suggestions Format:
     // Add fallback actions if none were extracted
     const fallbackActions = [];
     if (actions.length === 0) {
-      if (userMessage.toLowerCase().includes('case')) {
+      const lowerMessage = userMessage.toLowerCase();
+
+      // Context-aware fallback actions
+      if (lowerMessage.includes('case') || lowerMessage.includes('matter') || lowerMessage.includes('file')) {
         fallbackActions.push({ label: 'View Cases', action: 'cases', icon: 'file' });
         fallbackActions.push({ label: 'Create Case', action: 'new-case', icon: 'plus' });
-      } else if (userMessage.toLowerCase().includes('client')) {
+      } else if (lowerMessage.includes('client') || lowerMessage.includes('customer')) {
         fallbackActions.push({ label: 'View Clients', action: 'clients', icon: 'users' });
-      } else if (userMessage.toLowerCase().includes('document')) {
+        fallbackActions.push({ label: 'Add Client', action: 'new-client', icon: 'user' });
+      } else if (lowerMessage.includes('document') || lowerMessage.includes('contract') || lowerMessage.includes('draft')) {
         fallbackActions.push({ label: 'View Documents', action: 'documents', icon: 'file' });
-        fallbackActions.push({ label: 'Generate Contract', action: 'generate_contract', icon: 'plus' });
-      } else if (userMessage.toLowerCase().includes('task')) {
+        fallbackActions.push({ label: 'Generate Document', action: 'generate_contract', icon: 'plus' });
+      } else if (lowerMessage.includes('task') || lowerMessage.includes('todo') || lowerMessage.includes('deadline')) {
         fallbackActions.push({ label: 'View Tasks', action: 'tasks', icon: 'check' });
+        fallbackActions.push({ label: 'Calendar', action: 'calendar', icon: 'calendar' });
+      } else if (lowerMessage.includes('invoice') || lowerMessage.includes('billing') || lowerMessage.includes('payment')) {
+        fallbackActions.push({ label: 'View Invoices', action: 'invoices', icon: 'dollar' });
+      } else if (lowerMessage.includes('chat') || lowerMessage.includes('message') || lowerMessage.includes('team')) {
+        fallbackActions.push({ label: 'Team Chat', action: 'chats', icon: 'users' });
       } else {
+        // General fallback actions
         fallbackActions.push({ label: 'View Cases', action: 'cases', icon: 'file' });
         fallbackActions.push({ label: 'View Clients', action: 'clients', icon: 'users' });
+        fallbackActions.push({ label: 'View Tasks', action: 'tasks', icon: 'check' });
       }
     }
     }

@@ -584,10 +584,7 @@ export const supabaseApi = {
     // Get pending invitations
     if (path === 'hr/invites/') {
       const organizationId = localStorage.getItem('organization_id');
-      let query = supabase
-        .from(TABLES.INVITES)
-        .select('*')
-        .eq('status', 'pending');
+      let query = supabase.from(TABLES.INVITES).select('*').eq('status', 'pending');
 
       if (organizationId) {
         query = query.eq('organization_id', organizationId);
@@ -863,34 +860,34 @@ export const supabaseApi = {
           username: payload.username || payload.email,
           email: payload.email,
           role: requestedRole,
-        phone_number: payload.phone_number || '',
-        alternative_phone_number: payload.alternative_phone_number || '',
-        id_number: payload.id_number || payload.id_passport_number || '',
-        passport_number: payload.id_passport_number || '',
-        date_of_birth: payload.date_of_birth || '',
-        gender: payload.gender || 'Not set',
-        address: payload.address || '',
-        nationality: payload.nationality || 'Kenyan',
-        occupation: payload.occupation || '',
-        marital_status: payload.marital_status || '',
-        status: 'Active',
-        timezone: 'EAT',
-        messaging: true,
-        client_communication: true,
-        task_management: true,
-        deadline_notifications: true,
-        organization_id: resolvedOrganizationId,
-      };
-      const { error: userInsertErr } = await supabase.from(TABLES.USERS).insert(userProfile);
-      if (userInsertErr) {
-        console.warn('User profile insert failed:', userInsertErr);
-      }
+          phone_number: payload.phone_number || '',
+          alternative_phone_number: payload.alternative_phone_number || '',
+          id_number: payload.id_number || payload.id_passport_number || '',
+          passport_number: payload.id_passport_number || '',
+          date_of_birth: payload.date_of_birth || '',
+          gender: payload.gender || 'Not set',
+          address: payload.address || '',
+          nationality: payload.nationality || 'Kenyan',
+          occupation: payload.occupation || '',
+          marital_status: payload.marital_status || '',
+          status: 'Active',
+          timezone: 'EAT',
+          messaging: true,
+          client_communication: true,
+          task_management: true,
+          deadline_notifications: true,
+          organization_id: resolvedOrganizationId,
+        };
+        const { error: userInsertErr } = await supabase.from(TABLES.USERS).insert(userProfile);
+        if (userInsertErr) {
+          console.warn('User profile insert failed:', userInsertErr);
+        }
 
-      return success({
-        id: registeredUser.id,
-        email: registeredUser.email,
-        username: payload.username,
-      });
+        return success({
+          id: registeredUser.id,
+          email: registeredUser.email,
+          username: payload.username,
+        });
       } catch (authError) {
         console.error('Supabase auth error:', authError);
         return failure(
@@ -1092,7 +1089,7 @@ export const supabaseApi = {
       // Create new employee/user in the system
       const user = JSON.parse(localStorage.getItem('userInfo') || '{}');
       const organizationId = localStorage.getItem('organization_id') || payload.organization_id;
-      
+
       // Check if current user has permission to add employees
       if (!user?.id || user.role === 'client' || user.role === 'individual') {
         return failure('You do not have permission to add employees', 403);
@@ -1115,29 +1112,29 @@ export const supabaseApi = {
         deadline_notifications: true,
       };
 
-      const { data, error } = await supabase
-        .from(TABLES.USERS)
-        .insert(employeeData)
-        .select();
+      const { data, error } = await supabase.from(TABLES.USERS).insert(employeeData).select();
 
       if (error) {
         console.error('Employee creation error:', error);
         return failure('Failed to add employee: ' + error.message, 400);
       }
 
-      return success({
-        id: data[0]?.id,
-        name: data[0]?.name,
-        email: data[0]?.email,
-        role: data[0]?.role,
-        department: data[0]?.department,
-        status: 'active',
-      }, 201);
+      return success(
+        {
+          id: data[0]?.id,
+          name: data[0]?.name,
+          email: data[0]?.email,
+          role: data[0]?.role,
+          department: data[0]?.department,
+          status: 'active',
+        },
+        201
+      );
     }
 
     if (path === 'hr/invites/') {
       const organizationId = localStorage.getItem('organization_id') || payload.organization_id;
-      
+
       const inviteData = {
         email: payload.email,
         role: payload.role || 'employee',
@@ -1147,25 +1144,25 @@ export const supabaseApi = {
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
       };
 
-      const { data, error } = await supabase
-        .from(TABLES.INVITES)
-        .insert(inviteData)
-        .select();
+      const { data, error } = await supabase.from(TABLES.INVITES).insert(inviteData).select();
 
       if (error) {
         console.error('Invite creation error:', error);
         return failure('Failed to send invitation: ' + error.message, 400);
       }
 
-      return success({
-        message: `Invitation sent to ${payload.email}`,
-        invite: data[0] || {
-          id: Date.now(),
-          email: payload.email,
-          role: payload.role || 'employee',
-          status: 'pending',
+      return success(
+        {
+          message: `Invitation sent to ${payload.email}`,
+          invite: data[0] || {
+            id: Date.now(),
+            email: payload.email,
+            role: payload.role || 'employee',
+            status: 'pending',
+          },
         },
-      }, 201);
+        201
+      );
     }
 
     if (path === 'auth/change-password/') {
@@ -1287,11 +1284,26 @@ export const supabaseApi = {
 
       const countryInfo = {
         kenya: { name: 'Kenya', law: 'Laws of Kenya', court: 'Kenyan courts', format: 'A4' },
-        nigeria: { name: 'Nigeria', law: 'Laws of Nigeria', court: 'Nigerian courts', format: 'A4' },
-        tanzania: { name: 'Tanzania', law: 'Laws of Tanzania', court: 'Tanzanian courts', format: 'A4' },
+        nigeria: {
+          name: 'Nigeria',
+          law: 'Laws of Nigeria',
+          court: 'Nigerian courts',
+          format: 'A4',
+        },
+        tanzania: {
+          name: 'Tanzania',
+          law: 'Laws of Tanzania',
+          court: 'Tanzanian courts',
+          format: 'A4',
+        },
         uganda: { name: 'Uganda', law: 'Laws of Uganda', court: 'Ugandan courts', format: 'A4' },
         ghana: { name: 'Ghana', law: 'Laws of Ghana', court: 'Ghanaian courts', format: 'A4' },
-        southafrica: { name: 'South Africa', law: 'Laws of South Africa', court: 'South African courts', format: 'A4' },
+        southafrica: {
+          name: 'South Africa',
+          law: 'Laws of South Africa',
+          court: 'South African courts',
+          format: 'A4',
+        },
         usa: { name: 'USA', law: 'US Federal/State laws', court: 'US Courts', format: 'Letter' },
         uk: { name: 'UK', law: 'English law', court: 'UK Courts', format: 'A4' },
       };
@@ -1299,15 +1311,53 @@ export const supabaseApi = {
       const countryLaw = countryInfo[country] || countryInfo.kenya;
       const filename = `${docType}_${countryLaw.name}_${new Date().toISOString().slice(0, 10)}.txt`;
 
-      return success({
-        success: true,
-        filename,
-        content: `Generating ${docType} for ${countryLaw.name}...`,
-        ai_generated: true,
-        doc_type: docType,
-        country: countryLaw.name,
-        page_count: 1,
-      });
+      // Generate actual content with AI
+      const prompt = `Generate a professional legal ${docType} document for ${countryLaw.name} jurisdiction under ${countryLaw.law}.
+${userPrompt ? `User requirements: ${userPrompt}` : ''}
+Context: ${JSON.stringify(context)}
+
+Format requirements:
+- Use proper legal language and structure
+- Include all necessary sections and clauses
+- Follow ${countryLaw.format} format
+- Make it ready for use with placeholders clearly marked like [PARTY_NAME], [DATE], etc.
+- Include proper headings, date, and signature blocks`;
+
+      try {
+        const response = await fetch('/api/reya', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: prompt,
+            context: { docType, country: countryLaw.name, ...context },
+            quick: true,
+            action: 'generate_document',
+          }),
+        });
+        const data = await response.json();
+        const content = data.content || `Generated ${docType} for ${countryLaw.name}`;
+
+        return success({
+          success: true,
+          filename,
+          content,
+          ai_generated: true,
+          doc_type: docType,
+          country: countryLaw.name,
+          page_count: 1,
+        });
+      } catch (error) {
+        console.error('Document generation error:', error);
+        return success({
+          success: true,
+          filename,
+          content: `Document generation failed. Please try again or contact support.`,
+          ai_generated: false,
+          doc_type: docType,
+          country: countryLaw.name,
+          page_count: 1,
+        });
+      }
     }
 
     if (path === '/ai/reya/query/') {

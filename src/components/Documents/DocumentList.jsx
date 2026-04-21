@@ -48,7 +48,7 @@ function DocumentList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [entriesPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // Document generation state
   const [docPrompt, setDocPrompt] = useState('');
   const [docCountry, setDocCountry] = useState('kenya');
@@ -109,7 +109,7 @@ function DocumentList() {
       message.warning('Please describe the document you need');
       return;
     }
-    
+
     setGeneratingDoc(true);
     try {
       const response = await axiosInstance.post('/documents/generate/', {
@@ -118,12 +118,14 @@ function DocumentList() {
         country: docCountry,
         context: {},
       });
-      
+
       if (response.data?.content) {
         setGeneratedContent(response.data.content);
         message.success('Document generated! Review and save below.');
       } else {
-        setGeneratedContent(`Document: ${docPrompt}\n\nCountry: ${docCountry}\n\n[AI-generated content will appear here once connected to ZAI/GROQ API]`);
+        setGeneratedContent(
+          `Document: ${docPrompt}\n\nCountry: ${docCountry}\n\n[AI-generated content will appear here once connected to ZAI/GROQ API]`
+        );
         message.info('Document template created. Edit as needed.');
       }
     } catch (error) {
@@ -140,20 +142,27 @@ function DocumentList() {
       message.warning('No document content to save');
       return;
     }
-    
+
     try {
       const titleMatch = generatedContent.match(/^[^:\n]+/);
-      const title = titleMatch ? titleMatch[0].slice(0, 50) : `Generated Document ${new Date().toISOString().slice(0, 10)}`;
-      
+      const title = titleMatch
+        ? titleMatch[0].slice(0, 50)
+        : `Generated Document ${new Date().toISOString().slice(0, 10)}`;
+
+      // Create a text file with the generated content
+      const blob = new Blob([generatedContent], { type: 'text/plain' });
+      const file = new File([blob], `${title}.txt`, { type: 'text/plain' });
+
       const formData = new FormData();
       formData.append('title', title);
       formData.append('description', docPrompt);
+      formData.append('file', file);
       formData.append('owner', '1');
-      
+
       await axiosInstance.post('/document_management/api/documents/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      
+
       message.success('Document saved successfully!');
       eventBus.emit('documentCreated', {});
       setGeneratedContent('');
@@ -472,9 +481,7 @@ function DocumentList() {
             <Col span={24}>
               <div style={{ marginBottom: '12px' }}>
                 <Bot style={{ marginRight: '8px', color: '#6366f1' }} />
-                <span style={{ fontSize: '16px', fontWeight: 600 }}>
-                  AI Document Generator
-                </span>
+                <span style={{ fontSize: '16px', fontWeight: 600 }}>AI Document Generator</span>
               </div>
               <Input.TextArea
                 rows={4}
@@ -516,7 +523,7 @@ function DocumentList() {
               </div>
             </Col>
           </Row>
-          
+
           {/* Generated Document Preview */}
           {generatedContent && (
             <Row gutter={16} style={{ marginTop: '20px' }}>

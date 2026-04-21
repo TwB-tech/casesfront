@@ -37,11 +37,24 @@ export async function queryReaya(message, context = {}) {
     };
   } catch (error) {
     console.error('AI query failed:', error);
+    // Try to extract any fallback content from the error
+    let fallbackContent =
+      "I'm having trouble connecting to my AI brain right now. But I can still help! Try asking about your cases, documents, or deadlines.";
+    let fallbackActions = [];
+    let fallbackSuggestions = [{ label: 'Show my cases', action: 'cases' }];
+
+    // If the error contains fallback data, use it
+    if (error.response?.data?.fallback) {
+      const fallbackData = error.response.data;
+      fallbackContent = fallbackData.content || fallbackContent;
+      fallbackActions = fallbackData.actions || fallbackActions;
+      fallbackSuggestions = fallbackData.suggestions || fallbackSuggestions;
+    }
+
     return {
-      content:
-        "I'm having trouble connecting to my AI brain right now. But I can still help! Try asking about your cases, documents, or deadlines.",
-      actions: [],
-      suggestions: [{ label: 'Show my cases', action: 'cases' }],
+      content: fallbackContent,
+      actions: fallbackActions,
+      suggestions: fallbackSuggestions,
     };
   }
 }

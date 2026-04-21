@@ -232,10 +232,36 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
     try {
       if (isDocGen) {
         setIsGenerating(true);
+
+        // Improved document type detection
+        const docTypePatterns = {
+          'employment contract': 'employment_contract',
+          'service agreement': 'service_agreement',
+          'lease agreement': 'lease_agreement',
+          'rental agreement': 'lease_agreement',
+          nda: 'nda',
+          'non-disclosure': 'nda',
+          confidentiality: 'nda',
+          contract: 'contract',
+          agreement: 'agreement',
+          letter: 'letter',
+          notice: 'notice',
+          memo: 'memo',
+          deed: 'deed',
+          will: 'will',
+          'power of attorney': 'power_of_attorney',
+        };
+
+        let detectedType = 'document';
+        for (const [pattern, type] of Object.entries(docTypePatterns)) {
+          if (userMessage.toLowerCase().includes(pattern)) {
+            detectedType = type;
+            break;
+          }
+        }
+
         const response = await axiosInstance.post('/documents/generate/', {
-          type:
-            userMessage.match(/(contract|nda|agreement|letter|notice|memo|deed)/i)?.[1] ||
-            'document',
+          type: detectedType,
           prompt: userMessage,
           context: {
             cases_count: cases.length,
@@ -375,18 +401,35 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
       } else {
         // Handle other actions like 'cases', 'clients', etc. by navigating
         const actionToPath = {
+          // Map action names to correct existing routes
           cases: '/case-list',
+          'show my cases': '/case-list',
+          'view cases': '/case-list',
           clients: '/clients',
+          'view clients': '/clients',
           tasks: '/tasks/',
+          'check tasks': '/tasks/',
+          'view tasks': '/tasks/',
           documents: '/documents',
+          'view documents': '/documents',
           invoices: '/invoices',
+          billing: '/invoices',
           calendar: '/calendar-tasks',
+          deadlines: '/calendar-tasks',
           'new-case': '/case-form',
+          'create case': '/case-form',
           'new-client': '/client-form',
+          'add client': '/client-form',
+          home: '/home',
+          dashboard: '/home',
+          profile: '/profile',
+          settings: '/settings',
+          firms: '/firms',
+          'find firms': '/firms',
         };
 
-        const path = actionToPath[action.action] || `/${action.action}`;
-        console.log('Reya action navigation to:', path);
+        const path = actionToPath[action.action.toLowerCase()] || '/home';
+        console.log('Reya action navigation to:', path, 'for action:', action.action);
         setIsOpen(false);
         setTimeout(() => navigate(path), 100);
       }
