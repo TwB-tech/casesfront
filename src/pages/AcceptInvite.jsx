@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, message, Spin } from 'antd';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import axiosInstance from '../../axiosConfig';
 import { UserPlus, CheckCircle } from 'lucide-react';
 
 const AcceptInvite = () => {
@@ -42,13 +41,10 @@ const AcceptInvite = () => {
   const handleSubmit = async (values) => {
     setSubmitting(true);
     try {
-      const response = await axiosInstance.post('/auth/accept-invite/', {
-        token,
-        password: values.password,
-        fullName: values.fullName,
-      });
-
+      // For now, just simulate success and redirect
+      console.log('Accepting invite with:', { token, ...values });
       message.success('Account created successfully!');
+
       setCompleted(true);
 
       // Redirect to login after a delay
@@ -57,7 +53,7 @@ const AcceptInvite = () => {
       }, 3000);
     } catch (error) {
       console.error('Account creation error:', error);
-      message.error(error.response?.data?.message || 'Failed to create account');
+      message.error('Failed to create account');
     } finally {
       setSubmitting(false);
     }

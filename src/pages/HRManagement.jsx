@@ -62,8 +62,8 @@ const HRManagement = () => {
       const employeesData = response.data.results || response.data;
 
       // Filter out firms and only show employees (security check on frontend too)
-      const filteredData = employeesData.filter(emp =>
-        emp.role !== 'firm' && emp.role !== 'individual' && emp.role !== 'client'
+      const filteredData = employeesData.filter(
+        (emp) => emp.role !== 'firm' && emp.role !== 'individual' && emp.role !== 'client'
       );
 
       // Map API user object to table row shape
@@ -73,9 +73,10 @@ const HRManagement = () => {
         email: emp.email,
         role: emp.role || 'employee',
         department: emp.department || 'General',
-        billableRate: emp.billable_rate || emp.salary
-          ? `${formatCurrency(emp.billable_rate || emp.salary, currency)}/hr`
-          : `${formatCurrency(150, currency)}/hr`,
+        billableRate:
+          emp.billable_rate || emp.salary
+            ? `${formatCurrency(emp.billable_rate || emp.salary, currency)}/hr`
+            : `${formatCurrency(150, currency)}/hr`,
         utilization: emp.utilization || 85,
         status: emp.status || 'Active',
         leaveBalance: emp.leave_balance || 30,
@@ -210,19 +211,9 @@ const HRManagement = () => {
       // Refresh invites list if we add that functionality
     } catch (error) {
       console.error('Error sending invitation:', error);
-      message.error(error.response?.data?.message || 'Failed to send invitation. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-      await axiosInstance.post('/hr/employees/', payload);
-      message.success('Employee added successfully');
-      setIsModalVisible(false);
-      form.resetFields();
-      fetchEmployees();
-    } catch (error) {
-      console.error('Error adding employee:', error);
-      message.error('Failed to add employee. Please try again.');
+      message.error(
+        error.response?.data?.message || 'Failed to send invitation. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -317,11 +308,7 @@ const HRManagement = () => {
               >
                 Invite Employee
               </Button>
-              <Button
-                type="primary"
-                icon={<UserPlus />}
-                onClick={() => setIsModalVisible(true)}
-              >
+              <Button type="primary" icon={<UserPlus />} onClick={() => setIsModalVisible(true)}>
                 Invite Employee
               </Button>
             </div>
@@ -443,13 +430,11 @@ const HRManagement = () => {
               <div className="mb-6 flex justify-between items-center">
                 <div>
                   <h2 className="text-xl font-semibold mb-2">Pending Invitations</h2>
-                  <p className="text-gray-600">Manage employee invitations and track their status</p>
+                  <p className="text-gray-600">
+                    Manage employee invitations and track their status
+                  </p>
                 </div>
-                <Button
-                  type="primary"
-                  icon={<UserPlus />}
-                  onClick={() => setIsModalVisible(true)}
-                >
+                <Button type="primary" icon={<UserPlus />} onClick={() => setIsModalVisible(true)}>
                   Send Invitation
                 </Button>
               </div>
@@ -473,7 +458,11 @@ const HRManagement = () => {
                     dataIndex: 'status',
                     key: 'status',
                     render: (status) => (
-                      <Tag color={status === 'pending' ? 'orange' : status === 'accepted' ? 'green' : 'red'}>
+                      <Tag
+                        color={
+                          status === 'pending' ? 'orange' : status === 'accepted' ? 'green' : 'red'
+                        }
+                      >
                         {status}
                       </Tag>
                     ),
