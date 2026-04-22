@@ -201,6 +201,7 @@ const HRManagement = () => {
         email: values.email,
         role: values.role || 'employee',
         department: values.department || '',
+        full_name: values.name,
       };
 
       await axiosInstance.post('/hr/invites/', payload);
