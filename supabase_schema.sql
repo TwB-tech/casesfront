@@ -177,7 +177,7 @@ CREATE TABLE IF NOT EXISTS invites (
   email TEXT NOT NULL,
   role TEXT DEFAULT 'employee',
   department TEXT DEFAULT '',
-  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   status TEXT DEFAULT 'pending',
   invited_by UUID REFERENCES users(id) ON DELETE SET NULL,
   token TEXT NOT NULL,
