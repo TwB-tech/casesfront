@@ -1,9 +1,10 @@
 import DOMPurify from 'dompurify';
-import { USE_SUPABASE } from './config';
+import { USE_SUPABASE, USE_APPWRITE, USE_STANDALONE } from './config';
 import supabaseApi from './lib/supabaseApi';
+import appwriteApi from './lib/appwriteApi';
 import { standaloneApi } from './lib/standaloneApi';
 
-// Sanitization helper (kept for compatibility but Supabase handles most)
+// Sanitization helper
 const sanitizeResponse = (value) => {
   if (typeof value === 'string') {
     return DOMPurify.sanitize(value, {
@@ -67,28 +68,17 @@ const sanitizeResponse = (value) => {
 // Response sanitization wrapper
 const sanitizeApiResponse = (response) => {
   if (response && typeof response === 'object') {
-    if (response.data !== undefined) {
-      response.data = sanitizeResponse(response.data);
-    }
-    if (response.results !== undefined) {
-      response.results = sanitizeResponse(response.results);
-    }
+    if (response.data !== undefined) response.data = sanitizeResponse(response.data);
+    if (response.results !== undefined) response.results = sanitizeResponse(response.results);
   }
   return response;
 };
 
-// Hybrid API with automatic Supabase → standalone fallback on network errors
+// Hybrid API with automatic Appwrite → Supabase fallback on network errors
 const createHybridApi = (primary, fallback) => {
   const isNetworkError = (error) => {
-    // No response object = network/connectivity error
-    if (!error.response) {
-      return true;
-    }
-    // Server errors (5xx) - Supabase may be down
-    if (error.response.status >= 500) {
-      return true;
-    }
-    // Connection errors typically have specific messages
+    if (!error.response) return true;
+    if (error.response.status >= 500) return true;
     const msg = error.message?.toLowerCase() || '';
     if (
       msg.includes('network') ||
@@ -106,39 +96,40 @@ const createHybridApi = (primary, fallback) => {
       return sanitizeApiResponse(result);
     } catch (error) {
       if (isNetworkError(error)) {
-        console.warn(`Supabase ${method}(${path}) failed:`, error.message);
-        console.warn('Falling back to standalone API');
+        console.warn(`Primary DB ${method}(${path}) failed:`, error.message);
+        console.warn('Falling back to secondary database');
         const fallbackResult = await fallback[method](path, payload);
         return sanitizeApiResponse(fallbackResult);
       }
-      // Auth errors (401, 403) or client errors - don't fallback
       throw error;
     }
   };
 
-  return {
-    get: wrap('get'),
-    post: wrap('post'),
-    put: wrap('put'),
-    delete: wrap('delete'),
-  };
+  return { get: wrap('get'), post: wrap('post'), put: wrap('put'), delete: wrap('delete') };
 };
 
-// Determine mode: Supabase-only, Standalone-only, or Hybrid fallback
+// Determine mode: Appwrite, Supabase, Standalone, or Hybrid fallback
 let apiInstance;
-const ENABLE_STANDALONE_FALLBACK =
-  import.meta.env.VITE_ENABLE_STANDALONE_FALLBACK === 'true' || import.meta.env.DEV;
+const ENABLE_FALLBACK = import.meta.env.VITE_ENABLE_FALLBACK === 'true' || import.meta.env.DEV;
+const DUAL_WRITE_MODE = import.meta.env.DUAL_WRITE_MODE === 'true';
 
-if (USE_SUPABASE) {
-  if (ENABLE_STANDALONE_FALLBACK) {
+if (USE_APPWRITE) {
+  if (DUAL_WRITE_MODE && ENABLE_FALLBACK) {
+    console.warn('Initializing hybrid API: Appwrite primary, Supabase fallback (dual-write)');
+    apiInstance = createHybridApi(appwriteApi, supabaseApi);
+  } else {
+    console.warn('Initializing Appwrite API');
+    apiInstance = appwriteApi;
+  }
+} else if (USE_SUPABASE) {
+  if (ENABLE_FALLBACK) {
     console.warn('Initializing hybrid API: Supabase primary, standalone fallback');
     apiInstance = createHybridApi(supabaseApi, standaloneApi);
   } else {
-    console.warn('Initializing Supabase API without standalone fallback');
+    console.warn('Initializing Supabase API');
     apiInstance = supabaseApi;
   }
 } else {
-  // Pure standalone mode (no Supabase)
   console.warn('Initializing standalone API (DATABASE_MODE=standalone)');
   apiInstance = standaloneApi;
 }

@@ -505,29 +505,28 @@ function DocumentList() {
                   data-testid="save-generated-doc"
                 >
                   Save to Documents
-                  </Button>
-                  <Button
-                    icon={<CopyOutlined />}
-                    onClick={() => {
-                      navigator.clipboard.writeText(generatedContent);
-                      message.success('Copied to clipboard');
-                    }}
-                  >
-                    Copy
-                  </Button>
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={() => {
-                      setGeneratedContent('');
-                      setDocPrompt('');
-                    }}
-                  >
-                    Clear
-                  </Button>
-                </div>
-              </Col>
-            </Row>
-          )}
+                </Button>
+                <Button
+                  icon={<CopyOutlined />}
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedContent);
+                    message.success('Copied to clipboard');
+                  }}
+                >
+                  Copy
+                </Button>
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={() => {
+                    setGeneratedContent('');
+                    setDocPrompt('');
+                  }}
+                >
+                  Clear
+                </Button>
+              </div>
+            </Col>
+          </Row>
         </Card>
 
         {/* Content */}

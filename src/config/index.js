@@ -3,16 +3,40 @@
  * Centralized config for feature flags and environment settings
  */
 
-// Database mode flag: 'supabase' | 'standalone' (localStorage mock)
+// Database mode flag: 'supabase' | 'appwrite' | 'standalone' (localStorage mock)
 const dbMode =
   import.meta.env.DATABASE_MODE ||
   import.meta.env.VITE_DATABASE_MODE ||
   import.meta.env.REACT_APP_DATABASE_MODE ||
   'standalone';
+
 export const USE_SUPABASE = dbMode === 'supabase';
+export const USE_APPWRITE = dbMode === 'appwrite';
 export const USE_STANDALONE = dbMode === 'standalone';
 
-// Supabase Configuration - prioritizes plain env vars (no VITE_ prefix)
+// Appwrite Configuration
+export const APPWRITE_CONFIG = {
+  ENDPOINT:
+    import.meta.env.APPWRITE_ENDPOINT ||
+    import.meta.env.VITE_APPWRITE_ENDPOINT ||
+    import.meta.env.REACT_APP_APPWRITE_ENDPOINT ||
+    'https://cloud.appwrite.io/v1',
+  PROJECT_ID:
+    import.meta.env.APPWRITE_PROJECT_ID ||
+    import.meta.env.VITE_APPWRITE_PROJECT_ID ||
+    import.meta.env.REACT_APP_APPWRITE_PROJECT_ID,
+  API_KEY:
+    import.meta.env.APPWRITE_API_KEY ||
+    import.meta.env.VITE_APPWRITE_API_KEY ||
+    import.meta.env.REACT_APP_APPWRITE_API_KEY,
+  DATABASE_ID:
+    import.meta.env.APPWRITE_DATABASE_ID ||
+    import.meta.env.VITE_APPWRITE_DATABASE_ID ||
+    import.meta.env.REACT_APP_APPWRITE_DATABASE_ID ||
+    'default',
+};
+
+// Supabase Configuration - kept for backward compatibility/dual-write
 export const SUPABASE_CONFIG = {
   URL:
     import.meta.env.SUPABASE_URL ||
@@ -43,6 +67,12 @@ export const FEATURES = {
 export const validateConfig = () => {
   const errors = [];
 
+  if (USE_APPWRITE && (!APPWRITE_CONFIG.PROJECT_ID || !APPWRITE_CONFIG.API_KEY)) {
+    errors.push(
+      'APPWRITE_PROJECT_ID and APPWRITE_API_KEY are required when DATABASE_MODE=appwrite'
+    );
+  }
+
   if (USE_SUPABASE && (!SUPABASE_CONFIG.URL || !SUPABASE_CONFIG.ANON_KEY)) {
     errors.push('SUPABASE_URL and SUPABASE_ANON_KEY are required when DATABASE_MODE=supabase');
   }
@@ -64,8 +94,10 @@ if (import.meta.env.DEV) {
 
 export default {
   USE_SUPABASE,
+  USE_APPWRITE,
   USE_STANDALONE,
   SUPABASE_CONFIG,
+  APPWRITE_CONFIG,
   SECURITY_CONFIG,
   FEATURES,
 };
