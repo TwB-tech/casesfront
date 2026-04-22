@@ -111,6 +111,20 @@ CREATE TABLE IF NOT EXISTS communications (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Invites table (employee invitations)
+CREATE TABLE IF NOT EXISTS invites (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT NOT NULL,
+  role TEXT DEFAULT 'employee',
+  department TEXT DEFAULT '',
+  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'pending',
+  invited_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  token TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Invoices table
 CREATE TABLE IF NOT EXISTS invoices (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

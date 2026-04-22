@@ -170,6 +170,27 @@ CREATE POLICY "Communications restricted to organization" ON communications
   FOR ALL USING (organization_id = (auth.jwt() ->> 'organization_id')::uuid);
 
 -- =====================================================
+-- INVITES (Employee Invitations)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS invites (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT NOT NULL,
+  role TEXT DEFAULT 'employee',
+  department TEXT DEFAULT '',
+  organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'pending',
+  invited_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  token TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE invites ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Invites access limited to organization" ON invites
+  FOR ALL USING (organization_id = (auth.jwt() ->> 'organization_id')::uuid);
+
+-- =====================================================
 -- INVOICES
 -- =====================================================
 CREATE TABLE invoices (

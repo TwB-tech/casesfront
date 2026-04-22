@@ -196,19 +196,19 @@ const HRManagement = () => {
   const handleAddEmployee = async (values) => {
     try {
       setLoading(true);
-      // Send invitation instead of direct employee creation
+      // Send invitation (invite flow)
       const payload = {
         email: values.email,
         role: values.role || 'employee',
         department: values.department || '',
-        full_name: values.name,
       };
 
       await axiosInstance.post('/hr/invites/', payload);
       message.success(`Invitation sent to ${values.email}`);
       setIsModalVisible(false);
       form.resetFields();
-      // Refresh invites list if we add that functionality
+      // Refresh invitations list to show new entry
+      fetchInvitations();
     } catch (error) {
       console.error('Error sending invitation:', error);
       message.error(
@@ -222,11 +222,12 @@ const HRManagement = () => {
   const handleInviteEmployee = async (values) => {
     try {
       setLoading(true);
-      // Simulate invite API call; adjust endpoint as needed
       await axiosInstance.post('/hr/invites/', values);
       message.success('Invitation sent successfully');
       setIsInviteModalVisible(false);
       inviteForm.resetFields();
+      // Refresh invitations list
+      fetchInvitations();
     } catch (error) {
       console.error('Error sending invite:', error);
       message.error('Failed to send invite. Please try again.');
