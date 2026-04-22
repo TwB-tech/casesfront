@@ -125,6 +125,10 @@ CREATE TABLE IF NOT EXISTS invites (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Indexes for fast lookup
+CREATE INDEX IF NOT EXISTS idx_invites_token ON invites(token);
+CREATE INDEX IF NOT EXISTS idx_invites_email ON invites(email);
+
 -- Invoices table
 CREATE TABLE IF NOT EXISTS invoices (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

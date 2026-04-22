@@ -185,6 +185,10 @@ CREATE TABLE IF NOT EXISTS invites (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Indexes for invite lookup
+CREATE INDEX IF NOT EXISTS idx_invites_token ON invites(token);
+CREATE INDEX IF NOT EXISTS idx_invites_email ON invites(email);
+
 ALTER TABLE invites ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Invites access limited to organization" ON invites
