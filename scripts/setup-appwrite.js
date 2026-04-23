@@ -402,10 +402,8 @@ async function ensureCollection(def) {
     read: def.permissions.read,
     write: def.permissions.write,
   };
-  console.log('    CREATE PAYLOAD:', JSON.stringify(payload, null, 2));
-  const result = await api('POST', `/databases/${databaseId}/collections`, payload);
+  await api('POST', `/databases/${databaseId}/collections`, payload);
   log.success(`  ✓ Created collection ${def.name}`);
-  console.log('    CREATE RESULT $permissions:', result.$permissions);
 }
 
 async function ensureAttributes(collectionName, attributes) {
@@ -501,16 +499,16 @@ async function main() {
     // ignore if not exists
   }
 
-  for (const coll of collections) {
-    log.info(`Collection: ${coll.name}`);
-    if (coll.name === 'organizations') {
-      console.log(
-        '    ORG PERMISSIONS READ:',
-        coll.permissions.read,
-        'WRITE:',
-        coll.permissions.write
-      );
-    }
+   for (const coll of collections) {
+     log.info(`Collection: ${coll.name}`);
+     try {
+       await ensureCollection(coll);
+       await ensureAttributes(coll.name, coll.attributes);
+     } catch (err) {
+       log.error(`  Failed: ${err.message}`);
+     }
+   }
+   }
     try {
       await ensureCollection(coll);
       await ensureAttributes(coll.name, coll.attributes);
