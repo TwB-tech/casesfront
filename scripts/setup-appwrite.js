@@ -296,7 +296,7 @@ const collections = [
     attributes: [
       { key: 'id', type: 'string', size: 255, required: true },
       { key: 'room', type: 'string', size: 255, required: true },
-      { key: 'sender', type: 'integer', required: true },
+      { key: 'sender', type: 'string', size: 255, required: true },
       { key: 'content', type: 'text', required: true },
       { key: 'timestamp', type: 'datetime', required: true },
       { key: 'attachments', type: 'string', array: true },
@@ -478,6 +478,16 @@ async function main() {
   console.log('\n=== Appwrite Database Setup ===\n');
 
   await ensureDatabase();
+
+  // Schema fix: chat_messages sender changed from integer to string
+  try {
+    await api('GET', `/databases/${databaseId}/collections/chat_messages`);
+    log.warn('  chat_messages exists - deleting to apply schema update...');
+    await api('DELETE', `/databases/${databaseId}/collections/chat_messages`);
+    log.success('  ✓ Deleted old chat_messages');
+  } catch (e) {
+    // ignore if not exists
+  }
 
   for (const coll of collections) {
     log.info(`Collection: ${coll.name}`);

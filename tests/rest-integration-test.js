@@ -426,7 +426,7 @@ async function runTests() {
       data: {
         id: msgDocId,
         room: roomId,
-        sender: 1, // integer per schema
+        sender: adminUserId,
         content: 'Hello from integration test',
         timestamp: new Date().toISOString(),
         attachments: [],

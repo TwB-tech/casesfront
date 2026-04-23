@@ -1267,23 +1267,6 @@ export const appwriteApi = {
       if (error) throw error;
       return success(data, 201);
     }
-        });
-      } else {
-        messageContent = payload.message;
-        room = payload.room;
-        senderId = String(payload.sender_id);
-      }
-
-      const { data, error } = await db.create(COLLECTIONS.CHAT_MESSAGES, {
-        room,
-        sender: senderId,
-        content: messageContent,
-        timestamp: new Date().toISOString(),
-        attachments: attachments.length > 0 ? attachments : undefined,
-      });
-      if (error) throw error;
-      return success(data, 201);
-    }
 
     // BILLING: SUBSCRIBE
     if (path === 'billing/subscribe/') {
