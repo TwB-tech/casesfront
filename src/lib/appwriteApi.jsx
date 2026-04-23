@@ -6,7 +6,18 @@
 
 import appwrite from './appwrite';
 
-const { db, auth, COLLECTIONS, DATABASE_ID, getCurrentUser, getCurrentOrganizationId } = appwrite;
+const {
+  db,
+  auth,
+  account,
+  COLLECTIONS,
+  DATABASE_ID,
+  getCurrentUser,
+  getCurrentOrganizationId,
+  Query,
+  storage,
+  ID,
+} = appwrite;
 
 // ============================================
 // UTILITIES
@@ -50,9 +61,9 @@ const enrichCase = async (item) => {
     ...item,
     name: client.data?.username || 'Unknown Client',
     client: client.data
-      ? { id: client.data.$id, name: client.data.username, username: client.data.username }
+      ? { id: client.data.id, name: client.data.username, username: client.data.username }
       : null,
-    advocate: advocate.data ? { id: advocate.data.$id, username: advocate.data.username } : null,
+    advocate: advocate.data ? { id: advocate.data.id, username: advocate.data.username } : null,
     court: court.data || null,
     court_name: court.data?.name || 'Not assigned',
     organization: item.organization || { name: 'TwB Cases' },
@@ -84,7 +95,7 @@ const enrichDocument = async (doc) => {
   return {
     ...doc,
     owner: owner.data
-      ? { id: owner.data.$id, username: owner.data.username, name: owner.data.username }
+      ? { id: owner.data.id, username: owner.data.username, name: owner.data.username }
       : null,
     shared_with: sharedWith,
   };
@@ -115,6 +126,21 @@ const mapInvoice = (inv) => {
     createdAt: inv.created_at,
     updatedAt: inv.updated_at,
   };
+};
+
+// Access control helper for documents
+const canAccessDocument = (doc, user) => {
+  if (!doc || !user?.id) return false;
+  const orgId = user.organization_id || user.id;
+  return (
+    doc.organization_id === orgId ||
+    doc.client_id === user.id ||
+    doc.advocate_id === user.id ||
+    doc.assigned_to === user.id ||
+    doc.created_by === user.id ||
+    doc.owner === user.id ||
+    (doc.shared_with && doc.shared_with.includes(user.id))
+  );
 };
 
 // ============================================
@@ -163,7 +189,7 @@ export const appwriteApi = {
       return success({
         results: data.map((doc) => ({
           ...doc,
-          id: doc.$id,
+          id: doc.id,
           username: doc.username || doc.name || doc.email,
         })),
       });
@@ -176,7 +202,7 @@ export const appwriteApi = {
       if (error) throw error;
       return success({
         ...data,
-        id: data.$id,
+        id: data.id,
         username: data.username || data.name,
         role: data.role || 'individual',
       });
@@ -188,7 +214,7 @@ export const appwriteApi = {
         Query.in('role', ['advocate', 'firm', 'administrator']),
       ]);
       if (error) throw error;
-      return success({ results: data.map((doc) => ({ ...doc, id: doc.$id })) });
+      return success({ results: data.map((doc) => ({ ...doc, id: doc.id })) });
     }
 
     // COURTS: GET all courts
@@ -207,7 +233,7 @@ export const appwriteApi = {
       if (error) throw error;
       return success({
         cases_count: data.length,
-        results: data.map((doc) => ({ ...doc, id: doc.$id })),
+        results: data.map((doc) => ({ ...doc, id: doc.id })),
       });
     }
 
@@ -227,7 +253,7 @@ export const appwriteApi = {
 
       return success({
         clients_count: clients.length,
-        results: clients.map((doc) => ({ ...doc, id: doc.$id })),
+        results: clients.map((doc) => ({ ...doc, id: doc.id })),
       });
     }
 
@@ -248,11 +274,52 @@ export const appwriteApi = {
       return success({ results: enriched });
     }
 
+    // DOCUMENT FILE DOWNLOAD
+    if (path.startsWith('api/documents/') && path.endsWith('/file/')) {
+      const id = path.split('/').filter(Boolean)[2]; // api/documents/:id/file/
+      const { data: doc, error: docErr } = await db.get(COLLECTIONS.DOCUMENTS, id);
+      if (docErr) throw docErr;
+      const user = await getCurrentUser();
+      const hasAccess =
+        doc.organization_id === (user.organization_id || user.id) ||
+        doc.owner === user.id ||
+        (doc.shared_with && doc.shared_with.includes(user.id));
+      if (!hasAccess) {
+        return failure('You do not have permission to access this file', 403);
+      }
+      if (!doc.file_path) {
+        return failure('No file attached to this document', 404);
+      }
+      try {
+        const fileUrl = storage.getFileView({
+          bucketId: 'documents',
+          fileId: doc.file_path,
+        });
+        return success({
+          data: fileUrl,
+          name: doc.title,
+          mime_type: doc.mime_type,
+        });
+      } catch (e) {
+        console.error('Storage error:', e);
+        return failure('File not found', 404);
+      }
+    }
+
     // SINGLE DOCUMENT
     if (path.startsWith('api/documents/') && path !== 'api/documents/') {
       const id = path.split('/').filter(Boolean).pop();
       const { data, error } = await db.get(COLLECTIONS.DOCUMENTS, id);
       if (error) throw error;
+      // Access control
+      const user = await getCurrentUser();
+      const hasAccess =
+        data.organization_id === (user.organization_id || user.id) ||
+        data.owner === user.id ||
+        (data.shared_with && data.shared_with.includes(user.id));
+      if (!hasAccess) {
+        return failure('You do not have permission to view this document', 403);
+      }
       const enriched = await enrichDocument(data);
       return success(enriched);
     }
@@ -305,7 +372,7 @@ export const appwriteApi = {
 
       return success({
         ...userData,
-        id: userData.$id,
+        id: userData.id,
         username: userData.username || userData.name || userData.email,
         role: finalRole,
       });
@@ -417,9 +484,9 @@ export const appwriteApi = {
       const transactions = [];
       invoices?.forEach((inv) => {
         transactions.push({
-          id: inv.$id,
+          id: inv.id,
           date: (inv.created_at || '').split('T')[0],
-          description: `Invoice #${inv.invoice_number || inv.$id}`,
+          description: `Invoice #${inv.invoice_number || inv.id}`,
           amount: Number(inv.total_amount || 0),
           type: 'income',
           status: inv.status,
@@ -427,7 +494,7 @@ export const appwriteApi = {
       });
       expenses?.forEach((exp) => {
         transactions.push({
-          id: exp.$id,
+          id: exp.id,
           date: (exp.date || '').split('T')[0],
           description: exp.title || 'Expense',
           amount: Number(exp.amount || 0),
@@ -491,7 +558,7 @@ export const appwriteApi = {
         return isValidRole && item.organization_id === user?.organization_id;
       });
 
-      return success({ results: filtered.map((doc) => ({ ...doc, id: doc.$id })) });
+      return success({ results: filtered.map((doc) => ({ ...doc, id: doc.id })) });
     }
 
     // HR: INVITES
@@ -546,7 +613,7 @@ export const appwriteApi = {
       const { data, error } = await db.list(COLLECTIONS.USERS);
       if (error) throw error;
       const results = data.map((u) => ({
-        id: u.$id,
+        id: u.id,
         username: u.username || u.name || u.email,
         email: u.email,
         role: u.role || 'individual',
@@ -554,6 +621,37 @@ export const appwriteApi = {
         created_at: u.created_at,
       }));
       return success({ results });
+    }
+
+    // ADMIN: GET SETTINGS (auto-creates default if missing)
+    if (path === 'admin/') {
+      const user = getCurrentUser();
+      if (!user || !['admin', 'administrator'].includes(user.role.toLowerCase())) {
+        throw Object.assign(new Error('Forbidden'), {
+          response: { status: 403, data: { message: 'Admin access required' } },
+        });
+      }
+      const { data, error } = await db.get(COLLECTIONS.ADMIN_SETTINGS, 'default');
+      if (error) {
+        // Create default settings if not exist
+        const { data: newData, error: createErr } = await db.create(
+          COLLECTIONS.ADMIN_SETTINGS,
+          {
+            id: 'default',
+            case_status: false,
+            case_assignment: false,
+            progress_tracking: false,
+            milestones: false,
+            client_fields: false,
+            client_portal_access: false,
+            updated_at: new Date().toISOString(),
+          },
+          'default'
+        );
+        if (createErr) throw createErr;
+        return success(newData);
+      }
+      return success(data);
     }
 
     return failure(`GET ${path} not implemented`, 404);
@@ -710,7 +808,7 @@ export const appwriteApi = {
           console.error('Organization creation error:', orgErr);
           return failure('Unable to create organization', 400, orgErr);
         }
-        resolvedOrganizationId = org.organization_id || org.$id;
+        resolvedOrganizationId = org.organization_id || org.id;
         localStorage.setItem('organization_id', resolvedOrganizationId);
         organization_id = resolvedOrganizationId;
       }
@@ -824,7 +922,7 @@ export const appwriteApi = {
       }
 
       // Update invite status
-      await db.update(COLLECTIONS.INVITES, invite.$id, { status: 'accepted' });
+      await db.update(COLLECTIONS.INVITES, invite.id, { status: 'accepted' });
 
       // Create user profile in users collection
       const userData = {
@@ -859,6 +957,42 @@ export const appwriteApi = {
       }
     }
 
+    // VERIFY TOKEN
+    if (path === 'auth/verify-token/') {
+      try {
+        const session = await account.get();
+        if (!session || !session.userId) {
+          return failure('Invalid token', 401);
+        }
+        const { data: userProfile, error: userErr } = await db.get(
+          COLLECTIONS.USERS,
+          session.userId
+        );
+        if (userErr) throw userErr;
+        return success({
+          user: {
+            id: userProfile.id,
+            email: session.email,
+            username: userProfile.username,
+            role: userProfile.role,
+            organization_id: userProfile.organization_id,
+          },
+        });
+      } catch (error) {
+        return failure('Invalid token', 401);
+      }
+    }
+
+    // LOGOUT
+    if (path === 'auth/logout/') {
+      try {
+        await auth.deleteSession();
+        return success({ detail: 'Logged out successfully.' });
+      } catch (error) {
+        return failure('Logout failed', 400);
+      }
+    }
+
     // CREATE CASE
     if (path === 'case/') {
       const { data, error } = await db.create(COLLECTIONS.CASES, {
@@ -890,34 +1024,58 @@ export const appwriteApi = {
       return success(enriched, 201);
     }
 
-    // CREATE DOCUMENT
+    // CREATE DOCUMENT (with optional file upload to Appwrite Storage)
     if (path === 'document_management/api/documents/') {
       const title = payload.get ? payload.get('title') : payload.title;
       const description = payload.get ? payload.get('description') : payload.description;
-      const owner = payload.get ? Number(payload.get('owner')) : Number(payload.owner);
+      const owner = payload.get ? payload.get('owner') : payload.owner;
       const shared_with = payload.getAll
-        ? payload.getAll('shared_with').map(Number)
+        ? payload.getAll('shared_with')
         : payload.shared_with || [];
 
-      const { data, error } = await db.create(COLLECTIONS.DOCUMENTS, {
+      // Upload file to Appwrite Storage if present
+      let fileId = null;
+      let fileSize = 0;
+      let mimeType = 'application/octet-stream';
+      const file = payload.get ? payload.get('file') : payload.file;
+      if (file) {
+        try {
+          const upload = await storage.createFile({
+            bucketId: 'documents',
+            fileId: ID.unique(),
+            file,
+            permissions: ['role:users'],
+          });
+          fileId = upload.$id;
+          fileSize = upload.sizeOriginal || 0;
+          mimeType = upload.mimeType || 'application/octet-stream';
+        } catch (e) {
+          console.error('Storage upload failed:', e);
+          return failure('File upload failed', 500);
+        }
+      }
+
+      const docData = {
         title,
         description,
         owner,
         shared_with,
-        file_path: 'local://uploaded-document',
-        file_size: 0,
-        mime_type: 'application/octet-stream',
+        file_path: fileId,
+        file_size: fileSize,
+        mime_type: mimeType,
         organization_id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      });
+      };
+
+      const { data, error } = await db.create(COLLECTIONS.DOCUMENTS, docData);
       if (error) throw error;
       const enriched = await enrichDocument(data);
       return success(enriched, 201);
     }
 
     // CREATE INVOICE
-    if (path === 'api/invoices') {
+    if (path === 'invoices' || path === 'invoices/') {
       const invoiceData = {
         invoice_number: `INV-${Date.now()}`,
         client_name: payload.clientName,
@@ -1008,7 +1166,7 @@ export const appwriteApi = {
 
       return success(
         {
-          id: data.$id,
+          id: data.id,
           name: data.username,
           email: data.email,
           role: data.role,
@@ -1057,9 +1215,9 @@ export const appwriteApi = {
 
     // CHATS: CREATE ROOM
     if (path === 'chats/create-or-get-chat-room/') {
-      const first = Number(payload.user_id);
-      const second = Number(payload.other_user_id);
-      const roomName = `room-${[first, second].sort((a, b) => a - b).join('-')}`;
+      const first = String(payload.user_id);
+      const second = String(payload.other_user_id);
+      const roomName = `room-${[first, second].sort((a, b) => a.localeCompare(b)).join('-')}`;
 
       // Check existing
       const { data: existing, error: findErr } = await db.list(COLLECTIONS.CHAT_ROOMS, [
@@ -1087,7 +1245,7 @@ export const appwriteApi = {
       if (payload instanceof FormData) {
         messageContent = payload.get('message');
         room = payload.get('room');
-        senderId = Number(payload.get('sender_id'));
+        senderId = String(payload.get('sender_id'));
         payload.forEach((value, key) => {
           if (key === 'attachments') {
             attachments.push({ name: value.name, size: value.size, type: value.type });
@@ -1096,7 +1254,24 @@ export const appwriteApi = {
       } else {
         messageContent = payload.message;
         room = payload.room;
-        senderId = Number(payload.sender_id);
+        senderId = String(payload.sender_id);
+      }
+
+      const { data, error } = await db.create(COLLECTIONS.CHAT_MESSAGES, {
+        room,
+        sender: senderId,
+        content: messageContent,
+        timestamp: new Date().toISOString(),
+        attachments: attachments.length > 0 ? attachments : undefined,
+      });
+      if (error) throw error;
+      return success(data, 201);
+    }
+        });
+      } else {
+        messageContent = payload.message;
+        room = payload.room;
+        senderId = String(payload.sender_id);
       }
 
       const { data, error } = await db.create(COLLECTIONS.CHAT_MESSAGES, {
@@ -1120,7 +1295,7 @@ export const appwriteApi = {
       if (error) throw error;
       return success({
         success: true,
-        checkout_request_id: payload.payment_method === 'mpesa' ? `mpesa-${data.$id}` : null,
+        checkout_request_id: payload.payment_method === 'mpesa' ? `mpesa-${data.id}` : null,
         message: 'Subscription started.',
       });
     }
@@ -1259,8 +1434,8 @@ export const appwriteApi = {
       const id = parts[1];
       const { data, error } = await db.update(COLLECTIONS.CASES, id, {
         ...payload,
-        client_id: Number(payload.individual ?? payload.client_id),
-        court_id: Number(payload.court ?? payload.court_id),
+        client_id: payload.individual ?? payload.client_id, // keep as string
+        court_id: payload.court ? Number(payload.court) : payload.court_id, // integer
       });
       if (error) throw error;
       const enriched = await enrichCase(data);
@@ -1272,8 +1447,8 @@ export const appwriteApi = {
       const id = parts[parts.length - 1];
       const { data, error } = await db.update(COLLECTIONS.TASKS, id, {
         ...payload,
-        assigned_to: Number(payload.assigned_to),
-        case_id: payload.case ? Number(payload.case) : undefined,
+        assigned_to: payload.assigned_to, // keep as string ID
+        case_id: payload.case ? String(payload.case) : undefined, // keep as string ID
       });
       if (error) throw error;
       const enriched = await enrichTask(data);
@@ -1281,8 +1456,19 @@ export const appwriteApi = {
     }
 
     // UPDATE DOCUMENT
-    if (path.startsWith('api/documents/')) {
+    if (path.startsWith('api/documents/') && !path.endsWith('/file/')) {
       const id = parts[2];
+      // Check permissions: fetch existing document
+      const { data: existing, error: fetchErr } = await db.get(COLLECTIONS.DOCUMENTS, id);
+      if (fetchErr) throw fetchErr;
+      const user = await getCurrentUser();
+      const hasAccess =
+        existing.organization_id === (user.organization_id || user.id) ||
+        existing.owner === user.id ||
+        (existing.shared_with && existing.shared_with.includes(user.id));
+      if (!hasAccess) {
+        return failure('You do not have permission to edit this document', 403);
+      }
       const { data, error } = await db.update(COLLECTIONS.DOCUMENTS, id, {
         ...payload,
         updated_at: new Date().toISOString(),
@@ -1306,7 +1492,7 @@ export const appwriteApi = {
       }
       const { data, error } = await db.update(COLLECTIONS.USERS, id, updateData);
       if (error) throw error;
-      return success({ ...data, id: data.$id, username: data.username });
+      return success({ ...data, id: data.id, username: data.username });
     }
 
     // UPDATE SETTINGS
@@ -1348,6 +1534,17 @@ export const appwriteApi = {
     // DELETE DOCUMENT
     if (path.startsWith('document') || path.startsWith('api/document')) {
       const id = parts[parts.length - 1];
+      // Check permissions: fetch document
+      const { data: doc, error: fetchErr } = await db.get(COLLECTIONS.DOCUMENTS, id);
+      if (fetchErr) throw fetchErr;
+      const user = await getCurrentUser();
+      const hasAccess =
+        doc.organization_id === (user.organization_id || user.id) ||
+        doc.owner === user.id ||
+        (doc.shared_with && doc.shared_with.includes(user.id));
+      if (!hasAccess) {
+        return failure('You do not have permission to delete this document', 403);
+      }
       const { error } = await db.delete(COLLECTIONS.DOCUMENTS, id);
       if (error) throw error;
       return success({ success: true });

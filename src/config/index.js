@@ -25,10 +25,6 @@ export const APPWRITE_CONFIG = {
     import.meta.env.APPWRITE_PROJECT_ID ||
     import.meta.env.VITE_APPWRITE_PROJECT_ID ||
     import.meta.env.REACT_APP_APPWRITE_PROJECT_ID,
-  API_KEY:
-    import.meta.env.APPWRITE_API_KEY ||
-    import.meta.env.VITE_APPWRITE_API_KEY ||
-    import.meta.env.REACT_APP_APPWRITE_API_KEY,
   DATABASE_ID:
     import.meta.env.APPWRITE_DATABASE_ID ||
     import.meta.env.VITE_APPWRITE_DATABASE_ID ||
@@ -67,10 +63,8 @@ export const FEATURES = {
 export const validateConfig = () => {
   const errors = [];
 
-  if (USE_APPWRITE && (!APPWRITE_CONFIG.PROJECT_ID || !APPWRITE_CONFIG.API_KEY)) {
-    errors.push(
-      'APPWRITE_PROJECT_ID and APPWRITE_API_KEY are required when DATABASE_MODE=appwrite'
-    );
+  if (USE_APPWRITE && !APPWRITE_CONFIG.PROJECT_ID) {
+    errors.push('APPWRITE_PROJECT_ID is required when DATABASE_MODE=appwrite');
   }
 
   if (USE_SUPABASE && (!SUPABASE_CONFIG.URL || !SUPABASE_CONFIG.ANON_KEY)) {

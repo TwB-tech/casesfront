@@ -1,0 +1,451 @@
+{
+  "version": "2",
+  "project": {
+    "name": "wakiliworld",
+    "description": "WakiliWorld Legal Practice Management System",
+    "team": "",
+    "teamRole": ""
+  },
+  "database": {
+    "name": "wakiliworld-db"
+  },
+  "collections": [
+    {
+      "name": "organizations",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "name", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "registration_number",
+          "type": "string",
+          "size": 255,
+          "required": false,
+          "default": ""
+        },
+        { "key": "address", "type": "string", "size": 1000, "required": false, "default": "" },
+        { "key": "phone", "type": "string", "size": 50, "required": false, "default": "" },
+        { "key": "email", "type": "string", "size": 255, "required": false, "default": "" },
+        { "key": "plan_type", "type": "string", "size": 50, "required": false, "default": "free" },
+        { "key": "is_verified", "type": "boolean", "required": false, "default": false },
+        { "key": "created_at", "type": "datetime", "required": false },
+        { "key": "updated_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:admin"]
+      }
+    },
+    {
+      "name": "users",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "organization_id",
+          "type": "string",
+          "size": 255,
+          "required": false,
+          "default": ""
+        },
+        { "key": "username", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "email", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "phone", "type": "string", "size": 50, "required": false, "default": "" },
+        { "key": "role", "type": "string", "size": 50, "required": false, "default": "individual" },
+        { "key": "title", "type": "string", "size": 255, "required": false, "default": "" },
+        { "key": "bio", "type": "string", "size": 2000, "required": false, "default": "" },
+        { "key": "practice_areas", "type": "string", "array": true, "required": false },
+        { "key": "timezone", "type": "string", "size": 50, "required": false, "default": "EAT" },
+        { "key": "status", "type": "string", "size": 50, "required": false, "default": "Active" },
+        { "key": "messaging_enabled", "type": "boolean", "required": false, "default": true },
+        { "key": "deadline_notifications", "type": "boolean", "required": false, "default": true },
+        { "key": "created_at", "type": "datetime", "required": false },
+        { "key": "updated_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:any"]
+      }
+    },
+    {
+      "name": "courts",
+      "attributes": [
+        { "key": "id", "type": "integer", "required": true, "default": 0 },
+        { "key": "name", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "jurisdiction", "type": "string", "size": 100, "required": false, "default": "" },
+        { "key": "address", "type": "string", "size": 500, "required": false, "default": "" },
+        { "key": "created_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:admin"]
+      }
+    },
+    {
+      "name": "cases",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "organization_id",
+          "type": "string",
+          "size": 255,
+          "required": true,
+          "default": ""
+        },
+        { "key": "case_number", "type": "string", "size": 100, "required": true, "default": "" },
+        { "key": "title", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "description", "type": "string", "size": 2000, "required": false, "default": "" },
+        { "key": "status", "type": "string", "size": 50, "required": false, "default": "open" },
+        { "key": "start_date", "type": "string", "size": 20, "required": false, "default": "" },
+        { "key": "end_date", "type": "string", "size": 20, "required": false, "default": "" },
+        { "key": "client_id", "type": "string", "size": 255, "required": false, "default": "" },
+        { "key": "advocate_id", "type": "string", "size": 255, "required": false, "default": "" },
+        { "key": "court_id", "type": "integer", "required": false, "default": 0 },
+        { "key": "created_by", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "created_at", "type": "datetime", "required": false },
+        { "key": "updated_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:any"]
+      }
+    },
+    {
+      "name": "tasks",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "organization_id",
+          "type": "string",
+          "size": 255,
+          "required": true,
+          "default": ""
+        },
+        { "key": "title", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "description", "type": "string", "size": 1000, "required": false, "default": "" },
+        { "key": "assigned_to", "type": "string", "size": 255, "required": false, "default": "" },
+        { "key": "case_id", "type": "string", "size": 255, "required": false, "default": "" },
+        { "key": "priority", "type": "string", "size": 50, "required": false, "default": "low" },
+        { "key": "deadline", "type": "datetime", "required": false },
+        { "key": "status", "type": "boolean", "required": false, "default": false },
+        { "key": "created_by", "type": "string", "size": 255, "required": false, "default": "" },
+        { "key": "created_at", "type": "datetime", "required": false },
+        { "key": "updated_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:any"]
+      }
+    },
+    {
+      "name": "documents",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "organization_id",
+          "type": "string",
+          "size": 255,
+          "required": true,
+          "default": ""
+        },
+        { "key": "title", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "description", "type": "string", "size": 1000, "required": false, "default": "" },
+        { "key": "owner", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "file_path", "type": "string", "size": 1000, "required": false, "default": "" },
+        { "key": "file_size", "type": "integer", "required": false, "default": 0 },
+        { "key": "mime_type", "type": "string", "size": 100, "required": false, "default": "" },
+        { "key": "shared_with", "type": "string", "array": true, "required": false },
+        { "key": "created_at", "type": "datetime", "required": false },
+        { "key": "updated_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:any"]
+      }
+    },
+    {
+      "name": "communications",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "organization_id",
+          "type": "string",
+          "size": 255,
+          "required": true,
+          "default": ""
+        },
+        { "key": "email", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "subject", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "message", "type": "string", "size": 5000, "required": true, "default": "" },
+        {
+          "key": "google_meet_link",
+          "type": "string",
+          "size": 500,
+          "required": false,
+          "default": ""
+        },
+        { "key": "created_by", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "created_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:any"]
+      }
+    },
+    {
+      "name": "invites",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "email", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "role", "type": "string", "size": 50, "required": false, "default": "employee" },
+        { "key": "department", "type": "string", "size": 100, "required": false, "default": "" },
+        {
+          "key": "organization_id",
+          "type": "string",
+          "size": 255,
+          "required": true,
+          "default": ""
+        },
+        { "key": "status", "type": "string", "size": 50, "required": false, "default": "pending" },
+        { "key": "invited_by", "type": "string", "size": 255, "required": false, "default": "" },
+        { "key": "token", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "expires_at", "type": "datetime", "required": true },
+        { "key": "created_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:admin", "role:advocate"],
+        "write": ["role:admin"]
+      }
+    },
+    {
+      "name": "invoices",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "organization_id",
+          "type": "string",
+          "size": 255,
+          "required": true,
+          "default": ""
+        },
+        { "key": "invoice_number", "type": "string", "size": 100, "required": true, "default": "" },
+        { "key": "client_name", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "client_address",
+          "type": "string",
+          "size": 500,
+          "required": false,
+          "default": ""
+        },
+        { "key": "crn", "type": "string", "size": 100, "required": false, "default": "" },
+        { "key": "total_amount", "type": "double", "required": false, "default": 0 },
+        { "key": "amount_due", "type": "double", "required": false, "default": 0 },
+        { "key": "tax", "type": "double", "required": false, "default": 0 },
+        { "key": "items", "type": "string", "required": false, "default": "[]" },
+        {
+          "key": "account_number",
+          "type": "string",
+          "size": 100,
+          "required": false,
+          "default": ""
+        },
+        { "key": "account_name", "type": "string", "size": 255, "required": false, "default": "" },
+        { "key": "bank_detail", "type": "string", "size": 500, "required": false, "default": "" },
+        { "key": "terms", "type": "string", "size": 2000, "required": false, "default": "" },
+        { "key": "signature", "type": "string", "required": false, "default": "" },
+        { "key": "status", "type": "string", "size": 50, "required": false, "default": "" },
+        { "key": "date", "type": "string", "size": 20, "required": false, "default": "" },
+        { "key": "created_at", "type": "datetime", "required": false },
+        { "key": "updated_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:admin"]
+      }
+    },
+    {
+      "name": "invoice_items",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "invoice_id", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "description", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "quantity", "type": "integer", "required": false, "default": 0 },
+        { "key": "unit_price", "type": "double", "required": false, "default": 0 },
+        { "key": "total", "type": "double", "required": false, "default": 0 }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:any"]
+      }
+    },
+    {
+      "name": "chat_rooms",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "organization_id",
+          "type": "string",
+          "size": 255,
+          "required": false,
+          "default": ""
+        },
+        { "key": "room_name", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "participants", "type": "string", "array": true, "required": true },
+        { "key": "created_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:any"]
+      }
+    },
+    {
+      "name": "chat_messages",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "room", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "sender", "type": "integer", "required": true, "default": 0 },
+        { "key": "content", "type": "string", "size": 5000, "required": true, "default": "" },
+        { "key": "timestamp", "type": "datetime", "required": true },
+        { "key": "attachments", "type": "string", "array": true, "required": false },
+        { "key": "created_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:any"]
+      }
+    },
+    {
+      "name": "audit_logs",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "organization_id",
+          "type": "string",
+          "size": 255,
+          "required": false,
+          "default": ""
+        },
+        { "key": "user_id", "type": "string", "size": 255, "required": false, "default": "" },
+        { "key": "action", "type": "string", "size": 100, "required": true, "default": "" },
+        { "key": "table_name", "type": "string", "size": 100, "required": true, "default": "" },
+        { "key": "record_id", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "changes", "type": "string", "size": 5000, "required": false, "default": "" },
+        { "key": "user_agent", "type": "string", "size": 500, "required": false, "default": "" },
+        { "key": "created_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:admin"],
+        "write": ["role:admin"]
+      }
+    },
+    {
+      "name": "expenses",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "organization_id",
+          "type": "string",
+          "size": 255,
+          "required": true,
+          "default": ""
+        },
+        { "key": "title", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "description", "type": "string", "size": 1000, "required": false, "default": "" },
+        { "key": "amount", "type": "double", "required": true, "default": 0 },
+        { "key": "date", "type": "string", "size": 20, "required": true, "default": "" },
+        { "key": "category", "type": "string", "size": 100, "required": false, "default": "" },
+        { "key": "status", "type": "string", "size": 50, "required": false, "default": "pending" },
+        { "key": "submitted_by", "type": "string", "size": 255, "required": false, "default": "" },
+        { "key": "created_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:any"]
+      }
+    },
+    {
+      "name": "payroll_runs",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "organization_id",
+          "type": "string",
+          "size": 255,
+          "required": true,
+          "default": ""
+        },
+        { "key": "total_amount", "type": "double", "required": true, "default": 0 },
+        { "key": "period_start", "type": "string", "size": 20, "required": true, "default": "" },
+        { "key": "period_end", "type": "string", "size": 20, "required": true, "default": "" },
+        { "key": "status", "type": "string", "size": 50, "required": false, "default": "" },
+        { "key": "created_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:admin", "role:hr"],
+        "write": ["role:admin"]
+      }
+    },
+    {
+      "name": "admin_settings",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        { "key": "case_status", "type": "boolean", "required": false, "default": false },
+        { "key": "case_assignment", "type": "boolean", "required": false, "default": false },
+        { "key": "progress_tracking", "type": "boolean", "required": false, "default": false },
+        { "key": "milestones", "type": "boolean", "required": false, "default": false },
+        { "key": "client_fields", "type": "boolean", "required": false, "default": false },
+        { "key": "client_portal_access", "type": "boolean", "required": false, "default": false },
+        { "key": "updated_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:admin"],
+        "write": ["role:admin"]
+      }
+    },
+    {
+      "name": "subscriptions",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "organization_id",
+          "type": "string",
+          "size": 255,
+          "required": true,
+          "default": ""
+        },
+        { "key": "payment_method", "type": "string", "size": 50, "required": false, "default": "" },
+        { "key": "status", "type": "string", "size": 50, "required": false, "default": "" },
+        {
+          "key": "current_period_end",
+          "type": "string",
+          "size": 20,
+          "required": false,
+          "default": ""
+        },
+        { "key": "created_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:admin"]
+      }
+    },
+    {
+      "name": "onboarding",
+      "attributes": [
+        { "key": "id", "type": "string", "size": 255, "required": true, "default": "" },
+        {
+          "key": "organization_id",
+          "type": "string",
+          "size": 255,
+          "required": true,
+          "default": ""
+        },
+        { "key": "step", "type": "string", "size": 100, "required": true, "default": "" },
+        { "key": "completed", "type": "boolean", "required": false, "default": false },
+        { "key": "created_at", "type": "datetime", "required": false }
+      ],
+      "permissions": {
+        "read": ["role:any"],
+        "write": ["role:any"]
+      }
+    }
+  ]
+}

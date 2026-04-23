@@ -11,13 +11,11 @@ const isAppwriteMode = dbMode === 'appwrite';
 // Configuration (only used in Appwrite mode)
 const endpoint = import.meta.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
 const projectId = import.meta.env.APPWRITE_PROJECT_ID;
-const apiKey = import.meta.env.APPWRITE_API_KEY;
 
 // Validate only when in Appwrite mode
-if (isAppwriteMode && (!projectId || !apiKey)) {
+if (isAppwriteMode && !projectId) {
   throw new Error(
-    'APPWRITE_PROJECT_ID and APPWRITE_API_KEY are required when DATABASE_MODE=appwrite. ' +
-      'Set them in .env.local or .env'
+    'APPWRITE_PROJECT_ID is required when DATABASE_MODE=appwrite. ' + 'Set it in .env.local or .env'
   );
 }
 
@@ -29,10 +27,10 @@ let storage = null;
 let functions = null;
 
 if (isAppwriteMode) {
-  client = new Client().setEndpoint(endpoint).setProject(projectId);
-  if (apiKey) {
-    client.setKey(apiKey);
-  }
+  client = new Client();
+  client.setEndpoint(endpoint);
+  client.setProject(projectId);
+  // No JWT set here — user sessions are managed by Account methods
   account = new Account(client);
   databases = new Databases(client);
   storage = new Storage(client);
@@ -40,7 +38,7 @@ if (isAppwriteMode) {
 }
 
 // Database ID (use 'default' or set via env)
-export const DATABASE_ID = import.meta.env.APPWRITE_DATABASE_ID || 'wakiliworld-db';
+export const DATABASE_ID = import.meta.env.APPWRITE_DATABASE_ID || 'default';
 
 // Collection/Table mappings (match Supabase TABLES)
 export const COLLECTIONS = {
@@ -210,10 +208,35 @@ export const db = {
   },
 
   // LIST documents with optional filters
+  // Auto-applies organization isolation for org-scoped collections
   async list(collection, queries = []) {
     try {
-      const orgQueries = withOrganization(queries, getCurrentUser()?.id);
-      const result = await databases.listDocuments(DATABASE_ID, collection, orgQueries);
+      // Collections that have organization_id field and need org isolation
+      const ORG_SCOPED = new Set([
+        'organizations',
+        'users',
+        'cases',
+        'tasks',
+        'documents',
+        'communications',
+        'invoices',
+        'invoice_items',
+        'chat_rooms',
+        'audit_logs',
+        'expenses',
+        'payroll_runs',
+        'subscriptions',
+        'onboarding',
+        'invites',
+        // 'courts' is global, not org-scoped
+      ]);
+
+      const userId = getCurrentUser()?.id;
+      if (ORG_SCOPED.has(collection)) {
+        queries = withOrganization(queries, userId);
+      }
+
+      const result = await databases.listDocuments(DATABASE_ID, collection, queries);
       const documents = result.documents.map((doc) => this.normalize(doc));
       return { data: documents };
     } catch (error) {
@@ -300,10 +323,12 @@ export const logAudit = async (action, tableName, recordId, changes = {}) => {
 // DEFAULT EXPORT BUNDLE
 // ============================================
 export default {
+  client,
   account,
   databases,
   storage,
   functions,
+  Query,
   COLLECTIONS,
   DATABASE_ID,
   BUCKETS,

@@ -46,13 +46,20 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "node tests/rest-integration-test.js",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,json,css,md}\"",
     "analyze": "source-map-explorer 'dist/assets/*.js'",
     "security:check": "node scripts/security-check.js",
     "license:generate": "node scripts/generate-license.js",
-    "deploy:free": "node scripts/deploy-free.js"
+    "deploy:free": "node scripts/deploy-free.js",
+    "db:setup": "node scripts/setup-appwrite.js",
+    "db:migrate": "node scripts/migrate-to-appwrite.js",
+    "db:test": "node scripts/test-appwrite-connection.js",
+    "db:storage": "node scripts/setup-appwrite-storage.js",
+    "db:export": "appwrite export-collections --database-id default --file ./backups/appwrite-backup.json",
+    "db:import": "appwrite import-collections --file ./schemas/appwrite-schema.json"
   },
   "devDependencies": {
     "@babel/plugin-transform-private-property-in-object": "^7.24.7",
