@@ -184,7 +184,7 @@ export const withOrganization = (queries = [], userId = null) => {
         Query.equal('assigned_to', userId),
         Query.equal('created_by', userId),
         Query.equal('owner', userId),
-        Query.arrayContains('shared_with', userId)
+        Query.contains('shared_with', userId)
       )
     );
   }

@@ -836,6 +836,16 @@ export const appwriteApi = {
         return failure('Registration failed', 400, createErr);
       }
 
+      // Create an email session so we can create organization as authenticated user
+      const { data: sessionData, error: sessionErr } = await auth.createEmailSession(
+        payload.email.trim(),
+        payload.password
+      );
+      if (sessionErr) {
+        console.warn('Failed to create session for new user:', sessionErr);
+        // Continue anyway - org creation may fail due to permissions
+      }
+
       // Create user profile in 'users' collection
       const userProfile = {
         id: newUser.user.$id,

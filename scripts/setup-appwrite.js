@@ -402,8 +402,10 @@ async function ensureCollection(def) {
     read: def.permissions.read,
     write: def.permissions.write,
   };
-  await api('POST', `/databases/${databaseId}/collections`, payload);
+  console.log('    CREATE PAYLOAD:', JSON.stringify(payload, null, 2));
+  const result = await api('POST', `/databases/${databaseId}/collections`, payload);
   log.success(`  ✓ Created collection ${def.name}`);
+  console.log('    CREATE RESULT $permissions:', result.$permissions);
 }
 
 async function ensureAttributes(collectionName, attributes) {
@@ -489,8 +491,26 @@ async function main() {
     // ignore if not exists
   }
 
+  // Fix organizations collection: delete and recreate with public write permission
+  try {
+    await api('GET', `/databases/${databaseId}/collections/organizations`);
+    log.warn('  organizations exists - deleting to apply permission update...');
+    await api('DELETE', `/databases/${databaseId}/collections/organizations`);
+    log.success('  ✓ Deleted old organizations collection');
+  } catch (e) {
+    // ignore if not exists
+  }
+
   for (const coll of collections) {
     log.info(`Collection: ${coll.name}`);
+    if (coll.name === 'organizations') {
+      console.log(
+        '    ORG PERMISSIONS READ:',
+        coll.permissions.read,
+        'WRITE:',
+        coll.permissions.write
+      );
+    }
     try {
       await ensureCollection(coll);
       await ensureAttributes(coll.name, coll.attributes);
