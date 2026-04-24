@@ -289,7 +289,65 @@ npx vercel inspect <deployment-id> --logs
 
 ---
 
-## 12. File Reference Summary (for Training)
+## 12. Outstanding Manual Steps
+
+### Register Production Domain as Web Platform in Appwrite
+
+**Issue:** Browser console shows:
+
+```
+Access to fetch at 'https://tor.cloud.appwrite.io/v1/databases/.../collections/organizations/documents'
+from origin 'https://www.kwakorti.live' has been blocked by CORS policy:
+No 'Access-Control-Allow-Origin' header is present on the requested resource.
+```
+
+Appwrite requires that any web origin making API calls be registered as a **Web Platform** in the project.
+
+**Action Required:**
+
+1. Go to https://cloud.appwrite.io → Your Project → **Settings** → **Web Platforms**
+2. Click "Add Web Platform"
+3. Enter:
+   - **Name:** WakiliWorld Production
+   - **Hostname:** `www.kwakorti.live`
+4. Save
+
+After this, CORS will include `Access-Control-Allow-Origin: https://www.kwakorti.live` and the app will function correctly.
+
+**Note:** The automated scripts (`scripts/setup-appwrite.js`) have configured all collections, attributes, indexes, and permissions correctly. The `organizations` collection has `write: ['role:users']` and registration flow creates an authenticated session before writing, so no public write is needed.
+
+---
+
+## 13. Quick Reference — Common Commands
+
+```bash
+# Local dev
+npm run dev
+
+# Build
+npm run build
+
+# E2E tests
+npm run test:e2e
+
+# Appwrite DB setup (run once)
+npm run db:setup
+
+# Check Appwrite connection
+npm run db:test
+
+# Setup storage bucket
+npm run db:storage
+
+# Vercel deployment
+npx vercel --prod
+npx vercel ls
+npx vercel inspect <deployment-id> --logs
+```
+
+---
+
+## 14. File Reference Summary (for Training)
 
 - `src/lib/appwrite.js` — client init, db wrapper, org filter, auth helpers
 - `src/lib/appwriteApi.jsx` — all REST endpoints (GET/POST/PUT/DELETE) mapped to Appwrite
@@ -298,7 +356,8 @@ npx vercel inspect <deployment-id> --logs
 - `scripts/setup-appwrite.js` — creates collections, attributes, indexes, seed data
 - `tests/rest-integration-test.js` — full integration suite
 - `vercel.json` — Vercel configuration (rewrites for API, security headers, **no catch-all**)
+- `context.md` — this file; complete project knowledge base
 
 ---
 
-**End of context dump.** This document should provide future agents (or developers) with a complete understanding of the migration, the bug, and the solution.
+**End of context dump.** This document should provide future agents (or developers) with a complete understanding of the migration, the bug, the solution, and remaining manual steps.
