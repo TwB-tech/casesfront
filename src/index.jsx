@@ -18,11 +18,15 @@ import { LicenseProvider } from './contexts/LicenseContext.jsx';
 import LicenseVerification from './components/LicenseManager/LicenseVerification.jsx';
 import { initializeSentry } from './config/sentry';
 import { initializeSecurity } from './utils/enhancedSecurity';
+import { verifyConnection } from './lib/sdk/appwrite.js';
 
 initializeSentry();
 
 // Initialize enhanced security systems
 initializeSecurity();
+
+// Verify Appwrite connection on app startup
+verifyConnection().catch(console.error);
 
 window.addEventListener('error', (event) => {
   console.error('Global error caught:', event.error);
