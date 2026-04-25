@@ -787,92 +787,92 @@ export const appwriteApi = {
         return failure('This role must be provisioned by an administrator.', 403);
       }
 
-      let resolvedOrganizationId = payload.organization_id || null;
+       let resolvedOrganizationId = payload.organization_id || null;
 
-      // Create organization if firm/org role
-      if (
-        (requestedRole === 'firm' || requestedRole === 'organization') &&
-        !resolvedOrganizationId
-      ) {
-        if (!payload.username) {
-          return failure('Organization name is required', 400, {
-            username: ['Organization name is required'],
-          });
-        }
-        const { data: org, error: orgErr } = await db.create(COLLECTIONS.ORGANIZATIONS, {
-          name: payload.username,
-          email: payload.email,
-          plan_type: 'free',
-        });
-        if (orgErr || !org) {
-          console.error('Organization creation error:', orgErr);
-          return failure('Unable to create organization', 400, orgErr);
-        }
-        resolvedOrganizationId = org.organization_id || org.id;
-        localStorage.setItem('organization_id', resolvedOrganizationId);
-        organization_id = resolvedOrganizationId;
-      }
+       // Generate verification token
+       const verificationToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
 
-      // Generate verification token
-      const verificationToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+       // Create user in Appwrite
+       const { data: newUser, error: createErr } = await auth.create(
+         null,
+         payload.email.trim(),
+         payload.password,
+         payload.username.trim(),
+         {
+           role: requestedRole,
+           organization_id: resolvedOrganizationId,
+           verification_token: verificationToken,
+           email_verified: false,
+           status: 'Active',
+           created_at: new Date().toISOString(),
+         }
+       );
 
-      // Create user in Appwrite
-      const { data: newUser, error: createErr } = await auth.create(
-        null,
-        payload.email.trim(),
-        payload.password,
-        payload.username.trim(),
-        {
-          role: requestedRole,
-          organization_id: resolvedOrganizationId,
-          verification_token: verificationToken,
-          email_verified: false,
-          status: 'Active',
-          created_at: new Date().toISOString(),
-        }
-      );
+       if (createErr || !newUser) {
+         return failure('Registration failed', 400, createErr);
+       }
 
-      if (createErr || !newUser) {
-        return failure('Registration failed', 400, createErr);
-      }
+       // Create an email session so subsequent DB operations run as authenticated user
+       const { data: sessionData, error: sessionErr } = await auth.createEmailSession(
+         payload.email.trim(),
+         payload.password
+       );
+       if (sessionErr) {
+         console.error('Failed to create session for new user:', sessionErr);
+         return failure('Registration failed — could not create session', 400, sessionErr);
+       }
 
-      // Create an email session so we can create organization as authenticated user
-      const { data: sessionData, error: sessionErr } = await auth.createEmailSession(
-        payload.email.trim(),
-        payload.password
-      );
-      if (sessionErr) {
-        console.warn('Failed to create session for new user:', sessionErr);
-        // Continue anyway - org creation may fail due to permissions
-      }
+       // Create organization if firm/org role (requires authentication)
+       if (
+         (requestedRole === 'firm' || requestedRole === 'organization') &&
+         !resolvedOrganizationId
+       ) {
+         if (!payload.username) {
+           return failure('Organization name is required', 400, {
+             username: ['Organization name is required'],
+           });
+         }
+         const { data: org, error: orgErr } = await db.create(COLLECTIONS.ORGANIZATIONS, {
+           name: payload.username,
+           email: payload.email,
+           plan_type: 'free',
+         });
+         if (orgErr || !org) {
+           console.error('Organization creation error:', orgErr);
+           return failure('Unable to create organization', 400, orgErr);
+         }
+         resolvedOrganizationId = org.organization_id || org.id;
+         localStorage.setItem('organization_id', resolvedOrganizationId);
+         organization_id = resolvedOrganizationId;
+       }
 
-      // Create user profile in 'users' collection
-      const userProfile = {
-        id: newUser.user.$id,
-        username: payload.username.trim(),
-        email: payload.email.trim(),
-        role: requestedRole,
-        phone_number: payload.phone_number || '',
-        alternative_phone_number: payload.alternative_phone_number || '',
-        id_number: payload.id_number || payload.id_passport_number || '',
-        passport_number: payload.id_passport_number || '',
-        date_of_birth: payload.date_of_birth || '',
-        gender: payload.gender || 'Not set',
-        address: payload.address || '',
-        nationality: payload.nationality || 'Kenyan',
-        occupation: payload.occupation || '',
-        marital_status: payload.marital_status || '',
-        status: 'Active',
-        timezone: 'EAT',
-        messaging: true,
-        client_communication: true,
-        task_management: true,
-        deadline_notifications: true,
-        organization_id: resolvedOrganizationId,
-        created_at: new Date().toISOString(),
-      };
+       // Create user profile in 'users' collection
+       const userProfile = {
+         id: newUser.user.$id,
+         username: payload.username.trim(),
+         email: payload.email.trim(),
+         role: requestedRole,
+         phone_number: payload.phone_number || '',
+         alternative_phone_number: payload.alternative_phone_number || '',
+         id_number: payload.id_number || payload.id_passport_number || '',
+         passport_number: payload.id_passport_number || '',
+         date_of_birth: payload.date_of_birth || '',
+         gender: payload.gender || 'Not set',
+         address: payload.address || '',
+         nationality: payload.nationality || 'Kenyan',
+         occupation: payload.occupation || '',
+         marital_status: payload.marital_status || '',
+         status: 'Active',
+         timezone: 'EAT',
+         messaging: true,
+         client_communication: true,
+         task_management: true,
+         deadline_notifications: true,
+         organization_id: resolvedOrganizationId,
+         created_at: new Date().toISOString(),
+       };
 
-      await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
+       await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
 
       // Send verification email
       // TODO: Implement sendVerificationEmail function

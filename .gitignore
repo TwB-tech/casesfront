@@ -1,4 +1,5 @@
 node_modules
+dist
 build
 .kilo/
 coverage
@@ -14,12 +15,16 @@ coverage
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.DS_Store
-.env
 
 # Playwright
 /test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-/playwright/.auth/
+playwright-report/
+blob-report/
+playwright/.cache/
+playwright/.auth/
+
+.vercel
+
+# Backups (JSON files)
+backups/*.json
+

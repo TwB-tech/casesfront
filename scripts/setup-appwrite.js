@@ -508,16 +508,8 @@ async function main() {
        log.error(`  Failed: ${err.message}`);
      }
    }
-   }
-    try {
-      await ensureCollection(coll);
-      await ensureAttributes(coll.name, coll.attributes);
-    } catch (err) {
-      log.error(`  Failed: ${err.message}`);
-    }
-  }
 
-  log.info('\nCreating indexes...');
+   log.info('\nCreating indexes...');
   await ensureIndexes();
 
   console.log('\n\x1b[1m✅ Setup Complete!\x1b[0m');

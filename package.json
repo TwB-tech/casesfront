@@ -58,7 +58,7 @@
     "db:migrate": "node scripts/migrate-to-appwrite.js",
     "db:test": "node scripts/test-appwrite-connection.js",
     "db:storage": "node scripts/setup-appwrite-storage.js",
-    "db:export": "appwrite export-collections --database-id default --file ./backups/appwrite-backup.json",
+    "db:export": "node scripts/backup-appwrite.js",
     "db:import": "appwrite import-collections --file ./schemas/appwrite-schema.json"
   },
   "devDependencies": {

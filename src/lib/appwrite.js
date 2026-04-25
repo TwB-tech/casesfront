@@ -188,8 +188,30 @@ export const withOrganization = (queries = [], userId = null) => {
       )
     );
   }
-  return queries;
-};
+   return queries;
+ };
+
+// Collections that have organization_id field and need org isolation
+// Note: 'organizations' and 'courts' are excluded — they are top-level
+export const ORG_SCOPED = new Set([
+  'users',
+  'cases',
+  'tasks',
+  'documents',
+  'communications',
+  'invoices',
+  'invoice_items',
+  'chat_rooms',
+  'chat_messages',
+  'audit_logs',
+  'expenses',
+  'payroll_runs',
+  'admin_settings',
+  'subscriptions',
+  'onboarding',
+  'invites',
+  // 'courts' is global, not org-scoped
+]);
 
 // ============================================
 // CRUD OPERATIONS
@@ -207,43 +229,23 @@ export const db = {
     };
   },
 
-  // LIST documents with optional filters
-  // Auto-applies organization isolation for org-scoped collections
-  async list(collection, queries = []) {
-    try {
-      // Collections that have organization_id field and need org isolation
-      const ORG_SCOPED = new Set([
-        'organizations',
-        'users',
-        'cases',
-        'tasks',
-        'documents',
-        'communications',
-        'invoices',
-        'invoice_items',
-        'chat_rooms',
-        'audit_logs',
-        'expenses',
-        'payroll_runs',
-        'subscriptions',
-        'onboarding',
-        'invites',
-        // 'courts' is global, not org-scoped
-      ]);
+   // LIST documents with optional filters
+   // Auto-applies organization isolation for org-scoped collections
+   async list(collection, queries = []) {
+     try {
+       const userId = getCurrentUser()?.id;
+       if (ORG_SCOPED.has(collection)) {
+         queries = withOrganization(queries, userId);
+       }
 
-      const userId = getCurrentUser()?.id;
-      if (ORG_SCOPED.has(collection)) {
-        queries = withOrganization(queries, userId);
-      }
-
-      const result = await databases.listDocuments(DATABASE_ID, collection, queries);
-      const documents = result.documents.map((doc) => this.normalize(doc));
-      return { data: documents };
-    } catch (error) {
-      console.error(`Appwrite list ${collection}:`, error);
-      return { error, data: [] };
-    }
-  },
+       const result = await databases.listDocuments(DATABASE_ID, collection, queries);
+       const documents = result.documents.map((doc) => this.normalize(doc));
+       return { data: documents };
+     } catch (error) {
+       console.error(`Appwrite list ${collection}:`, error);
+       return { error, data: [] };
+     }
+   },
 
   // GET single document
   async get(collection, docId) {
@@ -255,23 +257,26 @@ export const db = {
     }
   },
 
-  // CREATE document
-  async create(collection, data, docId = ID.unique()) {
-    try {
-      const orgId = getCurrentOrganizationId();
-      const enriched = {
-        ...data,
-        organization_id: orgId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      const doc = await databases.createDocument(DATABASE_ID, collection, docId, enriched);
-      return { data: this.normalize(doc) };
-    } catch (error) {
-      console.error(`Appwrite create ${collection}:`, error);
-      return { error };
-    }
-  },
+   // CREATE document
+   async create(collection, data, docId = ID.unique()) {
+     try {
+       const orgId = getCurrentOrganizationId();
+       const enriched = {
+         ...data,
+         created_at: new Date().toISOString(),
+         updated_at: new Date().toISOString(),
+       };
+       // Only add organization_id for org-scoped collections
+       if (ORG_SCOPED.has(collection)) {
+         enriched.organization_id = orgId;
+       }
+       const doc = await databases.createDocument(DATABASE_ID, collection, docId, enriched);
+       return { data: this.normalize(doc) };
+     } catch (error) {
+       console.error(`Appwrite create ${collection}:`, error);
+       return { error };
+     }
+   },
 
   // UPDATE document
   async update(collection, docId, data) {
