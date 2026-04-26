@@ -9,8 +9,13 @@ const dbMode =
 const isAppwriteMode = dbMode === 'appwrite';
 
 // Configuration (only used in Appwrite mode)
-const endpoint = import.meta.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+const appwriteEndpoint = import.meta.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
 const projectId = import.meta.env.APPWRITE_PROJECT_ID;
+
+// In Vercel production, use same-origin proxy to avoid CORS
+// The proxy is at /api/appwrite-proxy and forwards to Appwrite
+const isProduction = import.meta.env.PROD;
+const endpoint = isProduction ? '/api/appwrite-proxy' : appwriteEndpoint;
 
 // Validate only when in Appwrite mode
 if (isAppwriteMode && !projectId) {

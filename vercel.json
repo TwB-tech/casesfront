@@ -9,6 +9,10 @@
       "destination": "/api/reya.js"
     },
     {
+      "source": "/api/appwrite-proxy/(.*)",
+      "destination": "/api/appwrite-proxy.js"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1.js"
     }
