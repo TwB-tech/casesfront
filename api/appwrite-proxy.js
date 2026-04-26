@@ -9,13 +9,19 @@ import { URL } from 'url';
  * Example:
  *   Request: GET /api/appwrite-proxy/account
  *   Proxies to: GET https://tor.cloud.appwrite.io/v1/account
- * 
- *   Request: POST /api/appwrite-proxy/databases/123/collections/users/documents
- *   Proxies to: POST https://.../databases/123/collections/users/documents
  */
 
+function collectBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', chunk => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
 export default async function handler(req, res) {
-  const { method, headers, body } = req;
+  const { method, headers } = req;
 
   // Parse URL to extract the path after /api/appwrite-proxy
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -50,6 +56,18 @@ export default async function handler(req, res) {
   // Build target URL to Appwrite
   const targetUrl = `${endpoint.replace(/\/$/, '')}/${appwritePath}${url.search}`;
 
+  // Collect request body if present
+  let reqBody = null;
+  if (method !== 'GET' && method !== 'HEAD' && headers['content-type']) {
+    try {
+      reqBody = await collectBody(req);
+    } catch (err) {
+      console.error('Failed to read request body:', err);
+      res.status(400).json({ error: 'Failed to read request body' });
+      return;
+    }
+  }
+
   // Prepare headers for Appwrite
   const appwriteHeaders = {
     'X-Appwrite-Project': projectId,
@@ -83,23 +101,17 @@ export default async function handler(req, res) {
     const appwriteRes = await fetch(targetUrl, {
       method,
       headers: appwriteHeaders,
-      body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
+      body: reqBody,
     });
 
-    // Parse response
-    let responseBody;
-    const contentType = appwriteRes.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      responseBody = await appwriteRes.json();
-    } else {
-      responseBody = await appwriteRes.text();
-    }
-
+    // Forward status and headers
+    res.status(appwriteRes.status);
+    
     // Set CORS headers for browser
     res.setHeader('Access-Control-Allow-Origin', 'https://www.kwakorti.live');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-
-    // Forward specific Appwrite headers
+    
+    // Forward important headers from Appwrite
     const forwardHeaders = [
       'x-appwrite-id',
       'x-appwrite-active',
@@ -119,12 +131,12 @@ export default async function handler(req, res) {
       }
     }
 
-    // Return response
-    res.status(appwriteRes.status);
-    if (contentType && contentType.includes('application/json')) {
-      res.json(responseBody);
+    // Stream response body directly
+    if (appwriteRes.body) {
+      appwriteRes.body.pipe(res);
     } else {
-      res.send(responseBody);
+      const text = await appwriteRes.text();
+      res.send(text);
     }
 
   } catch (error) {
