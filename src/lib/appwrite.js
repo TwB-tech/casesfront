@@ -15,7 +15,11 @@ const projectId = import.meta.env.APPWRITE_PROJECT_ID;
 // In Vercel production, use same-origin proxy to avoid CORS
 // The proxy is at /api/appwrite-proxy and forwards to Appwrite
 const isProduction = import.meta.env.PROD;
-const endpoint = isProduction ? '/api/appwrite-proxy' : appwriteEndpoint;
+let endpoint = appwriteEndpoint;
+if (isProduction && typeof window !== 'undefined') {
+  // Use absolute URL for the proxy in production
+  endpoint = `${window.location.origin}/api/appwrite-proxy`;
+}
 
 // Validate only when in Appwrite mode
 if (isAppwriteMode && !projectId) {
