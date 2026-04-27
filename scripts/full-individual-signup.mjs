@@ -54,39 +54,28 @@ async function main() {
   const sessionSecret = sessData.secret;
   console.log('Session secret length:', sessionSecret.length);
 
-  // Step 3: create user profile in users collection
-  console.log('\n3. Creating user profile in users collection...');
+  // Step 3: create user profile in users collection using wrapper format {documentId, data}
   const profile = {
     id: userId,
     username: username,
     email: email,
     role: 'individual',
-    phone_number: '',
-    alternative_phone_number: '',
-    id_number: '',
-    passport_number: '',
-    date_of_birth: '',
-    gender: 'Not set',
-    address: '',
-    nationality: 'Kenyan',
-    occupation: '',
-    marital_status: '',
-    status: 'Active',
+    phone: '',
     timezone: 'EAT',
-    messaging: true,
-    client_communication: true,
-    task_management: true,
+    status: 'Active',
+    messaging_enabled: true,
     deadline_notifications: true,
     organization_id: null,
-    created_at: new Date().toISOString()
   };
-  const profileRes = await fetch(`${proxy}/databases/${dbId}/collections/users/documents/${userId}`, {
-    method: 'PUT',
+
+  const createUrl = `${proxy}/databases/${dbId}/collections/users/documents`;
+  const createRes = await fetch(createUrl, {
+    method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-Appwrite-Session': sessionSecret
     },
-    body: JSON.stringify(profile),
+    body: JSON.stringify({ documentId: userId, data: profile }),
     signal: AbortSignal.timeout(15000)
   });
   console.log('Profile status:', profileRes.status);
