@@ -792,21 +792,13 @@ export const appwriteApi = {
        // Generate verification token
        const verificationToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
 
-       // Create user in Appwrite
-       const { data: newUser, error: createErr } = await auth.create(
-         null,
-         payload.email.trim(),
-         payload.password,
-         payload.username.trim(),
-         {
-           role: requestedRole,
-           organization_id: resolvedOrganizationId,
-           verification_token: verificationToken,
-           email_verified: false,
-           status: 'Active',
-           created_at: new Date().toISOString(),
-         }
-       );
+        // Create user in Appwrite (no metadata in prefs; store everything in users collection)
+        const { data: newUser, error: createErr } = await auth.create(
+          null,
+          payload.email.trim(),
+          payload.password,
+          payload.username.trim()
+        );
 
        if (createErr || !newUser) {
          return failure('Registration failed', 400, createErr);
