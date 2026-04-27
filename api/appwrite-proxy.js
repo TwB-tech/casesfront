@@ -59,23 +59,21 @@ export default async function handler(req, res) {
 
    // Collect request body if present
    let reqBody = null;
-   if (method !== 'GET' && method !== 'HEAD' && headers['content-type']) {
-     try {
-       reqBody = await collectBody(req);
-       // DEBUG: Log request body for /account endpoint
-       if (path === '/account' && process.env.NODE_ENV !== 'production') {
-         console.log('Proxy received body for /account:', reqBody.toString('utf8').substring(0, 300));
-       }
-     } catch (err) {
-       console.error('Failed to read request body:', err);
-       res.status(400).json({ error: 'Failed to read request body' });
-       return;
-     }
-   } else {
-     console.log('No body collection (method:', method, 'content-type:', headers['content-type'], ')');
-   } else {
-     console.log('No body collection (method:', method, 'content-type:', headers['content-type'], ')');
-   }
+    if (method !== 'GET' && method !== 'HEAD' && headers['content-type']) {
+      try {
+        reqBody = await collectBody(req);
+        // DEBUG: Log request body for /account endpoint
+        if (path === '/account') {
+          console.log('Proxy received body for /account:', reqBody.toString('utf8').substring(0, 300));
+        }
+      } catch (err) {
+        console.error('Failed to read request body:', err);
+        res.status(400).json({ error: 'Failed to read request body' });
+        return;
+      }
+    } else {
+      console.log('No body collection (method:', method, 'content-type:', headers['content-type'], ')');
+    }
 
    // Prepare headers for Appwrite
    const appwriteHeaders = {
