@@ -90,21 +90,17 @@ export const auth = {
     }
   },
 
-  async create(userId, email, password, username) {
-    try {
-      let user;
-      if (userId) {
-        // If userId is provided, use the 4-argument signature
-        user = await account.create(userId, email, password, username);
-      } else {
-        // Omit userId: use 3-argument signature, Appwrite will generate one
-        user = await account.create(email, password, username);
-      }
-      return { data: { user } };
-    } catch (error) {
-      return { error };
-    }
-  },
+   async create(userId, email, password, username) {
+     try {
+       // Always provide a userId. Appwrite SDK requires 4 arguments: (userId, email, password, name)
+       // If not provided, generate a secure unique ID.
+       const uid = userId || ID.unique();
+       const user = await account.create(uid, email, password, username);
+       return { data: { user } };
+     } catch (error) {
+       return { error };
+     }
+   },
 
   async get() {
     try {
