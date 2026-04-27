@@ -92,8 +92,14 @@ export const auth = {
 
   async create(userId, email, password, username) {
     try {
-      // Appwrite SDK expects positional arguments: userId, email, password, name
-      const user = await account.create(userId || ID.unique(), email, password, username);
+      let user;
+      if (userId) {
+        // If userId is provided, use the 4-argument signature
+        user = await account.create(userId, email, password, username);
+      } else {
+        // Omit userId: use 3-argument signature, Appwrite will generate one
+        user = await account.create(email, password, username);
+      }
       return { data: { user } };
     } catch (error) {
       return { error };

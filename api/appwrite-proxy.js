@@ -56,27 +56,23 @@ export default async function handler(req, res) {
   // Build target URL to Appwrite
   const targetUrl = `${endpoint.replace(/\/$/, '')}/${appwritePath}${url.search}`;
 
-   // Collect request body if present
-   let reqBody = null;
-   if (method !== 'GET' && method !== 'HEAD' && headers['content-type']) {
-     try {
-       reqBody = await collectBody(req);
-      // DEBUG: Log incoming request body for /account creation
-      if (path === '/account' && method === 'POST') {
-        console.log('Proxy received /account body:', reqBody.toString('utf8').substring(0, 300));
+    // Collect request body if present
+    let reqBody = null;
+    if (method !== 'GET' && method !== 'HEAD' && headers['content-type']) {
+      try {
+        reqBody = await collectBody(req);
+        // DEBUG: Log incoming request body for /account creation
+        if (appwritePath === 'account' && method === 'POST') {
+          console.log('Proxy received /account body:', reqBody.toString('utf8').substring(0, 300));
+        }
+      } catch (err) {
+        console.error('Failed to read request body:', err);
+        res.status(400).json({ error: 'Failed to read request body' });
+        return;
       }
-      // DEBUG: Log incoming request body for /account creation
-      if (path === '/account' && method === 'POST') {
-        console.log('Proxy received /account body:', reqBody.toString('utf8').substring(0, 300));
-      }
-     } catch (err) {
-       console.error('Failed to read request body:', err);
-       res.status(400).json({ error: 'Failed to read request body' });
-       return;
-     }
-   } else {
-     console.log('No body collection (method:', method, 'content-type:', headers['content-type'], ')');
-   }
+    } else {
+      console.log('No body collection (method:', method, 'content-type:', headers['content-type'], ')');
+    }
 
    // Prepare headers for Appwrite
    const appwriteHeaders = {
