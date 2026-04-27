@@ -847,33 +847,22 @@ export const appwriteApi = {
          organization_id = resolvedOrganizationId;
        }
 
-       // Create user profile in 'users' collection
-       const userProfile = {
-         id: newUser.user.$id,
-         username: payload.username.trim(),
-         email: payload.email.trim(),
-         role: requestedRole,
-         phone_number: payload.phone_number || '',
-         alternative_phone_number: payload.alternative_phone_number || '',
-         id_number: payload.id_number || payload.id_passport_number || '',
-         passport_number: payload.id_passport_number || '',
-         date_of_birth: payload.date_of_birth || '',
-         gender: payload.gender || 'Not set',
-         address: payload.address || '',
-         nationality: payload.nationality || 'Kenyan',
-         occupation: payload.occupation || '',
-         marital_status: payload.marital_status || '',
-         status: 'Active',
-         timezone: 'EAT',
-         messaging: true,
-         client_communication: true,
-         task_management: true,
-         deadline_notifications: true,
-         organization_id: resolvedOrganizationId,
-         created_at: new Date().toISOString(),
-       };
+        // Create user profile in 'users' collection
+        // Schema: id, username, email, phone, role, timezone, status, messaging_enabled, deadline_notifications, organization_id, created_at, updated_at
+        const userProfile = {
+          id: newUser.user.$id,
+          username: payload.username.trim(),
+          email: payload.email.trim(),
+          role: requestedRole,
+          phone: payload.phone_number || '',
+          timezone: 'EAT',
+          status: 'Active',
+          messaging_enabled: true,
+          deadline_notifications: true,
+          organization_id: resolvedOrganizationId,
+        };
 
-       await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
+        await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
 
       // Send verification email
       // TODO: Implement sendVerificationEmail function
