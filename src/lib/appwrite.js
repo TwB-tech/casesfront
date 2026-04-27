@@ -332,20 +332,21 @@ export const logAudit = async (action, tableName, recordId, changes = {}) => {
 // ============================================
 // DEFAULT EXPORT BUNDLE
 // ============================================
-export default {
-  client,
-  account,
-  databases,
-  storage,
-  functions,
-  Query,
-  COLLECTIONS,
-  DATABASE_ID,
-  BUCKETS,
-  auth,
-  db,
-  logAudit,
-  getCurrentUser,
-  getCurrentOrganizationId,
-  withOrganization,
-};
+ export default {
+   client,
+   account,
+   databases,
+   storage,
+   functions,
+   Query,
+   COLLECTIONS,
+   DATABASE_ID,
+   BUCKETS,
+   auth,
+   db,
+   logAudit,
+   getCurrentUser,
+   getCurrentOrganizationId,
+   withOrganization,
+   ID,
+ };
