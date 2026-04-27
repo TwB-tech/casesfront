@@ -3,20 +3,48 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "rewrites": [
-    {
-      "source": "/api/reya",
-      "destination": "/api/reya.js"
-    },
-    {
-      "source": "/api/appwrite-proxy/(.*)",
-      "destination": "/api/appwrite-proxy.js"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1.js"
-    }
-  ],
+   "rewrites": [
+     {
+       "source": "/api/reya",
+       "destination": "/api/reya.js"
+     },
+     {
+       "source": "/api/appwrite-proxy/(.*)",
+       "destination": "/api/appwrite-proxy.js"
+     },
+     {
+       "source": "/api/(.*)",
+       "destination": "/api/$1.js"
+     },
+     {
+       "source": "/assets/(.*)",
+       "destination": "/assets/$1"
+     },
+     {
+       "source": "/favicon.ico",
+       "destination": "/favicon.ico"
+     },
+     {
+       "source": "/manifest.json",
+       "destination": "/manifest.json"
+     },
+     {
+       "source": "/logo192.png",
+       "destination": "/logo192.png"
+     },
+     {
+       "source": "/logo512.png",
+       "destination": "/logo512.png"
+     },
+     {
+       "source": "/robots.txt",
+       "destination": "/robots.txt"
+     },
+     {
+       "source": "/(.*)",
+       "destination": "/index.html"
+     }
+   ],
   "headers": [
     {
       "source": "/(.*)",
