@@ -23,6 +23,18 @@ function collectBody(req) {
 export default async function handler(req, res) {
   const { method, headers } = req;
 
+  // Debug: log incoming request headers (sanitized)
+  if (method !== 'GET' && process.env.NODE_ENV !== 'production') {
+    console.log('Proxy incoming headers:', {
+      'content-type': headers['content-type'],
+      'x-appwrite-project': headers['x-appwrite-project'] ? 'present' : 'absent',
+      'x-appwrite-key': headers['x-appwrite-key'] ? 'present' : 'absent',
+      'x-appwrite-session': headers['x-appwrite-session'] ? 'present' : 'absent',
+      'x-appwrite-jwt': headers['x-appwrite-jwt'] ? 'present' : 'absent',
+      'authorization': headers['authorization'] ? 'present' : 'absent',
+    });
+  }
+
   // Parse URL to extract the path after /api/appwrite-proxy
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathSegments = url.pathname.split('/').filter(Boolean);
@@ -78,12 +90,17 @@ export default async function handler(req, res) {
   // Forward session for authenticated user requests
   if (headers['x-appwrite-session']) {
     appwriteHeaders['X-Appwrite-Session'] = headers['x-appwrite-session'];
+    console.log('Forwarding X-Appwrite-Session (length:', headers['x-appwrite-session'].length, ')');
+  } else {
+    console.log('No X-Appwrite-Session header from client');
   }
   if (headers['x-appwrite-jwt']) {
     appwriteHeaders['X-Appwrite-JWT'] = headers['x-appwrite-jwt'];
+    console.log('Forwarding X-Appwrite-JWT');
   }
   if (headers['authorization']) {
     appwriteHeaders['Authorization'] = headers['authorization'];
+    console.log('Forwarding Authorization');
   }
 
    // Handle CORS preflight
