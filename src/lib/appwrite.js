@@ -83,7 +83,7 @@ export const BUCKETS = {
 export const auth = {
   async createEmailSession(email, password) {
     try {
-      const session = await account.createEmailSession(email, password);
+      const session = await account.createEmailSession({ email, password });
       return { data: session };
     } catch (error) {
       return { error };
