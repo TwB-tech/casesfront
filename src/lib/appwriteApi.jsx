@@ -800,9 +800,12 @@ export const appwriteApi = {
           payload.username.trim()
         );
 
-       if (createErr || !newUser) {
-         return failure('Registration failed', 400, createErr);
-       }
+        if (createErr || !newUser) {
+          console.error('❌ auth.create failed:', createErr);
+          // Return detailed error during development
+          const message = createErr?.message || createErr?.code?.toString() || 'Registration failed';
+          return failure(message, 400, createErr);
+        }
 
        // Create an email session so subsequent DB operations run as authenticated user
        const { data: sessionData, error: sessionErr } = await auth.createEmailSession(
