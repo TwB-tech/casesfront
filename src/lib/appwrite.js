@@ -93,7 +93,13 @@ export const auth = {
   async create(userId, email, password, username, metadata = {}) {
     try {
       // Create user with ID (Appwrite allows specifying ID)
-      const user = await account.create(userId || ID.unique(), email, password, username);
+      const createPayload = {
+        userId: userId || ID.unique(),
+        email,
+        password,
+        name: username,
+      };
+      const user = await account.create(createPayload);
 
       // Store metadata in user prefs
       if (Object.keys(metadata).length > 0) {
