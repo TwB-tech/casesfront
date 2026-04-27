@@ -22,6 +22,7 @@ function collectBody(req) {
 
 export default async function handler(req, res) {
   const { method, headers } = req;
+  const path = new URL(req.url, 'http://localhost').pathname;
 
   // Parse URL to extract the path after /api/appwrite-proxy
   const url = new URL(req.url, `http://${req.headers.host}`);
