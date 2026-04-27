@@ -832,11 +832,12 @@ export const appwriteApi = {
              username: ['Organization name is required'],
            });
          }
-         const { data: org, error: orgErr } = await db.create(COLLECTIONS.ORGANIZATIONS, {
-           name: payload.username,
-           email: payload.email,
-           plan_type: 'free',
-         });
+          const { data: org, error: orgErr } = await db.create(COLLECTIONS.ORGANIZATIONS, {
+            id: ID.unique(),
+            name: payload.username,
+            email: payload.email,
+            plan_type: 'free',
+          });
          if (orgErr || !org) {
            console.error('Organization creation error:', orgErr);
            return failure('Unable to create organization', 400, orgErr);
