@@ -5,6 +5,7 @@
  */
 
 import appwrite from './appwrite';
+import { sendVerificationEmail } from './emailService';
 
 const {
   db,
@@ -843,7 +844,7 @@ export const appwriteApi = {
        }
 
         // Create user profile in 'users' collection
-        // Schema: id, username, email, phone, role, timezone, status, messaging_enabled, deadline_notifications, organization_id, created_at, updated_at
+        // Schema: id, username, email, phone, role, timezone, status, messaging_enabled, deadline_notifications, organization_id, created_at, updated_at, verification_token, email_verified
         const userProfile = {
           id: newUser.user.$id,
           username: payload.username.trim(),
@@ -855,18 +856,28 @@ export const appwriteApi = {
           messaging_enabled: true,
           deadline_notifications: true,
           organization_id: resolvedOrganizationId,
+          verification_token: verificationToken,
+          email_verified: false,
         };
 
         await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
 
-      // Send verification email
-      // TODO: Implement sendVerificationEmail function
+        // Send verification email
+        const emailResult = await sendVerificationEmail({
+          user: { ...userProfile, id: newUser.user.$id },
+          providedToken: verificationToken,
+        });
 
-      return success({
-        id: newUser.user.$id,
-        email: newUser.user.email,
-        username: payload.username,
-      });
+        if (!emailResult.success) {
+          console.warn('Failed to send verification email:', emailResult.error);
+          // Don't fail registration if email fails - user can request new verification
+        }
+
+        return success({
+          id: newUser.user.$id,
+          email: newUser.user.email,
+          username: payload.username,
+        });
     }
 
     // EMAIL VERIFY
@@ -876,9 +887,49 @@ export const appwriteApi = {
           token: ['Verification token is required'],
         });
       }
-      // Appwrite handles email verification via magic link or custom flow
-      // Simplified implementation:
-      return success({ detail: 'Email verified successfully.' });
+
+      // Find user by verification token
+      const { data: users, error: listErr } = await db.list(COLLECTIONS.USERS, [
+        Query.equal('verification_token', payload.token),
+      ]);
+
+      if (listErr) {
+        console.error('Token lookup error:', listErr);
+        return failure('Invalid verification token', 400, {
+          token: ['Invalid or expired verification token'],
+        });
+      }
+
+      if (users.length === 0) {
+        return failure('Invalid verification token', 400, {
+          token: ['Token not found'],
+        });
+      }
+
+      const user = users[0];
+
+      // Check if already verified
+      if (user.email_verified) {
+        return success({ detail: 'Email already verified.', email_verified: true });
+      }
+
+      // Mark as verified and clear token
+      const { error: updateErr } = await db.update(COLLECTIONS.USERS, user.id, {
+        email_verified: true,
+        verification_token: null,
+        status: 'Active',
+      });
+
+      if (updateErr) {
+        console.error('Verification update error:', updateErr);
+        return failure('Failed to update verification status', 500);
+      }
+
+      return success({
+        detail: 'Email verified successfully.',
+        email_verified: true,
+        user_id: user.id,
+      });
     }
 
     // ACCEPT INVITE

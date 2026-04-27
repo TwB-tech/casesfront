@@ -142,6 +142,8 @@ const collections = [
       { key: 'status', type: 'string', size: 50, default: 'Active' },
       { key: 'messaging_enabled', type: 'boolean', default: true },
       { key: 'deadline_notifications', type: 'boolean', default: true },
+      { key: 'verification_token', type: 'string', size: 255 },
+      { key: 'email_verified', type: 'boolean', default: false },
       { key: 'created_at', type: 'datetime' },
       { key: 'updated_at', type: 'datetime' },
     ],
