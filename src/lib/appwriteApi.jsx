@@ -5,7 +5,6 @@
  */
 
 import appwrite from './appwrite';
-import { sendVerificationEmail } from './emailService';
 
 const {
   db,
@@ -862,15 +861,19 @@ export const appwriteApi = {
 
         await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
 
-        // Send verification email
-        const emailResult = await sendVerificationEmail({
-          user: { ...userProfile, id: newUser.user.$id },
-          providedToken: verificationToken,
-        });
-
-        if (!emailResult.success) {
-          console.warn('Failed to send verification email:', emailResult.error);
-          // Don't fail registration if email fails - user can request new verification
+        // Send verification email via serverless function (to avoid CORS and expose API key)
+        try {
+          await fetch('/api/send-verification-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user: { ...userProfile, id: newUser.user.$id },
+              token: verificationToken,
+            }),
+          });
+        } catch (emailErr) {
+          console.warn('Failed to send verification email:', emailErr);
+          // Don't fail registration if email fails - user can request new verification later
         }
 
         return success({
