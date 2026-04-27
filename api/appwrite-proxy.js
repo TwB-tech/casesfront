@@ -132,31 +132,9 @@ export default async function handler(req, res) {
        }
      }
 
-     // Stream response body - convert WHATWG ReadableStream to Node.js stream
-     if (appwriteRes.body) {
-       const reader = appwriteRes.body.getReader();
-       (async () => {
-         try {
-           while (true) {
-             const { done, value } = await reader.read();
-             if (done) break;
-             if (value) {
-               res.write(Buffer.from(value));
-             }
-           }
-           res.end();
-         } catch (err) {
-           console.error('Stream error:', err);
-           if (!res.headersSent) {
-             res.status(500).end(JSON.stringify({ error: 'Stream failed' }));
-           } else {
-             res.end();
-           }
-         }
-       })();
-     } else {
-       res.end();
-     }
+     // Read full response body and forward (simpler, reliable)
+     const bodyBuffer = await appwriteRes.arrayBuffer();
+     res.end(Buffer.from(bodyBuffer));
 
    } catch (error) {
      console.error('Appwrite proxy error:', error);
