@@ -103,7 +103,7 @@ export const auth = {
 
       // Store metadata in user prefs
       if (Object.keys(metadata).length > 0) {
-        await account.updatePrefs(user.$id, metadata);
+        await account.updatePrefs(metadata);
       }
 
       return { data: { user } };
