@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { notification } from 'antd';
-import axiosInstance from '../axiosConfig';
 
 const EmailVerification = () => {
   const [verifying, setVerifying] = useState(true);
@@ -23,23 +22,30 @@ const EmailVerification = () => {
       }
 
       try {
-        const response = await axiosInstance.post('/auth/verify-email/', { token });
+        const response = await fetch('/api/verify-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Verification failed');
+        }
 
         notification.success({
           message: 'Email Verified',
           description:
             'Your email has been successfully verified. You can now log in to your account.',
         });
-        navigate('/login');
+        // Redirect to login after success
+        setTimeout(() => navigate('/login'), 2000);
       } catch (error) {
         console.error('Email verification error:', error);
 
         let errorMessage = 'An unexpected error occurred during verification.';
-        if (error.response?.data?.message) {
-          errorMessage = error.response.data.message;
-        } else if (error.response?.data?.errors) {
-          errorMessage = Object.values(error.response.data.errors).flat().join(', ');
-        } else if (error.message) {
+        if (error.message) {
           errorMessage = error.message;
         }
 
