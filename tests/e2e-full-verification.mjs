@@ -35,7 +35,7 @@ function loadEnv() {
   return env;
 }
 const env = loadEnv();
-const APPWRITE_ENDPOINT = env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1';
+const APPWRITE_ENDPOINT = (env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1').replace(/\/v1$/, '');
 const APPWRITE_PROJECT_ID = env.APPWRITE_PROJECT_ID;
 const APPWRITE_DATABASE_ID = env.APPWRITE_DATABASE_ID || 'default';
 const APPWRITE_API_KEY = env.APPWRITE_API_KEY; // server key
@@ -80,8 +80,12 @@ console.log('');
 
 async function getVerificationToken(email) {
   if (!APPWRITE_API_KEY) throw new Error('APPWRITE_API_KEY not set in .env');
-  const endpoint = `${APPWRITE_ENDPOINT}/v1/databases/${APPWRITE_DATABASE_ID}/collections/users`;
-  const url = `${endpoint}?queries[0][$eq]=email&queries[0][value]=${encodeURIComponent(email)}`;
+  const base = APPWRITE_ENDPOINT;
+  const endpoint = `${base}/v1/databases/${APPWRITE_DATABASE_ID}/collections/users/documents`;
+  const params = new URLSearchParams();
+  params.append('queries[0][$eq]', 'email');
+  params.append('queries[0][value]', email);
+  const url = `${endpoint}?${params.toString()}`;
   const res = await fetch(url, {
     headers: {
       'X-Appwrite-Project': APPWRITE_PROJECT_ID,
@@ -89,7 +93,8 @@ async function getVerificationToken(email) {
     },
   });
   if (!res.ok) {
-    throw new Error(`Failed to fetch user: ${res.status}`);
+    const txt = await res.text();
+    throw new Error(`Failed to fetch user: ${res.status} - ${txt}`);
   }
   const data = await res.json();
   if (!data.documents || data.documents.length === 0) {
