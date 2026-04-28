@@ -860,10 +860,15 @@ export const appwriteApi = {
          console.log('[register] userProfile created:', { ...userProfile, verification_token: userProfile.verification_token ? `${userProfile.verification_token.substring(0, 10)}...` : 'MISSING' });
 
          const { data: createdUser, error: createUserErr } = await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
-        if (createUserErr) {
-          console.error('❌ Failed to create user profile:', createUserErr);
-          return failure('Failed to create user profile', 500, { detail: createUserErr.message });
-        }
+         if (createUserErr) {
+           console.error('❌ Failed to create user profile:', createUserErr);
+           return failure('Failed to create user profile', 500, { detail: createUserErr.message });
+         }
+         console.log('[register] createdUser document:', {
+           id: createdUser?.id,
+           email: createdUser?.email,
+           verification_token: createdUser?.verification_token ? `${createdUser.verification_token.substring(0, 20)}...` : 'MISSING',
+         });
 
         // Send verification email via serverless function (to avoid CORS and expose API key)
         try {
@@ -880,11 +885,12 @@ export const appwriteApi = {
           // Don't fail registration if email fails - user can request new verification later
         }
 
-        return success({
-          id: newUser.user.$id,
-          email: newUser.user.email,
-          username: payload.username,
-        });
+         return success({
+           id: newUser.user.$id,
+           email: newUser.user.email,
+           username: payload.username,
+           verification_token: verificationToken, // DEBUG: return to confirm it's generated
+         });
     }
 
     // EMAIL VERIFY
