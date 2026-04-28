@@ -98,59 +98,89 @@ const normalizeRegisterPayload = (formData, userType) => {
     throw new Error('Please enter a valid email address');
   }
 
-  if (userType === 'organization') {
-    const orgName = lowered['organization name'];
-    if (!orgName || orgName === '') {
-      throw new Error('Organization name is required');
-    }
-    return {
-      email,
-      username: orgName,
-      password,
-      role: 'organization',
-      phone_number: lowered['phone number'] || '',
-      alternative_phone_number: lowered['alternative phone number'] || '',
-      address: lowered.address || '',
-      occupation: 'Organization',
-    };
-  }
+   if (userType === 'organization') {
+     const orgName = lowered['organization name'];
+     if (!orgName || orgName === '') {
+       throw new Error('Organization name is required');
+     }
+     return {
+       email,
+       username: orgName,
+       password,
+       role: 'organization',
+       phone_number: lowered['phone number'] || '',
+       alternative_phone_number: lowered['alternative phone number'] || '',
+       address: lowered.address || '',
+       occupation: 'Organization',
+     };
+   }
 
-  if (userType === 'firm') {
-    const firmName = lowered['law firm name'];
-    if (!firmName || firmName === '') {
-      throw new Error('Law firm name is required');
-    }
-    return {
-      email,
-      username: firmName,
-      password,
-      role: 'firm',
-      phone_number: lowered['phone number'] || '',
-      alternative_phone_number: lowered['alternative phone number'] || '',
-      address: lowered.address || '',
-      occupation: 'Law Firm',
-    };
-  }
+   if (userType === 'firm') {
+     const firmName = lowered['law firm name'];
+     if (!firmName || firmName === '') {
+       throw new Error('Law firm name is required');
+     }
+     return {
+       email,
+       username: firmName,
+       password,
+       role: 'firm',
+       phone_number: lowered['phone number'] || '',
+       alternative_phone_number: lowered['alternative phone number'] || '',
+       address: lowered.address || '',
+       occupation: 'Law Firm',
+     };
+   }
 
-  // Default case (advocate, individual)
-  const fullName = lowered['full name'];
-  if (!fullName || fullName === '') {
-    throw new Error('Full name is required');
-  }
+   if (userType === 'law_school') {
+     const instName = lowered['institution name'];
+     if (!instName || instName === '') {
+       throw new Error('Institution name is required');
+     }
+     return {
+       email,
+       username: instName,
+       password,
+       role: 'law_school',
+       phone_number: lowered['phone number'] || '',
+       address: lowered.address || '',
+     };
+   }
 
-  return {
-    email,
-    username: fullName,
-    password,
-    role: userType === 'advocate' ? 'advocate' : 'individual',
-    phone_number: lowered['phone number'] || '',
-    alternative_phone_number: lowered['alternative phone number'] || '',
-    id_passport_number: lowered['id number or passport number'] || '',
-    marital_status: lowered['marital status'] || '',
-    occupation: lowered.occupation || '',
-    address: lowered.address || '',
-    date_of_birth: lowered['date of birth'] || '',
-  };
+   if (userType === 'legal_clinic') {
+     const clinicName = lowered['clinic name'];
+     if (!clinicName || clinicName === '') {
+       throw new Error('Clinic name is required');
+     }
+     return {
+       email,
+       username: clinicName,
+       password,
+       role: 'legal_clinic',
+       phone_number: lowered['phone number'] || '',
+       address: lowered.address || '',
+     };
+   }
+
+   // Default case (advocate, individual)
+   const fullName = lowered['full name'];
+   if (!fullName || fullName === '') {
+     throw new Error('Full name is required');
+   }
+
+   return {
+     email,
+     username: fullName,
+     password,
+     role: userType === 'advocate' ? 'advocate' : 'individual',
+     phone_number: lowered['phone number'] || '',
+     alternative_phone_number: lowered['alternative phone number'] || '',
+     id_passport_number: lowered['id number or passport number'] || '',
+     marital_status: lowered['marital status'] || '',
+     occupation: lowered.occupation || '',
+     address: lowered.address || '',
+     date_of_birth: lowered['date of birth'] || '',
+   };
 };
 
 const AuthProvider = ({ children }) => {
