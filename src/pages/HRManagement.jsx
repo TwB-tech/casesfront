@@ -193,32 +193,38 @@ const HRManagement = () => {
     },
   ];
 
-  const handleAddEmployee = async (values) => {
-    try {
-      setLoading(true);
-      // Send invitation (invite flow)
-      const payload = {
-        email: values.email,
-        role: values.role || 'employee',
-        department: values.department || '',
-        full_name: values.name,
-      };
+   const handleAddEmployee = async (values) => {
+     try {
+       setLoading(true);
+       // Format hire date (values.joinDate is a dayjs object)
+       const hireDate = values.joinDate
+         ? (values.joinDate.format ? values.joinDate.format('YYYY-MM-DD') : new Date(values.joinDate).toISOString().split('T')[0])
+         : new Date().toISOString().slice(0, 10);
 
-      await axiosInstance.post('/hr/invites/', payload);
-      message.success(`Invitation sent to ${values.email}`);
-      setIsModalVisible(false);
-      form.resetFields();
-      // Refresh invitations list to show new entry
-      fetchInvitations();
-    } catch (error) {
-      console.error('Error sending invitation:', error);
-      message.error(
-        error.response?.data?.message || 'Failed to send invitation. Please try again.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+       const payload = {
+         name: values.name,
+         email: values.email,
+         role: values.role || 'employee',
+         department: values.department || '',
+         hire_date: hireDate,
+         salary: values.salary || 0,
+       };
+
+       await axiosInstance.post('/hr/employees/', payload);
+       message.success(`Employee ${values.name} added successfully`);
+       setIsModalVisible(false);
+       form.resetFields();
+       // Refresh employees list
+       fetchEmployees();
+     } catch (error) {
+       console.error('Error adding employee:', error);
+       message.error(
+         error.response?.data?.message || 'Failed to create employee. Please try again.'
+       );
+     } finally {
+       setLoading(false);
+     }
+   };
 
   const handleInviteEmployee = async (values) => {
     try {
@@ -291,29 +297,26 @@ const HRManagement = () => {
                 Manage employees, leave, payroll, and team documents
               </p>
             </div>
-            <div className="flex gap-3">
-              <Button
-                type="primary"
-                size="large"
-                icon={<UserPlus className="w-4 h-4" />}
-                className={isFuturistic ? 'futuristic-btn' : ''}
-                style={{ background: isFuturistic ? '#6366f1' : undefined }}
-                onClick={() => setIsModalVisible(true)}
-              >
-                Add Employee
-              </Button>
-              <Button
-                size="large"
-                icon={<Mail className="w-4 h-4" />}
-                className={isFuturistic ? 'border-cyber-border' : ''}
-                onClick={() => setIsInviteModalVisible(true)}
-              >
-                Invite Employee
-              </Button>
-              <Button type="primary" icon={<UserPlus />} onClick={() => setIsModalVisible(true)}>
-                Invite Employee
-              </Button>
-            </div>
+             <div className="flex gap-3">
+               <Button
+                 type="primary"
+                 size="large"
+                 icon={<UserPlus className="w-4 h-4" />}
+                 className={isFuturistic ? 'futuristic-btn' : ''}
+                 style={{ background: isFuturistic ? '#6366f1' : undefined }}
+                 onClick={() => setIsModalVisible(true)}
+               >
+                 Add Employee
+               </Button>
+               <Button
+                 size="large"
+                 icon={<Mail className="w-4 h-4" />}
+                 className={isFuturistic ? 'border-cyber-border' : ''}
+                 onClick={() => setIsInviteModalVisible(true)}
+               >
+                 Invite Employee
+               </Button>
+             </div>
           </div>
         </div>
       </div>
@@ -728,14 +731,14 @@ const HRManagement = () => {
         </div>
       </Card>
 
-      {/* Invite Employee Modal */}
-      <Modal
-        title="Invite New Employee"
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={null}
-        width={600}
-      >
+       {/* Add Employee Modal */}
+       <Modal
+         title="Add Employee"
+         open={isModalVisible}
+         onCancel={() => setIsModalVisible(false)}
+         footer={null}
+         width={600}
+       >
         <Form form={form} layout="vertical" onFinish={handleAddEmployee}>
           <Form.Item
             name="name"

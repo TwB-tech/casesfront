@@ -180,20 +180,20 @@ export const appwriteApi = {
       return success(enriched);
     }
 
-    // CLIENTS: GET individual clients
-    if (['individual/', 'client/', 'client'].includes(path)) {
-      const { data, error } = await db.list(COLLECTIONS.USERS, [
-        Query.in('role', ['individual', 'client']),
-      ]);
-      if (error) throw error;
-      return success({
-        results: data.map((doc) => ({
-          ...doc,
-          id: doc.id,
-          username: doc.username || doc.name || doc.email,
-        })),
-      });
-    }
+     // CLIENTS: GET individual clients
+     if (['individual', 'client'].includes(path)) {
+       const { data, error } = await db.list(COLLECTIONS.USERS, [
+         Query.in('role', ['individual', 'client']),
+       ]);
+       if (error) throw error;
+       return success({
+         results: data.map((doc) => ({
+           ...doc,
+           id: doc.id,
+           username: doc.username || doc.name || doc.email,
+         })),
+       });
+     }
 
     // SINGLE CLIENT by ID
     if (/^individual\/\d+$/.test(path) || /^client\/\d+$/.test(path)) {
@@ -208,54 +208,54 @@ export const appwriteApi = {
       });
     }
 
-    // ADVOCATES: GET advocates and firm users
-    if (['advocate/', 'advocate/firm-advocates/', 'individual/case-advocates/'].includes(path)) {
-      const { data, error } = await db.list(COLLECTIONS.USERS, [
-        Query.in('role', ['advocate', 'firm', 'administrator']),
-      ]);
-      if (error) throw error;
-      return success({ results: data.map((doc) => ({ ...doc, id: doc.id })) });
-    }
+     // ADVOCATES: GET advocates and firm users
+     if (['advocate', 'advocate/firm-advocates', 'individual/case-advocates'].includes(path)) {
+       const { data, error } = await db.list(COLLECTIONS.USERS, [
+         Query.in('role', ['advocate', 'firm', 'administrator']),
+       ]);
+       if (error) throw error;
+       return success({ results: data.map((doc) => ({ ...doc, id: doc.id })) });
+     }
 
-    // COURTS: GET all courts
-    if (path === 'court/') {
-      const { data, error } = await db.list(COLLECTIONS.COURTS);
-      if (error) throw error;
-      return success({ results: data });
-    }
+     // COURTS: GET all courts
+     if (path === 'court') {
+       const { data, error } = await db.list(COLLECTIONS.COURTS);
+       if (error) throw error;
+       return success({ results: data });
+     }
 
-    // ADVOCATE CASES: Cases assigned to current user
-    if (path === 'advocate/cases/') {
-      const user = getCurrentUser();
-      const { data, error } = await db.list(COLLECTIONS.CASES, [
-        Query.equal('advocate_id', user.id),
-      ]);
-      if (error) throw error;
-      return success({
-        cases_count: data.length,
-        results: data.map((doc) => ({ ...doc, id: doc.id })),
-      });
-    }
+     // ADVOCATE CASES: Cases assigned to current user
+     if (path === 'advocate/cases') {
+       const user = getCurrentUser();
+       const { data, error } = await db.list(COLLECTIONS.CASES, [
+         Query.equal('advocate_id', user.id),
+       ]);
+       if (error) throw error;
+       return success({
+         cases_count: data.length,
+         results: data.map((doc) => ({ ...doc, id: doc.id })),
+       });
+     }
 
-    // ADVOCATE CLIENTS: Clients of current advocate
-    if (path === 'advocate/clients/') {
-      const user = getCurrentUser();
-      const { data: cases, error: caseErr } = await db.list(COLLECTIONS.CASES, [
-        Query.equal('advocate_id', user.id),
-      ]);
-      if (caseErr) throw caseErr;
+     // ADVOCATE CLIENTS: Clients of current advocate
+     if (path === 'advocate/clients') {
+       const user = getCurrentUser();
+       const { data: cases, error: caseErr } = await db.list(COLLECTIONS.CASES, [
+         Query.equal('advocate_id', user.id),
+       ]);
+       if (caseErr) throw caseErr;
 
-      const clientIds = [...new Set(cases.map((c) => c.client_id))];
-      const { data: clients, error: clientErr } = await db.list(COLLECTIONS.USERS, [
-        Query.in('$id', clientIds),
-      ]);
-      if (clientErr) throw clientErr;
+       const clientIds = [...new Set(cases.map((c) => c.client_id))];
+       const { data: clients, error: clientErr } = await db.list(COLLECTIONS.USERS, [
+         Query.in('$id', clientIds),
+       ]);
+       if (clientErr) throw clientErr;
 
-      return success({
-        clients_count: clients.length,
-        results: clients.map((doc) => ({ ...doc, id: doc.id })),
-      });
-    }
+       return success({
+         clients_count: clients.length,
+         results: clients.map((doc) => ({ ...doc, id: doc.id })),
+       });
+     }
 
     // TASKS: GET all tasks (org-filtered)
     if (['tasks/', 'tasks'].includes(path)) {
@@ -267,7 +267,7 @@ export const appwriteApi = {
     }
 
     // DOCUMENTS: GET all documents
-    if (['document_management/api/documents/', 'documents'].includes(path)) {
+    if (['document_management/api/documents', 'documents'].includes(path)) {
       const { data, error } = await db.list(COLLECTIONS.DOCUMENTS);
       if (error) throw error;
       const enriched = await Promise.all(data.map(enrichDocument));
@@ -324,16 +324,16 @@ export const appwriteApi = {
       return success(enriched);
     }
 
-    // INDIVIDUAL CASES: Cases where user is client or advocate
-    if (path === 'case/individual-cases/') {
-      const user = getCurrentUser();
-      const { data, error } = await db.list(COLLECTIONS.CASES, [
-        Query.or(Query.equal('client_id', user.id), Query.equal('advocate_id', user.id)),
-      ]);
-      if (error) throw error;
-      const enriched = await Promise.all(data.map(enrichCase));
-      return success(enriched);
-    }
+     // INDIVIDUAL CASES: Cases where user is client or advocate
+     if (path === 'case/individual-cases') {
+       const user = getCurrentUser();
+       const { data, error } = await db.list(COLLECTIONS.CASES, [
+         Query.or(Query.equal('client_id', user.id), Query.equal('advocate_id', user.id)),
+       ]);
+       if (error) throw error;
+       const enriched = await Promise.all(data.map(enrichCase));
+       return success(enriched);
+     }
 
     // INVOICES: GET all invoices
     if (['invoices', 'api/invoices'].includes(path)) {
@@ -360,58 +360,58 @@ export const appwriteApi = {
       return success(safeUser);
     }
 
-    // USER PROFILE
-    if (path === 'auth/profile/') {
-      const user = getCurrentUser();
-      const { data: userData, error: userErr } = await db.get(COLLECTIONS.USERS, user.id);
-      if (userErr) throw userErr;
+     // USER PROFILE
+     if (path === 'auth/profile') {
+       const user = getCurrentUser();
+       const { data: userData, error: userErr } = await db.get(COLLECTIONS.USERS, user.id);
+       if (userErr) throw userErr;
 
-      // Prefer role from user metadata (user_metadata field in Appwrite prefs)
-      // Appwrite stores custom data in 'prefs' field - flattening here
-      const finalRole = userData.role || 'individual';
+       // Prefer role from user metadata (user_metadata field in Appwrite prefs)
+       // Appwrite stores custom data in 'prefs' field - flattening here
+       const finalRole = userData.role || 'individual';
 
-      return success({
-        ...userData,
-        id: userData.id,
-        username: userData.username || userData.name || userData.email,
-        role: finalRole,
-      });
-    }
+       return success({
+         ...userData,
+         id: userData.id,
+         username: userData.username || userData.name || userData.email,
+         role: finalRole,
+       });
+     }
 
-    // EMAIL VERIFY (stub - handled by Appwrite auth)
-    if (path === 'auth/email-verify/') {
-      return success({ detail: 'Email verified successfully.' });
-    }
+     // EMAIL VERIFY (stub - handled by Appwrite auth)
+     if (path === 'auth/email-verify') {
+       return success({ detail: 'Email verified successfully.' });
+     }
 
-    // USER STATS
-    if (path === 'users/stats/') {
-      const user = getCurrentUser();
-      const { data: cases, error: caseErr } = await db.list(COLLECTIONS.CASES, [
-        Query.or(Query.equal('client_id', user.id), Query.equal('advocate_id', user.id)),
-      ]);
-      const { data: tasks, error: taskErr } = await db.list(COLLECTIONS.TASKS, [
-        Query.equal('assigned_to', user.id),
-      ]);
-      const { data: documents, error: docErr } = await db.list(COLLECTIONS.DOCUMENTS, [
-        Query.equal('owner', user.id),
-      ]);
+     // USER STATS
+     if (path === 'users/stats') {
+       const user = getCurrentUser();
+       const { data: cases, error: caseErr } = await db.list(COLLECTIONS.CASES, [
+         Query.or(Query.equal('client_id', user.id), Query.equal('advocate_id', user.id)),
+       ]);
+       const { data: tasks, error: taskErr } = await db.list(COLLECTIONS.TASKS, [
+         Query.equal('assigned_to', user.id),
+       ]);
+       const { data: documents, error: docErr } = await db.list(COLLECTIONS.DOCUMENTS, [
+         Query.equal('owner', user.id),
+       ]);
 
-      if (caseErr || taskErr || docErr) throw caseErr || taskErr || docErr;
+       if (caseErr || taskErr || docErr) throw caseErr || taskErr || docErr;
 
-      return success({
-        totalCases: cases.length,
-        activeCases: cases.filter((c) => c.status === 'open' || c.status === 'pending').length,
-        totalTasks: tasks.length,
-        pendingTasks: tasks.filter((t) => !t.status).length,
-        totalDocuments: documents.length,
-        sharedDocuments: documents.filter((d) => d.shared_with && d.shared_with.length > 0).length,
-      });
-    }
+       return success({
+         totalCases: cases.length,
+         activeCases: cases.filter((c) => c.status === 'open' || c.status === 'pending').length,
+         totalTasks: tasks.length,
+         pendingTasks: tasks.filter((t) => !t.status).length,
+         totalDocuments: documents.length,
+         sharedDocuments: documents.filter((d) => d.shared_with && d.shared_with.length > 0).length,
+       });
+     }
 
-    // FINANCIAL REPORTS
-    if (path === 'reports/financial/') {
-      const user = getCurrentUser();
-      const { data: invoices, error } = await db.list(COLLECTIONS.INVOICES);
+     // FINANCIAL REPORTS
+     if (path === 'reports/financial') {
+       const user = getCurrentUser();
+       const { data: invoices, error } = await db.list(COLLECTIONS.INVOICES);
       if (error) throw error;
 
       const summary = {
@@ -426,11 +426,11 @@ export const appwriteApi = {
       return success({ results: [summary] });
     }
 
-    // ACCOUNTING DASHBOARD
-    if (['accounting/dashboard', 'accounting/dashboard/summary/'].includes(path)) {
-      const user = getCurrentUser();
-      const { data: invoices } = await db.list(COLLECTIONS.INVOICES);
-      const { data: expenses } = await db.list(COLLECTIONS.EXPENSES);
+     // ACCOUNTING DASHBOARD
+     if (['accounting/dashboard', 'accounting/dashboard/summary'].includes(path)) {
+       const user = getCurrentUser();
+       const { data: invoices } = await db.list(COLLECTIONS.INVOICES);
+       const { data: expenses } = await db.list(COLLECTIONS.EXPENSES);
 
       const totalRevenue =
         invoices?.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0) || 0;
@@ -527,58 +527,58 @@ export const appwriteApi = {
       });
     }
 
-    // EXPENSES
-    if (path === 'expenses/') {
-      const user = getCurrentUser();
-      const { data, error } = await db.list(COLLECTIONS.EXPENSES);
-      if (error) throw error;
-      return success(data);
-    }
+     // EXPENSES
+     if (path === 'expenses') {
+       const user = getCurrentUser();
+       const { data, error } = await db.list(COLLECTIONS.EXPENSES);
+       if (error) throw error;
+       return success(data);
+     }
 
-    // PAYROLL
-    if (path === 'payroll/') {
-      const user = getCurrentUser();
-      const { data, error } = await db.list(COLLECTIONS.PAYROLL_RUNS);
-      if (error) throw error;
-      return success(data);
-    }
+     // PAYROLL
+     if (path === 'payroll') {
+       const user = getCurrentUser();
+       const { data, error } = await db.list(COLLECTIONS.PAYROLL_RUNS);
+       if (error) throw error;
+       return success(data);
+     }
 
-    // HR: EMPLOYEES
-    if (path === 'hr/employees/') {
-      const user = getCurrentUser();
-      // Filter: exclude individual/clients, only show org members (unless admin)
-      const { data, error } = await db.list(COLLECTIONS.USERS);
-      if (error) throw error;
+     // HR: EMPLOYEES
+     if (path === 'hr/employees') {
+       const user = getCurrentUser();
+       // Filter: exclude individual/clients, only show org members (unless admin)
+       const { data, error } = await db.list(COLLECTIONS.USERS);
+       if (error) throw error;
 
-      const filtered = data.filter((item) => {
-        const isValidRole = ['advocate', 'firm', 'employee', 'admin', 'administrator'].includes(
-          item.role
-        );
-        if (user.role === 'admin') return isValidRole;
-        return isValidRole && item.organization_id === user?.organization_id;
-      });
+       const filtered = data.filter((item) => {
+         const isValidRole = ['advocate', 'firm', 'employee', 'admin', 'administrator'].includes(
+           item.role
+         );
+         if (user.role === 'admin') return isValidRole;
+         return isValidRole && item.organization_id === user?.organization_id;
+       });
 
-      return success({ results: filtered.map((doc) => ({ ...doc, id: doc.id })) });
-    }
+       return success({ results: filtered.map((doc) => ({ ...doc, id: doc.id })) });
+     }
 
-    // HR: INVITES
-    if (path === 'hr/invites/') {
-      const user = getCurrentUser();
-      const { data, error } = await db.list(COLLECTIONS.INVITES, [
-        Query.equal('status', 'pending'),
-      ]);
-      if (error) throw error;
+     // HR: INVITES
+     if (path === 'hr/invites') {
+       const user = getCurrentUser();
+       const { data, error } = await db.list(COLLECTIONS.INVITES, [
+         Query.equal('status', 'pending'),
+       ]);
+       if (error) throw error;
 
-      // Filter: admin sees all, others only their org
-      const filtered = data.filter(
-        (inv) =>
-          user.role === 'admin' ||
-          inv.invited_by === user.id ||
-          inv.organization_id === user.organization_id
-      );
+       // Filter: admin sees all, others only their org
+       const filtered = data.filter(
+         (inv) =>
+           user.role === 'admin' ||
+           inv.invited_by === user.id ||
+           inv.organization_id === user.organization_id
+       );
 
-      return success({ results: filtered });
-    }
+       return success({ results: filtered });
+     }
 
     // CHAT ROOM INFO
     if (path.startsWith('chats/room-info/')) {
@@ -623,23 +623,23 @@ export const appwriteApi = {
       return success({ results });
     }
 
-    // ADMIN: GET SETTINGS (auto-creates default if missing)
-    if (path === 'admin/') {
-      const user = getCurrentUser();
-      if (!user || !['admin', 'administrator'].includes(user.role.toLowerCase())) {
-        throw Object.assign(new Error('Forbidden'), {
-          response: { status: 403, data: { message: 'Admin access required' } },
-        });
-      }
-      const { data, error } = await db.get(COLLECTIONS.ADMIN_SETTINGS, 'default');
-      if (error) {
-        // Create default settings if not exist
-        const { data: newData, error: createErr } = await db.create(
-          COLLECTIONS.ADMIN_SETTINGS,
-          {
-            id: 'default',
-            case_status: false,
-            case_assignment: false,
+     // ADMIN: GET SETTINGS (auto-creates default if missing)
+     if (path === 'admin') {
+       const user = getCurrentUser();
+       if (!user || !['admin', 'administrator'].includes(user.role.toLowerCase())) {
+         throw Object.assign(new Error('Forbidden'), {
+           response: { status: 403, data: { message: 'Admin access required' } },
+         });
+       }
+       const { data, error } = await db.get(COLLECTIONS.ADMIN_SETTINGS, 'default');
+       if (error) {
+         // Create default settings if not exist
+         const { data: newData, error: createErr } = await db.create(
+           COLLECTIONS.ADMIN_SETTINGS,
+           {
+             id: 'default',
+             case_status: false,
+             case_assignment: false,
             progress_tracking: false,
             milestones: false,
             client_fields: false,

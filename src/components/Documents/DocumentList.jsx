@@ -465,19 +465,69 @@ function DocumentList() {
             }}
             allowClear
           />
-        </div>
+         </div>
 
-        {/* Reya AI Document Generator - Inline Editor */}
-        <Card
-          style={{
-            marginBottom: '24px',
-            borderRadius: '12px',
-            background: isFuturistic ? '#1a1a24' : '#ffffff',
-            border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
-          }}
-          bodyStyle={{ padding: '20px' }}
-          data-testid="doc-generator-card"
-        >
+         {/* AI Document Generation Prompt */}
+         <Card
+           style={{
+             marginBottom: '24px',
+             borderRadius: '12px',
+             background: isFuturistic ? '#1a1a24' : '#ffffff',
+             border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
+           }}
+           bodyStyle={{ padding: '20px' }}
+           data-testid="ai-prompt-card"
+         >
+           <Row gutter={16}>
+             <Col span={18}>
+               <Input.TextArea
+                 placeholder="Describe the legal document you need (e.g., 'A lease agreement for a 2-bedroom apartment in Kenya with monthly rent of KES 50,000')"
+                 value={docPrompt}
+                 onChange={(e) => setDocPrompt(e.target.value)}
+                 rows={3}
+                 style={{ marginBottom: isSmallScreen ? '12px' : 0 }}
+               />
+             </Col>
+             <Col span={6}>
+               <Select
+                 value={docCountry}
+                 onChange={setDocCountry}
+                 style={{ width: '100%', marginBottom: '12px' }}
+               >
+                 <Option value="kenya">Kenya</Option>
+                 <Option value="nigeria">Nigeria</Option>
+                 <Option value="tanzania">Tanzania</Option>
+                 <Option value="uganda">Uganda</Option>
+                 <Option value="ghana">Ghana</Option>
+                 <Option value="south_africa">South Africa</Option>
+                 <Option value="usa">USA</Option>
+                 <Option value="uk">UK</Option>
+               </Select>
+               <Button
+                 type="primary"
+                 icon={<Bot size={16} />}
+                 loading={generatingDoc}
+                 onClick={generateDocument}
+                 block
+                 disabled={!docPrompt.trim() || generatingDoc}
+               >
+                 Generate
+               </Button>
+             </Col>
+           </Row>
+         </Card>
+
+         {/* Reya AI Document Generator - Inline Editor */}
+         <Card
+           style={{
+             marginBottom: '24px',
+             borderRadius: '12px',
+             background: isFuturistic ? '#1a1a24' : '#ffffff',
+             border: isFuturistic ? '1px solid #2a2a3a' : '1px solid #e2e8f0',
+           }}
+           bodyStyle={{ padding: '20px' }}
+           data-testid="doc-generator-card"
+         >
           <Row gutter={16}>
             <Col span={24}>
               <Divider orientation="left">Generated Document</Divider>
