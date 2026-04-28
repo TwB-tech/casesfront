@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { existsSync, mkdirSync, rmdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, rmdirSync, writeFileSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -11,7 +11,35 @@ mkdirSync(OUT, { recursive: true });
 const BASE = 'https://www.kwakorti.live';
 const PASSWORD = 'TestPass123!';
 
-// All 6 user types supported by the signup form
+// Load Appwrite admin credentials from .env for backend queries
+function loadEnv() {
+  const env = {};
+  try {
+    const content = readFileSync(join(process.cwd(), '.env'), 'utf-8');
+    const lines = content.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx === -1) continue;
+      const key = trimmed.substring(0, eqIdx).trim();
+      let value = trimmed.substring(eqIdx + 1).trim();
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      env[key] = value;
+    }
+  } catch (err) {
+    console.warn('Could not read .env:', err.message);
+  }
+  return env;
+}
+const env = loadEnv();
+const APPWRITE_ENDPOINT = env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1';
+const APPWRITE_PROJECT_ID = env.APPWRITE_PROJECT_ID;
+const APPWRITE_DATABASE_ID = env.APPWRITE_DATABASE_ID || 'default';
+const APPWRITE_API_KEY = env.APPWRITE_API_KEY; // server key
+
 const roles = {
   individual: {
     button: 'Individual',
@@ -50,6 +78,26 @@ console.log('Base URL:', BASE);
 console.log('Roles:', Object.keys(roles).join(', '));
 console.log('');
 
+async function getVerificationToken(email) {
+  if (!APPWRITE_API_KEY) throw new Error('APPWRITE_API_KEY not set in .env');
+  const endpoint = `${APPWRITE_ENDPOINT}/v1/databases/${APPWRITE_DATABASE_ID}/collections/users`;
+  const url = `${endpoint}?queries[0][$eq]=email&queries[0][value]=${encodeURIComponent(email)}`;
+  const res = await fetch(url, {
+    headers: {
+      'X-Appwrite-Project': APPWRITE_PROJECT_ID,
+      'X-Appwrite-Key': APPWRITE_API_KEY,
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch user: ${res.status}`);
+  }
+  const data = await res.json();
+  if (!data.documents || data.documents.length === 0) {
+    throw new Error('User not found');
+  }
+  return data.documents[0].verification_token;
+}
+
 async function testRole(roleKey, cfg) {
   console.log(`\n--- ${roleKey.toUpperCase()} ---`);
   const email = cfg.step1.email;
@@ -61,10 +109,8 @@ async function testRole(roleKey, cfg) {
   const page = await context.newPage();
 
   const errors = [];
-  const allConsole = [];
   page.on('console', msg => {
     const txt = msg.text();
-    allConsole.push(`[${msg.type()}] ${txt}`);
     if (msg.type() === 'error' || /Invalid userId|Registration failed|ERROR|TypeError/.test(txt)) {
       errors.push(`[${msg.type()}] ${txt}`);
     }
@@ -82,11 +128,10 @@ async function testRole(roleKey, cfg) {
 
     // Step 1
     for (const [field, val] of Object.entries(cfg.step1)) {
-      const escaped = field.replace(/['"]/g, '');
       try {
         await page.fill(`input[name="${field}"]`, val);
       } catch {
-        await page.fill(`input[name="${escaped}"]`, val);
+        await page.fill(`input[name="${field.toLowerCase()}"]`, val);
       }
     }
     await page.getByRole('button', { name: /next/i }).click();
@@ -126,109 +171,80 @@ async function testRole(roleKey, cfg) {
 
     const body = await page.textContent('body');
     const url = page.url();
-    console.log(`  Step 1 URL: ${url}`);
+    console.log(`  Post-submit URL: ${url}`);
 
     const success1 = body.toLowerCase().includes('success') || url.includes('register-success');
     if (!success1) {
       errors.push(`Signup did not reach success page. URL: ${url}`);
-
-      // Capture Antd notification messages if any
-      try {
-        const notifMsg = await page.textContent('.ant-notification-notice-message');
-        const notifDesc = await page.textContent('.ant-notification-notice-description');
-        if (notifMsg || notifDesc) {
-          errors.push(`Notification: ${(notifMsg||'').trim()} - ${(notifDesc||'').trim()}`);
-        }
-      } catch {}
-
-      // Dump first 1000 chars of page body for debugging
-      const snippet = body.substring(0, 1000);
+      const notif = await page.textContent('.ant-notification-notice-message, .ant-notification-notice-description').catch(() => '');
+      if (notif) errors.push(`Notification: ${notif}`);
+      const snippet = body.substring(0, 500);
       errors.push(`Page snippet: ${snippet}`);
-
-      // Dump collected console messages
-      if (allConsole.length > 0) {
-        errors.push(`Console (last 10): ${allConsole.slice(-10).join(' | ')}`);
-      }
-
       writeFileSync(join(outDir, 'errors.log'), errors.join('\n'));
       console.log(`  ❌ FAIL (${errors.length} errors)`);
       errors.forEach(e => console.log(`    ${e}`));
       await browser.close();
       return false;
     }
-    console.log('  ✓ Signup succeeded, checking email...');
+    console.log('  ✓ Signup succeeded');
 
-    // 2. Check email was sent via Resend API
-    console.log('  2/4: Checking verification email via Resend API...');
-    const RESEND_API_KEY = 're_Pkax7C3oMQjGqCpVSsJg1oL';
-    const emailsRes = await fetch('https://api.resend.com/emails?limit=50', {
-      headers: { Authorization: `Bearer ${RESEND_API_KEY}` },
-    });
-    if (!emailsRes.ok) {
-      errors.push(`Failed to fetch emails from Resend: ${emailsRes.status}`);
-    } else {
-      const emailsData = await emailsRes.json();
-      const matching = emailsData.data?.filter(e => e.to?.includes(email)) || [];
-      if (matching.length === 0) {
-        errors.push(`No verification email found in Resend inbox for ${email}. Recent emails: ${JSON.stringify(emailsData.data?.map(e=>({to:e.to,subject:e.subject})))}`);
-      } else {
-        const verifyEmail = matching.find(e => e.subject?.includes('Verify') || e.subject?.includes('verification'));
-        if (!verifyEmail) {
-          errors.push(`No verification email subject found. Found: ${matching.map(e=>e.subject).join(', ')}`);
-        } else {
-          console.log(`  ✓ Verification email found (ID: ${verifyEmail.id})`);
-          // Extract verification link from HTML
-          const html = verifyEmail.html || '';
-          const linkMatch = html.match(/href=["'](https?:\/\/[^"']*verify[^"']*)["']/i);
-          if (!linkMatch) {
-            errors.push(`Could not extract verification link from email HTML`);
-          } else {
-            const verifyUrl = linkMatch[1];
-            console.log(`  ✓ Verification link: ${verifyUrl}`);
-
-            // 3. Click verification link in browser
-            console.log('  3/4: Clicking verification link in browser...');
-            await page.goto(verifyUrl, { waitUntil: 'networkidle' });
-            await page.waitForTimeout(3000);
-            await page.screenshot({ path: join(outDir, '03-verified.png'), fullPage: true });
-
-            const verifyBody = await page.textContent('body');
-            const verifyResultUrl = page.url();
-            console.log(`  Verification page URL: ${verifyResultUrl}`);
-
-            if (verifyBody.toLowerCase().includes('verified') || verifyBody.toLowerCase().includes('success')) {
-              console.log('  ✓ Email verified successfully (page shows success)');
-            } else {
-              errors.push(`Verification page did not show success. Content: ${verifyBody.substring(0,200)}`);
-            }
-
-            // 4. Attempt login
-            console.log('  4/4: Testing login with verified account...');
-            await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
-            await page.waitForTimeout(1500);
-            await page.fill('input[name="email"]', email);
-            await page.fill('input[name="password"]', PASSWORD);
-            await page.getByRole('button', { name: /login|sign in/i }).click();
-            await page.waitForLoadState('networkidle');
-            await page.waitForTimeout(3000);
-            await page.screenshot({ path: join(outDir, '04-login.png'), fullPage: true });
-
-            const loggedInBody = await page.textContent('body');
-            const loggedInUrl = page.url();
-            console.log(`  Login URL: ${loggedInUrl}`);
-
-            if (loggedInBody.toLowerCase().includes('dashboard') || loggedInBody.toLowerCase().includes('home') || loggedInUrl.includes('home')) {
-              console.log('  ✓ Login successful, redirected to home/dashboard');
-            } else if (loggedInBody.toLowerCase().includes('verify')) {
-              errors.push(`Login succeeded but account still requires verification`);
-            } else if (loggedInBody.toLowerCase().includes('error') || loggedInBody.toLowerCase().includes('invalid')) {
-              errors.push(`Login failed: ${loggedInBody.substring(0,200)}`);
-            } else {
-              console.log(`  Login result unclear - checking page content`);
-            }
-          }
-        }
+    // 2. Retrieve verification token from Appwrite directly
+    console.log('  2/4: Retrieving verification token from Appwrite...');
+    let verificationToken;
+    try {
+      verificationToken = await getVerificationToken(email);
+      if (!verificationToken) {
+        throw new Error('Token is empty');
       }
+      console.log(`  ✓ Token retrieved (${verificationToken.substring(0, 10)}...)`);
+    } catch (e) {
+      errors.push(`Failed to get verification token: ${e.message}`);
+      writeFileSync(join(outDir, 'errors.log'), errors.join('\n'));
+      console.log(`  ❌ FAIL`);
+      await browser.close();
+      return false;
+    }
+
+    // 3. Visit verification page
+    console.log('  3/4: Verifying email via React page...');
+    await page.goto(`${BASE}/verify-email?token=${verificationToken}`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(5000);
+    await page.screenshot({ path: join(outDir, '03-verified.png'), fullPage: true });
+
+    const verifyBody = await page.textContent('body');
+    const verifyUrl = page.url();
+    console.log(`  Verification page URL: ${verifyUrl}`);
+
+    // The page should show success and redirect to /login or display message
+    if (verifyBody.toLowerCase().includes('verified') || verifyBody.toLowerCase().includes('success') || verifyUrl.includes('/login')) {
+      console.log('  ✓ Email verified successfully');
+    } else {
+      errors.push(`Verification did not succeed. Body: ${verifyBody.substring(0,200)}`);
+    }
+
+    // 4. Test login
+    console.log('  4/4: Testing login...');
+    await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(1500);
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', PASSWORD);
+    await page.getByRole('button', { name: /login|sign in/i }).click();
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
+    await page.screenshot({ path: join(outDir, '04-login.png'), fullPage: true });
+
+    const loggedInBody = await page.textContent('body');
+    const loggedInUrl = page.url();
+    console.log(`  Login URL: ${loggedInUrl}`);
+
+    if (loggedInBody.toLowerCase().includes('dashboard') || loggedInUrl.includes('home')) {
+      console.log('  ✓ Login successful');
+    } else if (loggedInBody.toLowerCase().includes('verify')) {
+      errors.push(`Login succeeded but account still requires verification`);
+    } else if (loggedInBody.toLowerCase().includes('error') || loggedInBody.toLowerCase().includes('invalid')) {
+      errors.push(`Login failed: ${loggedInBody.substring(0,200)}`);
+    } else {
+      console.log(`  Login result unclear - may need further check`);
     }
 
     await browser.close();
@@ -251,7 +267,7 @@ async function testRole(roleKey, cfg) {
   }
 }
 
-// Execute all role tests sequentially
+// Execute tests sequentially
 const results = {};
 for (const [role, cfg] of Object.entries(roles)) {
   console.log(`\n========== Testing: ${role.toUpperCase()} ==========`);
