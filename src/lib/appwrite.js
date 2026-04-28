@@ -265,6 +265,12 @@ export const db = {
     // CREATE document
     async create(collection, data, docId = ID.unique()) {
       try {
+        console.log(`[db.create] Called for collection=${collection}, docId=${docId}`);
+        console.log(`[db.create] Received data keys:`, Object.keys(data || {}));
+        if (data && 'verification_token' in data) {
+          const v = data.verification_token;
+          console.log(`[db.create] incoming verification_token: ${v ? v.substring(0,20)+'...' : 'null/undefined'}`);
+        }
         const orgId = getCurrentOrganizationId();
         const enriched = {
           ...data,
@@ -275,19 +281,19 @@ export const db = {
         if (ORG_SCOPED.has(collection)) {
           enriched.organization_id = orgId;
         }
-        console.log(`[db.create] Collection: ${collection}, docId: ${docId}`);
-        console.log(`[db.create] Data fields:`, Object.keys(enriched));
-        console.log(`[db.create] verification_token present:`, 'verification_token' in enriched);
+        console.log(`[db.create] Enriched data keys:`, Object.keys(enriched));
+        console.log(`[db.create] verification_token in enriched:`, 'verification_token' in enriched);
         if ('verification_token' in enriched) {
           const token = enriched.verification_token;
-          console.log(`[db.create] verification_token value: ${token ? token.substring(0, 20) + '...' : 'EMPTY'}`);
+          console.log(`[db.create] enriched verification_token: ${token ? token.substring(0,20)+'...' : 'EMPTY'}`);
         }
         const doc = await databases.createDocument(DATABASE_ID, collection, docId, enriched);
-        console.log(`[db.create] Document created with $id:`, doc?.$id);
+        console.log(`[db.create] Appwrite returned document with $id: ${doc?.$id}`);
+        console.log(`[db.create] Returned document verification_token:`, doc?.verification_token);
         return { data: this.normalize(doc) };
       } catch (error) {
         console.error(`❌ Appwrite create ${collection} failed:`, error.message || error);
-        console.error('Error details:', error);
+        console.error('Stack:', error.stack);
         return { error };
       }
     },
