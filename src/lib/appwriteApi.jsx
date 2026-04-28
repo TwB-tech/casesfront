@@ -782,7 +782,7 @@ export const appwriteApi = {
       }
 
       const requestedRole = (payload.role || 'individual').toLowerCase();
-      const SELF_SERVICE_ROLES = new Set(['individual', 'advocate', 'firm', 'organization']);
+      const SELF_SERVICE_ROLES = new Set(['individual', 'advocate', 'firm', 'organization', 'law_school', 'legal_clinic']);
       if (!SELF_SERVICE_ROLES.has(requestedRole)) {
         return failure('This role must be provisioned by an administrator.', 403);
       }

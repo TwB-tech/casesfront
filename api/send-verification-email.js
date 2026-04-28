@@ -1,4 +1,5 @@
-import { fetch } from 'cross-fetch';
+// Vercel serverless function for sending verification emails via Resend
+// No imports needed - fetch and env are provided globally
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@techwithbrands.com';
