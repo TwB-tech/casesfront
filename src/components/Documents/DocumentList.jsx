@@ -30,11 +30,12 @@ import {
 import { Bot } from 'lucide-react';
 import { Popconfirm } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
-import axiosInstance from '../../axiosConfig';
-import { useMediaQuery } from 'react-responsive';
-import { useTheme } from '../../contexts/ThemeContext';
-import eventBus from '../../utils/eventBus';
-import moment from 'moment';
+ import axiosInstance from '../../axiosConfig';
+ import { useMediaQuery } from 'react-responsive';
+ import { useTheme } from '../../contexts/ThemeContext';
+ import eventBus from '../../utils/eventBus';
+ import { getCurrentUser } from '../../lib/appwrite';
+ import moment from 'moment';
 
 const { Option } = Select;
 
@@ -136,42 +137,43 @@ function DocumentList() {
     }
   };
 
-  // Save generated document
-  const saveGeneratedDocument = async () => {
-    if (!generatedContent.trim()) {
-      message.warning('No document content to save');
-      return;
-    }
+   // Save generated document
+   const saveGeneratedDocument = async () => {
+     if (!generatedContent.trim()) {
+       message.warning('No document content to save');
+       return;
+     }
 
-    try {
-      const titleMatch = generatedContent.match(/^[^:\n]+/);
-      const title = titleMatch
-        ? titleMatch[0].slice(0, 50)
-        : `Generated Document ${new Date().toISOString().slice(0, 10)}`;
+     try {
+       const titleMatch = generatedContent.match(/^[^:\n]+/);
+       const title = titleMatch
+         ? titleMatch[0].slice(0, 50)
+         : `Generated Document ${new Date().toISOString().slice(0, 10)}`;
 
-      // Create a text file with the generated content
-      const blob = new Blob([generatedContent], { type: 'text/plain' });
-      const file = new File([blob], `${title}.txt`, { type: 'text/plain' });
+       // Create a text file with the generated content
+       const blob = new Blob([generatedContent], { type: 'text/plain' });
+       const file = new File([blob], `${title}.txt`, { type: 'text/plain' });
 
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('description', docPrompt);
-      formData.append('file', file);
-      formData.append('owner', '1');
+       const formData = new FormData();
+       formData.append('title', title);
+       formData.append('description', docPrompt);
+       formData.append('file', file);
+       const currentUser = getCurrentUser();
+       formData.append('owner', currentUser.id || currentUser?.$id || 'unknown');
 
-      await axiosInstance.post('/document_management/api/documents/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+       await axiosInstance.post('/document_management/api/documents/', formData, {
+         headers: { 'Content-Type': 'multipart/form-data' },
+       });
 
-      message.success('Document saved successfully!');
-      eventBus.emit('documentCreated', {});
-      setGeneratedContent('');
-      setDocPrompt('');
-    } catch (error) {
-      console.error('Save error:', error);
-      message.error('Failed to save document');
-    }
-  };
+       message.success('Document saved successfully!');
+       eventBus.emit('documentCreated', {});
+       setGeneratedContent('');
+       setDocPrompt('');
+     } catch (error) {
+       console.error('Save error:', error);
+       message.error('Failed to save document');
+     }
+   };
 
   const handleUploadClick = () => {
     navigate('/new-document');

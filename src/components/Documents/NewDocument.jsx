@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Form, Input, Button, Upload, Select, Card, Tooltip, notification } from 'antd';
-import { UploadOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import axiosInstance from '../../axiosConfig';
-import { useNavigate } from 'react-router-dom';
-import eventBus from '../../utils/eventBus';
+ import React, { useState, useEffect, useCallback } from 'react';
+ import { Form, Input, Button, Upload, Select, Card, Tooltip, notification } from 'antd';
+ import { UploadOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+ import axiosInstance from '../../axiosConfig';
+ import { useNavigate } from 'react-router-dom';
+ import eventBus from '../../utils/eventBus';
+ import { getCurrentUser } from '../../lib/appwrite';
 
 const { TextArea } = Input;
 const { Option } = Select;
