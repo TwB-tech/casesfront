@@ -843,7 +843,6 @@ export const appwriteApi = {
        }
 
         // Create user profile in 'users' collection
-        // Schema: id, username, email, phone, role, timezone, status, messaging_enabled, deadline_notifications, organization_id, created_at, updated_at, verification_token, email_verified
         const userProfile = {
           id: newUser.user.$id,
           username: payload.username.trim(),
@@ -859,7 +858,11 @@ export const appwriteApi = {
           email_verified: false,
         };
 
-        await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
+        const { data: createdUser, error: createUserErr } = await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
+        if (createUserErr) {
+          console.error('❌ Failed to create user profile:', createUserErr);
+          return failure('Failed to create user profile', 500, { detail: createUserErr.message });
+        }
 
         // Send verification email via serverless function (to avoid CORS and expose API key)
         try {
