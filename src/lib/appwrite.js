@@ -262,26 +262,35 @@ export const db = {
     }
   },
 
-   // CREATE document
-   async create(collection, data, docId = ID.unique()) {
-     try {
-       const orgId = getCurrentOrganizationId();
-       const enriched = {
-         ...data,
-         created_at: new Date().toISOString(),
-         updated_at: new Date().toISOString(),
-       };
-       // Only add organization_id for org-scoped collections
-       if (ORG_SCOPED.has(collection)) {
-         enriched.organization_id = orgId;
-       }
-       const doc = await databases.createDocument(DATABASE_ID, collection, docId, enriched);
-       return { data: this.normalize(doc) };
-     } catch (error) {
-       console.error(`Appwrite create ${collection}:`, error);
-       return { error };
-     }
-   },
+    // CREATE document
+    async create(collection, data, docId = ID.unique()) {
+      try {
+        const orgId = getCurrentOrganizationId();
+        const enriched = {
+          ...data,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        // Only add organization_id for org-scoped collections
+        if (ORG_SCOPED.has(collection)) {
+          enriched.organization_id = orgId;
+        }
+        console.log(`[db.create] Collection: ${collection}, docId: ${docId}`);
+        console.log(`[db.create] Data fields:`, Object.keys(enriched));
+        console.log(`[db.create] verification_token present:`, 'verification_token' in enriched);
+        if ('verification_token' in enriched) {
+          const token = enriched.verification_token;
+          console.log(`[db.create] verification_token value: ${token ? token.substring(0, 20) + '...' : 'EMPTY'}`);
+        }
+        const doc = await databases.createDocument(DATABASE_ID, collection, docId, enriched);
+        console.log(`[db.create] Document created with $id:`, doc?.$id);
+        return { data: this.normalize(doc) };
+      } catch (error) {
+        console.error(`❌ Appwrite create ${collection} failed:`, error.message || error);
+        console.error('Error details:', error);
+        return { error };
+      }
+    },
 
   // UPDATE document
   async update(collection, docId, data) {

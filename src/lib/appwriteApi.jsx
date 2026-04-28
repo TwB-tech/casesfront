@@ -842,23 +842,24 @@ export const appwriteApi = {
          organization_id = resolvedOrganizationId;
        }
 
-        // Create user profile in 'users' collection
-        const userProfile = {
-          id: newUser.user.$id,
-          username: payload.username.trim(),
-          email: payload.email.trim(),
-          role: requestedRole,
-          phone: payload.phone_number || '',
-          timezone: 'EAT',
-          status: 'Active',
-          messaging_enabled: true,
-          deadline_notifications: true,
-          organization_id: resolvedOrganizationId,
-          verification_token: verificationToken,
-          email_verified: false,
-        };
+         // Create user profile in 'users' collection
+         const userProfile = {
+           id: newUser.user.$id,
+           username: payload.username.trim(),
+           email: payload.email.trim(),
+           role: requestedRole,
+           phone: payload.phone_number || '',
+           timezone: 'EAT',
+           status: 'Active',
+           messaging_enabled: true,
+           deadline_notifications: true,
+           organization_id: resolvedOrganizationId,
+           verification_token: verificationToken,
+           email_verified: false,
+         };
+         console.log('[register] userProfile created:', { ...userProfile, verification_token: userProfile.verification_token ? `${userProfile.verification_token.substring(0, 10)}...` : 'MISSING' });
 
-        const { data: createdUser, error: createUserErr } = await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
+         const { data: createdUser, error: createUserErr } = await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
         if (createUserErr) {
           console.error('❌ Failed to create user profile:', createUserErr);
           return failure('Failed to create user profile', 500, { detail: createUserErr.message });
