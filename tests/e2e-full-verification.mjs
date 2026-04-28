@@ -82,11 +82,7 @@ async function getVerificationToken(email) {
   if (!APPWRITE_API_KEY) throw new Error('APPWRITE_API_KEY not set in .env');
   const base = APPWRITE_ENDPOINT;
   const endpoint = `${base}/v1/databases/${APPWRITE_DATABASE_ID}/collections/users/documents`;
-  const params = new URLSearchParams();
-  params.append('queries[0][$eq]', 'email');
-  params.append('queries[0][value]', email);
-  const url = `${endpoint}?${params.toString()}`;
-  const res = await fetch(url, {
+  const res = await fetch(endpoint, {
     headers: {
       'X-Appwrite-Project': APPWRITE_PROJECT_ID,
       'X-Appwrite-Key': APPWRITE_API_KEY,
@@ -94,13 +90,14 @@ async function getVerificationToken(email) {
   });
   if (!res.ok) {
     const txt = await res.text();
-    throw new Error(`Failed to fetch user: ${res.status} - ${txt}`);
+    throw new Error(`Failed to fetch users: ${res.status} - ${txt}`);
   }
   const data = await res.json();
-  if (!data.documents || data.documents.length === 0) {
-    throw new Error('User not found');
+  const user = data.documents?.find(d => d.email === email);
+  if (!user) {
+    throw new Error(`User with email ${email} not found`);
   }
-  return data.documents[0].verification_token;
+  return user.verification_token;
 }
 
 async function testRole(roleKey, cfg) {
