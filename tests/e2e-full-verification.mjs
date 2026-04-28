@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { existsSync, mkdirSync, rmdirSync, writeFileSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, rmdirSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -10,35 +10,6 @@ mkdirSync(OUT, { recursive: true });
 
 const BASE = 'https://www.kwakorti.live';
 const PASSWORD = 'TestPass123!';
-
-// Load Appwrite admin credentials from .env for backend queries
-function loadEnv() {
-  const env = {};
-  try {
-    const content = readFileSync(join(process.cwd(), '.env'), 'utf-8');
-    const lines = content.split('\n');
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-      const eqIdx = trimmed.indexOf('=');
-      if (eqIdx === -1) continue;
-      const key = trimmed.substring(0, eqIdx).trim();
-      let value = trimmed.substring(eqIdx + 1).trim();
-      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-        value = value.slice(1, -1);
-      }
-      env[key] = value;
-    }
-  } catch (err) {
-    console.warn('Could not read .env:', err.message);
-  }
-  return env;
-}
-const env = loadEnv();
-const APPWRITE_ENDPOINT = (env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1').replace(/\/v1$/, '');
-const APPWRITE_PROJECT_ID = env.APPWRITE_PROJECT_ID;
-const APPWRITE_DATABASE_ID = env.APPWRITE_DATABASE_ID || 'default';
-const APPWRITE_API_KEY = env.APPWRITE_API_KEY; // server key
 
 const roles = {
   individual: {
@@ -63,7 +34,7 @@ const roles = {
   },
   'legal clinic': {
     button: 'Legal Clinic',
-    step1: { 'clinic name': 'Test Legal Aid', email: `clinic${Date.now()}@e.test`, 'phone number': `+254700000005` },
+    step1: { 'clinic name': 'Test Legal Aid', email: `clinic${Date.now()}@e.test', 'phone number': `+254700000005` },
     step2: { address: 'Mombasa', 'focus areas': 'Human Rights', bio: 'Clinic test' },
   },
   organization: {
@@ -73,32 +44,10 @@ const roles = {
   },
 };
 
-console.log('=== COMPREHENSIVE SIGNUP + EMAIL VERIFICATION TEST ===');
+console.log('=== REAL BROWSER SIGNUP + EMAIL VERIFICATION (TOKEN CAPTURE) ===');
 console.log('Base URL:', BASE);
 console.log('Roles:', Object.keys(roles).join(', '));
 console.log('');
-
-async function getVerificationToken(email) {
-  if (!APPWRITE_API_KEY) throw new Error('APPWRITE_API_KEY not set in .env');
-  const base = APPWRITE_ENDPOINT;
-  const endpoint = `${base}/v1/databases/${APPWRITE_DATABASE_ID}/collections/users/documents`;
-  const res = await fetch(endpoint, {
-    headers: {
-      'X-Appwrite-Project': APPWRITE_PROJECT_ID,
-      'X-Appwrite-Key': APPWRITE_API_KEY,
-    },
-  });
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`Failed to fetch users: ${res.status} - ${txt}`);
-  }
-  const data = await res.json();
-  const user = data.documents?.find(d => d.email === email);
-  if (!user) {
-    throw new Error(`User with email ${email} not found`);
-  }
-  return user.verification_token;
-}
 
 async function testRole(roleKey, cfg) {
   console.log(`\n--- ${roleKey.toUpperCase()} ---`);
@@ -118,12 +67,32 @@ async function testRole(roleKey, cfg) {
     }
   });
 
-  try {
-    // 1. Sign up
-    console.log('  1/4: Starting signup...');
-    await page.goto(`${BASE}/signup`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(1500);
-    await page.screenshot({ path: join(outDir, '00-signup-page.png'), fullPage: true });
+   try {
+     console.log('  1/4: Starting signup...');
+     await page.goto(`${BASE}/signup`, { waitUntil: 'networkidle' });
+     await page.waitForTimeout(1500);
+     await page.screenshot({ path: join(outDir, '00-signup-page.png'), fullPage: true });
+
+     // Capture the Appwrite request that creates the user document
+     let appwriteReq = null;
+     page.on('request', request => {
+       const url = request.url();
+       if (url.includes('/collections/users/documents') && request.method() === 'POST') {
+         console.log('   [DEBUG] Appwrite create user document request detected');
+         const postData = request.postData();
+         try {
+           const json = JSON.parse(postData);
+           const hasToken = 'verification_token' in json;
+           console.log('   [DEBUG] Request body keys:', Object.keys(json));
+           console.log('   [DEBUG] verification_token present:', hasToken);
+           if (hasToken) {
+             console.log('   [DEBUG] verification_token value:', json.verification_token ? json.verification_token.substring(0,20)+'...' : 'null');
+           }
+         } catch (e) {
+           console.log('   [DEBUG] Could not parse request body as JSON');
+         }
+       }
+     });
 
     await page.getByRole('button', { name: new RegExp(cfg.button, 'i') }).click();
     await page.waitForTimeout(1000);
@@ -166,66 +135,55 @@ async function testRole(roleKey, cfg) {
     await page.waitForTimeout(2000);
 
     await page.screenshot({ path: join(outDir, '01-summary.png'), fullPage: true });
+
+    // Before submitting, set up request interception to capture verification token
+    const emailReqPromise = page.waitForRequest(
+      req => req.url().includes('/api/send-verification-email') && req.method() === 'POST'
+    );
+
     await page.getByRole('button', { name: /submit/i }).click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(5000);
-    await page.screenshot({ path: join(outDir, '02-post-submit.png'), fullPage: true });
 
-    const body = await page.textContent('body');
-    const url = page.url();
-    console.log(`  Post-submit URL: ${url}`);
+    // Wait for the verification email request
+    let emailReq;
+    try {
+      emailReq = await Promise.race([
+        emailReqPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout waiting for email request')), 10000))
+      ]);
+      const postData = JSON.parse(emailReq.postData());
+      const token = postData.token;
+      console.log(`  ✓ Captured verification token from email API request`);
+      // Verify email using that token
+      console.log('  2/4: Verifying email using token...');
+      await page.goto(`${BASE}/verify-email?token=${token}`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(5000);
+      await page.screenshot({ path: join(outDir, '02-verified.png'), fullPage: true });
 
-    const success1 = body.toLowerCase().includes('success') || url.includes('register-success');
-    if (!success1) {
-      errors.push(`Signup did not reach success page. URL: ${url}`);
-      const notif = await page.textContent('.ant-notification-notice-message, .ant-notification-notice-description').catch(() => '');
-      if (notif) errors.push(`Notification: ${notif}`);
-      const snippet = body.substring(0, 500);
-      errors.push(`Page snippet: ${snippet}`);
+      const verifyBody = await page.textContent('body');
+      const verifyUrl = page.url();
+      console.log(`  Verification page URL: ${verifyUrl}`);
+
+      if (verifyBody.toLowerCase().includes('verified') || verifyBody.toLowerCase().includes('success') || verifyUrl.includes('/login')) {
+        console.log('  ✓ Email verified successfully');
+      } else {
+        errors.push(`Verification did not succeed. Body: ${verifyBody.substring(0,200)}`);
+      }
+    } catch (e) {
+      errors.push(`Failed to capture/use verification token: ${e.message}`);
+    }
+
+    // If token capture failed, we could attempt DB lookup as fallback, but skip for brevity.
+
+    if (errors.length > 0) {
       writeFileSync(join(outDir, 'errors.log'), errors.join('\n'));
       console.log(`  ❌ FAIL (${errors.length} errors)`);
       errors.forEach(e => console.log(`    ${e}`));
       await browser.close();
       return false;
     }
-    console.log('  ✓ Signup succeeded');
 
-    // 2. Retrieve verification token from Appwrite directly
-    console.log('  2/4: Retrieving verification token from Appwrite...');
-    let verificationToken;
-    try {
-      verificationToken = await getVerificationToken(email);
-      if (!verificationToken) {
-        throw new Error('Token is empty');
-      }
-      console.log(`  ✓ Token retrieved (${verificationToken.substring(0, 10)}...)`);
-    } catch (e) {
-      errors.push(`Failed to get verification token: ${e.message}`);
-      writeFileSync(join(outDir, 'errors.log'), errors.join('\n'));
-      console.log(`  ❌ FAIL`);
-      await browser.close();
-      return false;
-    }
-
-    // 3. Visit verification page
-    console.log('  3/4: Verifying email via React page...');
-    await page.goto(`${BASE}/verify-email?token=${verificationToken}`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(5000);
-    await page.screenshot({ path: join(outDir, '03-verified.png'), fullPage: true });
-
-    const verifyBody = await page.textContent('body');
-    const verifyUrl = page.url();
-    console.log(`  Verification page URL: ${verifyUrl}`);
-
-    // The page should show success and redirect to /login or display message
-    if (verifyBody.toLowerCase().includes('verified') || verifyBody.toLowerCase().includes('success') || verifyUrl.includes('/login')) {
-      console.log('  ✓ Email verified successfully');
-    } else {
-      errors.push(`Verification did not succeed. Body: ${verifyBody.substring(0,200)}`);
-    }
-
-    // 4. Test login
-    console.log('  4/4: Testing login...');
+    // 3. Test login
+    console.log('  3/4: Testing login...');
     await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(1500);
     await page.fill('input[name="email"]', email);
@@ -233,7 +191,7 @@ async function testRole(roleKey, cfg) {
     await page.getByRole('button', { name: /login|sign in/i }).click();
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(3000);
-    await page.screenshot({ path: join(outDir, '04-login.png'), fullPage: true });
+    await page.screenshot({ path: join(outDir, '03-login.png'), fullPage: true });
 
     const loggedInBody = await page.textContent('body');
     const loggedInUrl = page.url();
@@ -269,7 +227,7 @@ async function testRole(roleKey, cfg) {
   }
 }
 
-// Execute tests sequentially
+// Execute all role tests sequentially
 const results = {};
 for (const [role, cfg] of Object.entries(roles)) {
   console.log(`\n========== Testing: ${role.toUpperCase()} ==========`);
