@@ -172,7 +172,7 @@ export const appwriteApi = {
     }
 
     // CASE: GET single case by ID
-    if (/^case\/\d+$/.test(path)) {
+    if (/^case\/[^/]+$/.test(path)) {
       const id = path.split('/')[1];
       const { data, error } = await db.get(COLLECTIONS.CASES, id);
       if (error) throw error;
@@ -196,7 +196,7 @@ export const appwriteApi = {
      }
 
     // SINGLE CLIENT by ID
-    if (/^individual\/\d+$/.test(path) || /^client\/\d+$/.test(path)) {
+    if (/^individual\/[^/]+$/.test(path) || /^client\/[^/]+$/.test(path)) {
       const id = path.split('/')[1];
       const { data, error } = await db.get(COLLECTIONS.USERS, id);
       if (error) throw error;
@@ -258,7 +258,7 @@ export const appwriteApi = {
      }
 
     // TASKS: GET all tasks (org-filtered)
-    if (['tasks/', 'tasks'].includes(path)) {
+    if (path === 'tasks') {
       const { data, error } = await db.list(COLLECTIONS.TASKS);
       if (error) throw error;
       const tasksWithCase = data.map((t) => ({ ...t, case: t.case_id }));
@@ -275,8 +275,9 @@ export const appwriteApi = {
     }
 
     // DOCUMENT FILE DOWNLOAD
-    if (path.startsWith('api/documents/') && path.endsWith('/file/')) {
-      const id = path.split('/').filter(Boolean)[2]; // api/documents/:id/file/
+     if (path.startsWith('documents/') && path.endsWith('/file')) {
+       const parts = path.split('/').filter(Boolean);
+       const id = parts[1]; // documents/:id/file
       const { data: doc, error: docErr } = await db.get(COLLECTIONS.DOCUMENTS, id);
       if (docErr) throw docErr;
       const user = await getCurrentUser();
@@ -307,7 +308,7 @@ export const appwriteApi = {
     }
 
     // SINGLE DOCUMENT
-    if (path.startsWith('api/documents/') && path !== 'api/documents/') {
+     if (path.startsWith('documents/') && path !== 'documents') {
       const id = path.split('/').filter(Boolean).pop();
       const { data, error } = await db.get(COLLECTIONS.DOCUMENTS, id);
       if (error) throw error;
@@ -344,8 +345,8 @@ export const appwriteApi = {
     }
 
     // SINGLE INVOICE
-    if (/^api\/invoices\/\d+$/.test(path)) {
-      const id = path.split('/')[2];
+     if (/^invoices\/[^/]+$/.test(path)) {
+       const id = path.split('/')[1];
       const { data, error } = await db.get(COLLECTIONS.INVOICES, id);
       if (error) throw error;
       return success(mapInvoice(data));
@@ -654,6 +655,47 @@ export const appwriteApi = {
       return success(data);
     }
 
+    // FIRM: LIST FIRMS
+    if (path === 'firm') {
+      const { data, error } = await db.list(COLLECTIONS.USERS, [
+        Query.equal('role', 'firm'),
+      ]);
+      if (error) throw error;
+      return success({ results: data.map((doc) => ({ ...doc, id: doc.id })) });
+    }
+
+    // NOTES: LIST NOTES FOR CURRENT USER
+    if (path === 'notes') {
+      const user = getCurrentUser();
+      const { data, error } = await db.list(COLLECTIONS.NOTES, [
+        Query.equal('user_id', user.id),
+      ]);
+      if (error) throw error;
+      return success({ results: data });
+    }
+
+    // CLIENTCOMM: LIST COMMUNICATIONS
+    if (path === 'clientcomm/api/clientcommunications') {
+      const user = getCurrentUser();
+      const { data, error } = await db.list(COLLECTIONS.COMMUNICATIONS, [
+        Query.equal('organization_id', user.organization_id),
+      ]);
+      if (error) throw error;
+      return success({ results: data });
+    }
+
+    // CLIENTCOMM: SINGLE COMMUNICATION
+    if (path.startsWith('clientcomm/api/clientcommunications/') && path !== 'clientcomm/api/clientcommunications') {
+      const id = path.split('/').filter(Boolean).pop();
+      const { data, error } = await db.get(COLLECTIONS.COMMUNICATIONS, id);
+      if (error) throw error;
+      const user = getCurrentUser();
+      if (data.organization_id !== user.organization_id) {
+        return failure('Forbidden', 403);
+      }
+      return success(data);
+    }
+
     return failure(`GET ${path} not implemented`, 404);
   },
 
@@ -687,7 +729,7 @@ export const appwriteApi = {
     // =========== AUTH ENDPOINTS ===========
 
     // LOGIN
-    if (path === 'auth/login/') {
+    if (path === 'auth/login') {
       // Appwrite: create email session
       const { data, error } = await auth.createEmailSession(payload.email, payload.password);
       if (error) {
@@ -717,7 +759,7 @@ export const appwriteApi = {
     }
 
     // REGISTER
-    if (path === 'auth/register/') {
+    if (path === 'auth/register') {
       // Rate limiting (same as Supabase)
       const clientIP = payload.client_ip || payload.ip || 'unknown';
       const rateLimitKey = `registration_rate_limit_${clientIP}`;
@@ -894,7 +936,7 @@ export const appwriteApi = {
     }
 
     // EMAIL VERIFY
-    if (path === 'auth/verify-email/') {
+    if (path === 'auth/verify-email') {
       if (!payload.token) {
         return failure('Verification token is required', 400, {
           token: ['Verification token is required'],
@@ -946,7 +988,7 @@ export const appwriteApi = {
     }
 
     // ACCEPT INVITE
-    if (path === 'auth/accept-invite/') {
+    if (path === 'auth/accept-invite') {
       const { token, password, fullName } = payload;
       if (!token || !password) {
         return failure('Token and password are required', 400);
@@ -1007,7 +1049,7 @@ export const appwriteApi = {
     }
 
     // CHANGE PASSWORD
-    if (path === 'auth/change-password/') {
+    if (path === 'auth/change-password') {
       try {
         await auth.updatePassword(payload.newPassword);
         return success({ detail: 'Password updated successfully.' });
@@ -1017,7 +1059,7 @@ export const appwriteApi = {
     }
 
     // VERIFY TOKEN
-    if (path === 'auth/verify-token/') {
+    if (path === 'auth/verify-token') {
       try {
         const session = await account.get();
         if (!session || !session.userId) {
@@ -1043,7 +1085,7 @@ export const appwriteApi = {
     }
 
     // LOGOUT
-    if (path === 'auth/logout/') {
+    if (path === 'auth/logout') {
       try {
         await auth.deleteSession();
         return success({ detail: 'Logged out successfully.' });
@@ -1053,7 +1095,7 @@ export const appwriteApi = {
     }
 
     // CREATE CASE
-    if (path === 'case/') {
+    if (path === 'case') {
       const { data, error } = await db.create(COLLECTIONS.CASES, {
         ...payload,
         organization_id,
@@ -1066,7 +1108,7 @@ export const appwriteApi = {
     }
 
     // CREATE TASK
-    if (['tasks/create/', 'tasks/create'].includes(path)) {
+    if (path === 'tasks/create') {
       const { data, error } = await db.create(COLLECTIONS.TASKS, {
         title: payload.title,
         description: payload.description,
@@ -1084,7 +1126,7 @@ export const appwriteApi = {
     }
 
     // CREATE DOCUMENT (with optional file upload to Appwrite Storage)
-    if (path === 'document_management/api/documents/') {
+     if (path === 'document_management/api/documents') {
       const title = payload.get ? payload.get('title') : payload.title;
       const description = payload.get ? payload.get('description') : payload.description;
       const owner = payload.get ? payload.get('owner') : payload.owner;
@@ -1134,7 +1176,7 @@ export const appwriteApi = {
     }
 
     // CREATE INVOICE
-    if (path === 'invoices' || path === 'invoices/') {
+     if (path === 'invoices') {
       const invoiceData = {
         invoice_number: `INV-${Date.now()}`,
         client_name: payload.clientName,
@@ -1160,7 +1202,7 @@ export const appwriteApi = {
     }
 
     // CREATE EXPENSE
-    if (path === 'expenses/') {
+     if (path === 'expenses') {
       const { data, error } = await db.create(COLLECTIONS.EXPENSES, {
         ...payload,
         organization_id,
@@ -1172,7 +1214,7 @@ export const appwriteApi = {
     }
 
     // CREATE PAYROLL RUN
-    if (path === 'payroll/') {
+     if (path === 'payroll') {
       const { data, error } = await db.create(COLLECTIONS.PAYROLL_RUNS, {
         ...payload,
         organization_id,
@@ -1189,7 +1231,7 @@ export const appwriteApi = {
     }
 
     // HR: CREATE EMPLOYEE
-    if (path === 'hr/employees/') {
+     if (path === 'hr/employees') {
       const currentUser = getCurrentUser();
       const orgId = localStorage.getItem('organization_id') || payload.organization_id;
 
@@ -1237,7 +1279,7 @@ export const appwriteApi = {
     }
 
     // HR: SEND INVITATION
-    if (path === 'hr/invites/') {
+     if (path === 'hr/invites') {
       const orgId = localStorage.getItem('organization_id') || payload.organization_id;
 
       if (!user.id || !['advocate', 'firm', 'admin', 'administrator'].includes(user.role)) {
@@ -1273,7 +1315,7 @@ export const appwriteApi = {
     }
 
     // CHATS: CREATE ROOM
-    if (path === 'chats/create-or-get-chat-room/') {
+     if (path === 'chats/create-or-get-chat-room') {
       const first = String(payload.user_id);
       const second = String(payload.other_user_id);
       const roomName = `room-${[first, second].sort((a, b) => a.localeCompare(b)).join('-')}`;
@@ -1297,7 +1339,7 @@ export const appwriteApi = {
     }
 
     // CHATS: SEND MESSAGE
-    if (path === 'chats/send-message/') {
+     if (path === 'chats/send-message') {
       let messageContent, room, senderId;
       const attachments = [];
 
@@ -1328,7 +1370,7 @@ export const appwriteApi = {
     }
 
     // BILLING: SUBSCRIBE
-    if (path === 'billing/subscribe/') {
+     if (path === 'billing/subscribe') {
       const { data, error } = await db.create(COLLECTIONS.SUBSCRIPTIONS, {
         ...payload,
         organization_id,
@@ -1343,7 +1385,7 @@ export const appwriteApi = {
     }
 
     // BILLING: ONBOARDING
-    if (path === 'billing/onboarding/') {
+     if (path === 'billing/onboarding') {
       const { data, error } = await db.create(COLLECTIONS.ONBOARDING, {
         ...payload,
         organization_id,
@@ -1354,7 +1396,7 @@ export const appwriteApi = {
     }
 
     // DOCUMENT GENERATION (AI)
-    if (path === 'documents/generate/') {
+     if (path === 'documents/generate') {
       const docType = payload.type || 'document';
       const country = (payload.country || 'kenya').toLowerCase();
       const userPrompt = payload.prompt || '';
@@ -1428,7 +1470,7 @@ export const appwriteApi = {
     }
 
     // AI/REYA QUERY (redirect to API)
-    if (path === '/ai/reya/query/') {
+     if (path === 'ai/reya/query') {
       return success({
         response: 'Processing with AI...',
         query: payload.query || payload.message,
@@ -1436,7 +1478,7 @@ export const appwriteApi = {
     }
 
     // QUICK ACTION
-    if (path === '/ai/reya/quick-action/') {
+     if (path === 'ai/reya/quick-action') {
       const action = payload.action || '';
       return success({
         content: 'Processing with AI...',
@@ -1451,6 +1493,92 @@ export const appwriteApi = {
           { label: 'Letter', action: 'generate_letter' },
         ],
       });
+    }
+
+    // CLIENT REGISTRATION VIA INVITE TOKEN
+    if (path === 'clients/register') {
+      const { token, password, name } = payload;
+      if (!token || !password) {
+        return failure('Token and password required', 400);
+      }
+      // Find pending invite
+      const { data: invites, error: inviteErr } = await db.list(COLLECTIONS.INVITES, [
+        Query.equal('token', token),
+        Query.equal('status', 'pending'),
+      ]);
+      if (inviteErr || invites.length === 0) {
+        return failure('Invalid or expired invitation', 400);
+      }
+      const invite = invites[0];
+      // Check expiration
+      if (new Date(invite.expires_at) < new Date()) {
+        return failure('Invitation expired', 400);
+      }
+      // Create user account
+      const { data: authData, error: authError } = await auth.create(
+        null,
+        invite.email,
+        password,
+        name || invite.email.split('@')[0]
+      );
+      if (authError) {
+        return failure('Failed to create account: ' + authError.message, 400);
+      }
+      // Create user profile
+      const userData = {
+        id: authData.user?.$id,
+        username: name || invite.email.split('@')[0],
+        email: invite.email,
+        role: 'client',
+        organization_id: invite.organization_id,
+        status: 'Active',
+        email_verified: true,
+        invited_by: invite.invited_by,
+        created_at: new Date().toISOString(),
+      };
+      await db.create(COLLECTIONS.USERS, userData, authData.user.$id);
+      // Update invite status
+      await db.update(COLLECTIONS.INVITES, invite.id, { status: 'accepted' });
+      return success({
+        id: authData.user.$id,
+        email: invite.email,
+        username: userData.username,
+        role: 'client',
+        organization_id: invite.organization_id,
+      }, 201);
+    }
+
+    // NOTES: CREATE NOTE
+    if (path === 'notes') {
+      const currentUser = getCurrentUser();
+      const noteData = {
+        user_id: currentUser.id,
+        organization_id: currentUser.organization_id || null,
+        title: payload.title || '',
+        content: payload.content,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      const { data, error } = await db.create(COLLECTIONS.NOTES, noteData);
+      if (error) throw error;
+      return success({ ...data, id: data.id }, 201);
+    }
+
+    // CLIENTCOMM: CREATE COMMUNICATION
+    if (path === 'clientcomm/api/clientcommunications') {
+      const currentUser = getCurrentUser();
+      const commData = {
+        organization_id: currentUser.organization_id,
+        email: payload.email || '',
+        subject: payload.subject || '',
+        message: payload.message,
+        google_meet_link: payload.google_meet_link || '',
+        created_by: currentUser.id,
+        created_at: new Date().toISOString(),
+      };
+      const { data, error } = await db.create(COLLECTIONS.COMMUNICATIONS, commData);
+      if (error) throw error;
+      return success(data, 201);
     }
 
     return failure(`POST ${path} not implemented`, 404);
@@ -1498,8 +1626,8 @@ export const appwriteApi = {
     }
 
     // UPDATE DOCUMENT
-    if (path.startsWith('api/documents/') && !path.endsWith('/file/')) {
-      const id = parts[2];
+     if (path.startsWith('documents/') && !path.endsWith('/file')) {
+        const id = parts[1];
       // Check permissions: fetch existing document
       const { data: existing, error: fetchErr } = await db.get(COLLECTIONS.DOCUMENTS, id);
       if (fetchErr) throw fetchErr;
@@ -1521,8 +1649,8 @@ export const appwriteApi = {
     }
 
     // UPDATE USER PROFILE
-    if (path.startsWith('individual/') || path === 'auth/profile/') {
-      const id = path === 'auth/profile/' ? getCurrentUser().id : parts[1];
+     if (path.startsWith('individual/') || path === 'auth/profile') {
+       const id = path === 'auth/profile' ? getCurrentUser().id : parts[1];
       const updateData = {
         username: payload.username,
         email: payload.email,

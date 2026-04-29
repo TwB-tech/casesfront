@@ -376,18 +376,31 @@ const collections = [
     ],
     permissions: { read: ['role:all'], write: ['role:users'] },
   },
-  {
-    name: 'onboarding',
-    attributes: [
-      { key: 'id', type: 'string', size: 255, required: true },
-      { key: 'organization_id', type: 'string', size: 255, required: true },
-      { key: 'step', type: 'string', size: 100, required: true },
-      { key: 'completed', type: 'boolean', default: false },
-      { key: 'created_at', type: 'datetime' },
-    ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
-  },
-];
+   {
+     name: 'onboarding',
+     attributes: [
+       { key: 'id', type: 'string', size: 255, required: true },
+       { key: 'organization_id', type: 'string', size: 255, required: true },
+       { key: 'step', type: 'string', size: 100, required: true },
+       { key: 'completed', type: 'boolean', default: false },
+       { key: 'created_at', type: 'datetime' },
+     ],
+     permissions: { read: ['role:all'], write: ['role:users'] },
+   },
+   {
+     name: 'notes',
+     attributes: [
+       { key: 'id', type: 'string', size: 255, required: true },
+       { key: 'user_id', type: 'string', size: 255, required: true },
+       { key: 'organization_id', type: 'string', size: 255 },
+        { key: 'title', type: 'string', size: 255 },
+       { key: 'content', type: 'text', required: true },
+       { key: 'created_at', type: 'datetime' },
+       { key: 'updated_at', type: 'datetime' },
+     ],
+     permissions: { read: ['role:all'], write: ['role:users'] },
+   },
+ ];
 
 async function ensureCollection(def) {
   try {

@@ -19,6 +19,7 @@ import {
   Search,
   UserPlus,
   Mail,
+  Bookmark,
 } from 'lucide-react';
 
 import useAuth from '../../hooks/useAuth';
@@ -33,6 +34,8 @@ import {
   quickAction as aiQuickAction,
   ACTIVE_PROVIDER,
 } from '../../lib/reyaAiService';
+
+import { message } from 'antd';
 
 const ActionButton = ({ action, onClick, isFuturistic }) => {
   const getIcon = (iconName) => {
@@ -437,9 +440,27 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
         setTimeout(() => navigate(path), 100);
       }
     }
-  };
+   };
 
-  // Calculate pending notifications
+   // Save note
+   const saveAsNote = useCallback(async (content) => {
+     if (!user) {
+       message.error('You must be logged in to save notes');
+       return;
+     }
+     try {
+       await axiosInstance.post('/notes', {
+         title: `Note ${new Date().toLocaleTimeString()}`,
+         content,
+       });
+       message.success('Note saved');
+     } catch (error) {
+       console.error('Save note error:', error);
+       message.error('Failed to save note');
+     }
+   }, [user]);
+
+   // Calculate pending notifications
   const pendingNotificationCount =
     deadlines.filter((d) => {
       const daysLeft = Math.ceil((new Date(d.end_date) - new Date()) / (1000 * 60 * 60 * 24));
@@ -607,8 +628,26 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
                               ))}
                             </div>
                           </div>
-                        )}
-                      </div>
+                         )}
+ 
+                         {/* Save as Note button for assistant messages */}
+                         {msg.type === 'assistant' && (
+                           <div className="mt-2">
+                             <button
+                               onClick={() => saveAsNote(msg.content)}
+                               className={`text-xs flex items-center gap-1 transition-colors ${
+                                 isFuturistic
+                                   ? 'text-aurora-muted hover:text-aurora-primary'
+                                   : 'text-gray-500 hover:text-primary-600'
+                               }`}
+                               title="Save as Note"
+                             >
+                               <Bookmark className="w-3 h-3" />
+                               Save as Note
+                             </button>
+                           </div>
+                         )}
+                       </div>
                     </div>
                   ))}
 

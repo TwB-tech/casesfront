@@ -10,6 +10,7 @@ const DATABASE_ID = process.env.APPWRITE_DATABASE_ID || 'default';
 const COLLECTION_USERS = 'users';
 
 export default async function handler(req, res) {
+  console.log('🔔 verify-email called', { method: req.method, token: req.body?.token?.substring(0,10) });
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

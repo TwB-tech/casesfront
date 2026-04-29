@@ -25,9 +25,9 @@ export default defineConfig(({ mode }) => {
         env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1'
       ),
       'import.meta.env.APPWRITE_PROJECT_ID': JSON.stringify(env.APPWRITE_PROJECT_ID || ''),
-      'import.meta.env.APPWRITE_DATABASE_ID': JSON.stringify(env.APPWRITE_DATABASE_ID || 'default'),
-      'import.meta.env.RESEND_API_KEY': JSON.stringify(env.RESEND_API_KEY || ''),
-      'import.meta.env.ADMIN_EMAIL': JSON.stringify(env.ADMIN_EMAIL || 'admin@techwithbrands.com'),
+       'import.meta.env.APPWRITE_DATABASE_ID': JSON.stringify(env.APPWRITE_DATABASE_ID || 'default'),
+       // 'import.meta.env.RESEND_API_KEY': JSON.stringify(env.RESEND_API_KEY || ''), // REMOVED: secret exposed in client
+       'import.meta.env.ADMIN_EMAIL': JSON.stringify(env.ADMIN_EMAIL || 'admin@techwithbrands.com'),
       'import.meta.env.NOREPLY_EMAIL': JSON.stringify(env.NOREPLY_EMAIL || 'noreply@techwithbrands.com'),
       'import.meta.env.SITE_URL': JSON.stringify(env.SITE_URL || 'http://localhost:3000'),
     },

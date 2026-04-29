@@ -63,13 +63,14 @@ export const COLLECTIONS = {
   CHAT_MESSAGES: 'chat_messages',
   AUDIT_LOGS: 'audit_logs',
   EXPENSES: 'expenses',
-  PAYROLL_RUNS: 'payroll_runs',
-  ADMIN_SETTINGS: 'admin_settings',
-  SUBSCRIPTIONS: 'subscriptions',
-  ONBOARDING: 'onboarding',
-  INVITES: 'invites',
-  COURTS: 'courts',
-};
+   PAYROLL_RUNS: 'payroll_runs',
+   ADMIN_SETTINGS: 'admin_settings',
+   SUBSCRIPTIONS: 'subscriptions',
+   ONBOARDING: 'onboarding',
+   INVITES: 'invites',
+   COURTS: 'courts',
+   NOTES: 'notes',
+ };
 
 // Storage buckets (matching Supabase)
 export const BUCKETS = {

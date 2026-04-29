@@ -29,6 +29,7 @@ function buildVerificationEmail(username, token) {
 }
 
 export default async function handler(req, res) {
+  console.log('🔔 send-verification-email called', { method: req.method, bodyKeys: Object.keys(req.body || {}) });
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

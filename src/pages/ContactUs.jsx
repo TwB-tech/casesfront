@@ -10,7 +10,7 @@ import {
 } from '@ant-design/icons';
 import { useTheme } from '../contexts/ThemeContext';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
-import { sendContactEmail } from '../lib/emailService';
+import axiosInstance from '../axiosConfig';
 
 const { Title, Text } = Typography;
 
@@ -23,13 +23,13 @@ const ContactUsForm = () => {
   const handleSubmit = async (values) => {
     setSubmitting(true);
     try {
-      const result = await sendContactEmail(values);
-      if (result.success) {
+      const response = await axiosInstance.post('/api/contact', values);
+      if (response.data?.success) {
         setSubmitted(true);
         message.success('Message sent successfully! We\'ll get back to you soon.');
         form.resetFields();
       } else {
-        message.error(result.error || 'Failed to send message. Please try again.');
+        message.error(response.data?.error || 'Failed to send message. Please try again.');
       }
     } catch (errorInfo) {
       console.error('Failed:', errorInfo);
