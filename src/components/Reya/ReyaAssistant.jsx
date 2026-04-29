@@ -34,6 +34,7 @@ import {
   quickAction as aiQuickAction,
   ACTIVE_PROVIDER,
 } from '../../lib/reyaAiService';
+import { getSessionId, initThread, appendMessage, getConversationContext } from '../../utils/reyaMemory';
 
 import { message } from 'antd';
 
@@ -80,13 +81,17 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Core state
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [initialPrompt, setInitialPrompt] = useState('');
+   // Core state
+   const [isOpen, setIsOpen] = useState(false);
+   const [isMinimized, setIsMinimized] = useState(false);
+   const [isTyping, setIsTyping] = useState(false);
+   const [input, setInput] = useState('');
+   const [messages, setMessages] = useState([]);
+   const [initialPrompt, setInitialPrompt] = useState('');
+
+   // Conversation memory state
+   const [threadId, setThreadId] = useState(null);
+   const [conversationHistory, setConversationHistory] = useState([]);
 
   // Expose openWithPrompt method to window for external triggers
   useEffect(() => {
@@ -103,14 +108,42 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
     };
   }, [isOpen]);
 
-  // Context data
-  const [cases, setCases] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [deadlines, setDeadlines] = useState([]);
-  const [invoices, setInvoices] = useState([]);
-  const [clients, setClients] = useState([]);
+   // Context data
+   const [cases, setCases] = useState([]);
+   const [tasks, setTasks] = useState([]);
+   const [deadlines, setDeadlines] = useState([]);
+   const [invoices, setInvoices] = useState([]);
+   const [clients, setClients] = useState([]);
 
-  const messagesEndRef = useRef(null);
+   const messagesEndRef = useRef(null);
+
+   // Initialize conversation thread on mount (or when user becomes available)
+   useEffect(() => {
+     if (user && !threadId) {
+       const { threadId: newThreadId, memory } = initThread({
+         user_id: user.id,
+         role: user.role,
+         organization_id: user.organization_id,
+       });
+       setThreadId(newThreadId);
+       // Load any existing history for this thread
+       const context = getConversationContext(newThreadId);
+       if (context.history && context.history.length > 0) {
+         // Convert memory format to UI messages format
+         const uiMessages = context.history.map((msg, idx) => ({
+           id: Date.now() - context.history.length + idx,
+           type: msg.role === 'user' ? 'user' : 'assistant',
+           content: msg.content,
+           ...(msg.actions && { actions: msg.actions }),
+           ...(msg.suggestions && { suggestions: msg.suggestions }),
+         }));
+         setMessages(uiMessages.length > 0 ? uiMessages : []);
+         setConversationHistory(context.history);
+       } else {
+         setConversationHistory([]);
+       }
+     }
+   }, [user, threadId]);
 
   // Initialize with welcome message
   useEffect(() => {
@@ -274,75 +307,93 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
           country: 'kenya',
         });
 
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            type: 'assistant',
-            content: response.data.content || 'Document generated successfully!',
-            actions: [
-              { label: 'View Documents', icon: 'file', path: '/documents' },
-              { label: 'Create Another', icon: 'plus', action: 'generate_more' },
-            ],
-            suggestions: [
-              { label: 'Generate Contract', action: 'generate_contract' },
-              { label: 'Generate NDA', action: 'generate_nda' },
-            ],
-          },
-        ]);
-        setIsGenerating(false);
-      } else {
-        const aiResponse = await aiQuery(userMessage, {
-          cases_count: cases.length,
-          clients_count: clients.length,
-          invoices_count: invoices.length,
-          pending_tasks: tasks.filter((t) => !t.status).length,
-          upcoming_deadlines: deadlines.length,
-          user_role: user?.role,
-          user_id: user?.id,
-          is_authenticated: !!user,
-        });
+         const assistantData = {
+           content: response.data.content || 'Document generated successfully!',
+           actions: [
+             { label: 'View Documents', icon: 'file', path: '/documents' },
+             { label: 'Create Another', icon: 'plus', action: 'generate_more' },
+           ],
+           suggestions: [
+             { label: 'Generate Contract', action: 'generate_contract' },
+             { label: 'Generate NDA', action: 'generate_nda' },
+           ],
+         };
+         setMessages((prev) => [
+           ...prev,
+           {
+             id: Date.now() + 1,
+             type: 'assistant',
+             ...assistantData,
+           },
+         ]);
+         setIsGenerating(false);
+         // Save to conversation memory
+         saveToMemory(userMessage, assistantData);
+       } else {
+         const aiResponse = await aiQuery(userMessage, {
+           cases_count: cases.length,
+           clients_count: clients.length,
+           invoices_count: invoices.length,
+           pending_tasks: tasks.filter((t) => !t.status).length,
+           upcoming_deadlines: deadlines.length,
+           user_role: user?.role,
+           user_id: user?.id,
+           is_authenticated: !!user,
+           threadId,
+           history: conversationHistory,
+         });
 
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            type: 'assistant',
-            ...aiResponse,
-          },
-        ]);
+         const assistantData = { ...aiResponse };
+         setMessages((prev) => [
+           ...prev,
+           {
+             id: Date.now() + 1,
+             type: 'assistant',
+             ...assistantData,
+           },
+         ]);
+         // Save to conversation memory
+         saveToMemory(userMessage, assistantData);
       }
-    } catch {
-      const fallbackResponse = getSimpleFallback(userMessage);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          type: 'assistant',
-          content: fallbackResponse,
-          actions: [
-            { label: 'View Cases', icon: 'file', path: '/case-list' },
-            { label: 'View Tasks', icon: 'check', path: '/tasks' },
-          ],
-          suggestions: [
-            { label: 'Show my cases', action: 'cases' },
-            { label: 'Draft document', action: 'drafting' },
-          ],
-        },
-      ]);
-    } finally {
-      setIsTyping(false);
-    }
-  }, [
-    input,
-    user,
-    cases.length,
-    clients.length,
-    invoices.length,
-    tasks,
-    deadlines.length,
-    getSimpleFallback,
-  ]);
+     } catch {
+       const fallbackResponse = getSimpleFallback(userMessage);
+       const fallbackData = {
+         content: fallbackResponse,
+         actions: [
+           { label: 'View Cases', icon: 'file', path: '/case-list' },
+           { label: 'View Tasks', icon: 'check', path: '/tasks' },
+         ],
+         suggestions: [
+           { label: 'Show my cases', action: 'cases' },
+           { label: 'Draft document', action: 'drafting' },
+         ],
+       };
+       setMessages((prev) => [
+         ...prev,
+         {
+           id: Date.now() + 1,
+           type: 'assistant',
+           ...fallbackData,
+         },
+       ]);
+       // Save fallback to memory
+       saveToMemory(userMessage, fallbackData);
+     } finally {
+       setIsTyping(false);
+     }
+   }, [
+     input,
+     user,
+     cases.length,
+     clients.length,
+     invoices.length,
+     tasks,
+     deadlines.length,
+     getSimpleFallback,
+     threadId,
+     conversationHistory,
+     saveToMemory,
+   ]);
 
   // Handle keyboard input
   const handleKeyPress = (e) => {
@@ -467,7 +518,26 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
       return daysLeft <= 3;
     }).length + tasks.filter((t) => !t.status).length;
 
-  // Auto-scroll to bottom
+   // Save assistant response to conversation memory
+   const saveToMemory = useCallback((userMsg, assistantData) => {
+     if (!threadId) return;
+     try {
+       appendMessage(threadId, userMsg, assistantData);
+       setConversationHistory((prev) => [
+         ...prev,
+         { role: 'user', content: userMsg, timestamp: new Date().toISOString() },
+         { 
+           role: 'assistant', 
+           content: assistantData.content,
+           timestamp: new Date().toISOString(),
+           actions: assistantData.actions || [],
+           suggestions: assistantData.suggestions || [],
+         },
+       ]);
+     } catch (e) {
+       console.warn('Failed to save to memory:', e);
+     }
+   }, [threadId]);
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);

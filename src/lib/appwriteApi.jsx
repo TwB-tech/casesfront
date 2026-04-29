@@ -1139,22 +1139,26 @@ export const appwriteApi = {
       let fileSize = 0;
       let mimeType = 'application/octet-stream';
       const file = payload.get ? payload.get('file') : payload.file;
-      if (file) {
-        try {
-          const upload = await storage.createFile({
-            bucketId: 'documents',
-            fileId: ID.unique(),
-            file,
-            permissions: ['role:users'],
-          });
-          fileId = upload.$id;
-          fileSize = upload.sizeOriginal || 0;
-          mimeType = upload.mimeType || 'application/octet-stream';
-        } catch (e) {
-          console.error('Storage upload failed:', e);
-          return failure('File upload failed', 500);
-        }
-      }
+       if (file) {
+         try {
+           const upload = await storage.createFile({
+             bucketId: 'documents',
+             fileId: ID.unique(),
+             file,
+             // New Appwrite permission format (v0.16+)
+             permissions: {
+               read: ['users'],   // All authenticated users can read
+               write: ['users'],  // All authenticated users can write (adjust per doc ownership if needed)
+             },
+           });
+           fileId = upload.$id;
+           fileSize = upload.sizeOriginal || 0;
+           mimeType = upload.mimeType || 'application/octet-stream';
+         } catch (e) {
+           console.error('Storage upload failed:', e);
+           return failure('File upload failed: ' + e.message, 500);
+         }
+       }
 
       const docData = {
         title,

@@ -245,7 +245,7 @@ export const db = {
        }
 
        const result = await databases.listDocuments(DATABASE_ID, collection, queries);
-       const documents = result.documents.map((doc) => this.normalize(doc));
+       const documents = (result.documents || []).map((doc) => this.normalize(doc));
        return { data: documents };
      } catch (error) {
        console.error(`Appwrite list ${collection}:`, error);

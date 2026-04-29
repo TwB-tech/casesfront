@@ -7,13 +7,21 @@ const API_ENDPOINT = '/api/reya';
 
 /**
  * Main query function - sends user message to AI with context
+ * Includes conversation memory: threadId and history
  */
 export async function queryReaya(message, context = {}) {
   try {
+    const { threadId, history = [], ...restContext } = context;
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, context, quick: false }),
+      body: JSON.stringify({
+        message,
+        context: restContext,
+        quick: false,
+        threadId,
+        history,
+      }),
       credentials: 'same-origin',
     });
 

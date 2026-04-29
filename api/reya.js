@@ -6,13 +6,19 @@ const handler = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { message, context, action, quick } = req.body;
+  const { message, context, action, quick, history = [], threadId, summary } = req.body;
 
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
   const ZAI_API_KEY = process.env.ZAI_API_KEY;
 
   const useZai = ZAI_API_KEY && ZAI_API_KEY.length > 0;
   const useGroq = GROQ_API_KEY && GROQ_API_KEY.length > 0;
+
+  // Build conversation history block (last 6 message pairs)
+  const recentHistory = history.slice(-6).map(m => `${m.role === 'user' ? 'User' : 'Reya'}: ${m.content}`).join('\n');
+
+  // Build summary block if available
+  const summaryBlock = summary ? `\nEarlier conversation summary:\n${summary}\n` : '';
 
   const chatSystemPrompt = `You are Reya, an intelligent AI legal assistant for WakiliWorld.
 
@@ -31,6 +37,7 @@ Your capabilities:
 - Task management
 - Calendar scheduling
 - Legal research assistance
+- Note-taking and memory
 
 Current user context:
 - Active cases: ${context?.cases_count || 0}
@@ -38,6 +45,11 @@ Current user context:
 - Pending tasks: ${context?.pending_tasks || 0}
 - Upcoming deadlines (7 days): ${context?.upcoming_deadlines || 0}
 - User role: ${context?.user_role || 'lawyer'}
+- Organization: ${context?.organization_name || 'Personal'}
+
+${summaryBlock}
+Recent conversation:
+${recentHistory || 'No recent conversation.'}
 
 Guidelines:
 1. Keep responses conversational and natural - like a helpful colleague
@@ -45,7 +57,8 @@ Guidelines:
 3. Get straight to the point while being warm
 4. If you don't know something, say so honestly
 5. Offer specific, actionable next steps
-6. Keep responses under 200 words unless detailed explanation needed`;
+6. Keep responses under 200 words unless detailed explanation needed
+7. Remember details from earlier in the conversation;
 
   // Detect document generation requests using original message
   const isDocGen =
@@ -83,6 +96,13 @@ Generate a complete, ready-to-use legal document now.`
   const maxTokens = isDocGen ? 3000 : 500;
   const temperature = isDocGen ? 0.3 : 0.7;
 
+  // Build conversation messages: system + history + current user message
+  const messages = [
+    { role: 'system', content: systemPromptToUse },
+    ...(history.length > 0 ? history.slice(-6) : []),
+    { role: 'user', content: userMessage },
+  ];
+
   try {
     let responseContent;
     let providerUsed;
@@ -95,10 +115,7 @@ Generate a complete, ready-to-use legal document now.`
           ZAI_API_KEY,
           {
             model: 'zai-legal-v1',
-            messages: [
-              { role: 'system', content: systemPromptToUse },
-              { role: 'user', content: userMessage },
-            ],
+            messages,
             temperature,
             max_tokens: maxTokens,
           }
@@ -118,10 +135,7 @@ Generate a complete, ready-to-use legal document now.`
         GROQ_API_KEY,
         {
           model: 'llama-3.1-8b-instant',
-          messages: [
-            { role: 'system', content: systemPromptToUse },
-            { role: 'user', content: userMessage },
-          ],
+          messages,
           temperature,
           max_tokens: maxTokens,
         }
