@@ -1,1 +1,0 @@
-import{at as e}from"./render-ByGHeMOx.js";var t=()=>e()&&window.document.documentElement;export{t};
