@@ -56,100 +56,107 @@ export default async function handler(req, res) {
   // Build target URL to Appwrite
   const targetUrl = `${endpoint.replace(/\/$/, '')}/${appwritePath}${url.search}`;
 
-    // Collect request body if present
-    let reqBody = null;
-    if (method !== 'GET' && method !== 'HEAD' && headers['content-type']) {
-      try {
-        reqBody = await collectBody(req);
-        // DEBUG: Log incoming request body for /account creation
-        if (appwritePath === 'account' && method === 'POST') {
-          console.log('Proxy received /account body:', reqBody.toString('utf8').substring(0, 300));
-        }
-      } catch (err) {
-        console.error('Failed to read request body:', err);
-        res.status(400).json({ error: 'Failed to read request body' });
-        return;
+  // Collect request body if present
+  let reqBody = null;
+  if (method !== 'GET' && method !== 'HEAD' && headers['content-type']) {
+    try {
+      reqBody = await collectBody(req);
+    } catch (err) {
+      console.error('Failed to read request body:', err);
+      res.status(400).json({ error: 'Failed to read request body' });
+      return;
+    }
+  }
+
+  // Prepare headers for Appwrite
+  const appwriteHeaders = {
+    'X-Appwrite-Project': projectId,
+    'X-Appwrite-Key': apiKey,
+    'Content-Type': headers['content-type'] || 'application/json',
+  };
+
+  // Forward session for authenticated user requests
+  if (headers['x-appwrite-session']) {
+    appwriteHeaders['X-Appwrite-Session'] = headers['x-appwrite-session'];
+  }
+  if (headers['x-appwrite-jwt']) {
+    appwriteHeaders['X-Appwrite-JWT'] = headers['x-appwrite-jwt'];
+  }
+  if (headers['authorization']) {
+    appwriteHeaders['Authorization'] = headers['authorization'];
+  }
+
+  // Determine allowed CORS origins (comma-separated env var, fallback to production domain + localhost)
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+    : ['https://www.kwakorti.live', 'http://localhost:3000'];
+  const requestOrigin = headers.origin || '';
+  // In development, allow any origin; in production, check allowlist
+  const isAllowed = process.env.NODE_ENV !== 'production' || allowedOrigins.includes(requestOrigin);
+
+  // Handle CORS preflight
+  if (method === 'OPTIONS') {
+    const originToSend = isAllowed ? requestOrigin : allowedOrigins[0];
+    res.setHeader('Access-Control-Allow-Origin', originToSend);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, X-Appwrite-Project, X-Appwrite-Key, X-Appwrite-Session, X-Appwrite-JWT, Authorization'
+    );
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+
+  try {
+    // Forward request to Appwrite
+    const appwriteRes = await fetch(targetUrl, {
+      method,
+      headers: appwriteHeaders,
+      body: reqBody,
+    });
+
+    // Set status code
+    res.statusCode = appwriteRes.status;
+
+    // Set CORS headers for browser
+    const corsOrigin = isAllowed ? requestOrigin : allowedOrigins[0];
+    res.setHeader('Access-Control-Allow-Origin', corsOrigin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    // Forward important headers from Appwrite
+    const forwardHeaders = [
+      'x-appwrite-id',
+      'x-appwrite-active',
+      'x-appwrite-logs',
+      'x-appwrite-message',
+      'x-appwrite-code',
+      'x-appwrite-version',
+      'etag',
+      'cache-control',
+      'last-modified',
+      'content-type',
+    ];
+    for (const header of forwardHeaders) {
+      const value = appwriteRes.headers.get(header);
+      if (value) {
+        res.setHeader(header, value);
       }
-    } else {
-      console.log('No body collection (method:', method, 'content-type:', headers['content-type'], ')');
     }
 
-   // Prepare headers for Appwrite
-   const appwriteHeaders = {
-     'X-Appwrite-Project': projectId,
-     'X-Appwrite-Key': apiKey,
-     'Content-Type': headers['content-type'] || 'application/json',
-   };
+    // Read full response body and forward (simpler, reliable)
+    const bodyBuffer = await appwriteRes.arrayBuffer();
+    res.end(Buffer.from(bodyBuffer));
 
-   // Forward session for authenticated user requests
-   if (headers['x-appwrite-session']) {
-     appwriteHeaders['X-Appwrite-Session'] = headers['x-appwrite-session'];
-   }
-   if (headers['x-appwrite-jwt']) {
-     appwriteHeaders['X-Appwrite-JWT'] = headers['x-appwrite-jwt'];
-   }
-   if (headers['authorization']) {
-     appwriteHeaders['Authorization'] = headers['authorization'];
-   }
-
-   // Handle CORS preflight
-   if (method === 'OPTIONS') {
-     res.setHeader('Access-Control-Allow-Origin', 'https://www.kwakorti.live');
-     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Appwrite-Project, X-Appwrite-Key, X-Appwrite-Session, X-Appwrite-JWT, Authorization');
-     res.setHeader('Access-Control-Allow-Credentials', 'true');
-     res.statusCode = 204;
-     res.end();
-     return;
-   }
-
-   try {
-     // Forward request to Appwrite
-     const appwriteRes = await fetch(targetUrl, {
-       method,
-       headers: appwriteHeaders,
-       body: reqBody,
-     });
-
-     // Set status code
-     res.statusCode = appwriteRes.status;
-
-     // Set CORS headers for browser
-     res.setHeader('Access-Control-Allow-Origin', 'https://www.kwakorti.live');
-     res.setHeader('Access-Control-Allow-Credentials', 'true');
-
-     // Forward important headers from Appwrite
-     const forwardHeaders = [
-       'x-appwrite-id',
-       'x-appwrite-active',
-       'x-appwrite-logs',
-       'x-appwrite-message',
-       'x-appwrite-code',
-       'x-appwrite-version',
-       'etag',
-       'cache-control',
-       'last-modified',
-       'content-type',
-     ];
-     for (const header of forwardHeaders) {
-       const value = appwriteRes.headers.get(header);
-       if (value) {
-         res.setHeader(header, value);
-       }
-     }
-
-     // Read full response body and forward (simpler, reliable)
-     const bodyBuffer = await appwriteRes.arrayBuffer();
-     res.end(Buffer.from(bodyBuffer));
-
-   } catch (error) {
-     console.error('Appwrite proxy error:', error);
-     res.statusCode = 500;
-     res.setHeader('Content-Type', 'application/json');
-     res.end(JSON.stringify({
-       error: 'Proxy error',
-       message: error.message,
-       ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
-     }));
-   }
+  } catch (error) {
+    console.error('Appwrite proxy error:', error);
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({
+      error: 'Proxy error',
+      message: error.message,
+      ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
+    }));
+  }
 }
