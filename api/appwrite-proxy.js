@@ -68,23 +68,26 @@ export default async function handler(req, res) {
     }
   }
 
-  // Prepare headers for Appwrite
-  const appwriteHeaders = {
-    'X-Appwrite-Project': projectId,
-    'X-Appwrite-Key': apiKey,
-    'Content-Type': headers['content-type'] || 'application/json',
-  };
+   // Prepare headers for Appwrite
+   const appwriteHeaders = {
+     'Content-Type': headers['content-type'] || 'application/json',
+   };
 
-  // Forward session for authenticated user requests
-  if (headers['x-appwrite-session']) {
-    appwriteHeaders['X-Appwrite-Session'] = headers['x-appwrite-session'];
-  }
-  if (headers['x-appwrite-jwt']) {
-    appwriteHeaders['X-Appwrite-JWT'] = headers['x-appwrite-jwt'];
-  }
-  if (headers['authorization']) {
-    appwriteHeaders['Authorization'] = headers['authorization'];
-  }
+   // Forward session for authenticated user requests (takes precedence over API key)
+   if (headers['x-appwrite-session']) {
+     appwriteHeaders['X-Appwrite-Session'] = headers['x-appwrite-session'];
+   } else if (headers['x-appwrite-jwt']) {
+     appwriteHeaders['X-Appwrite-JWT'] = headers['x-appwrite-jwt'];
+   } else if (headers['authorization']) {
+     appwriteHeaders['Authorization'] = headers['authorization'];
+   } else {
+     // Only use API key if no user session provided (server-to-server)
+     const apiKey = process.env.APPWRITE_API_KEY;
+     if (apiKey) {
+       appwriteHeaders['X-Appwrite-Key'] = apiKey;
+     }
+   }
+   }
 
   // Determine allowed CORS origins (comma-separated env var, fallback to production domain + localhost)
   const allowedOrigins = process.env.ALLOWED_ORIGINS
