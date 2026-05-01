@@ -1058,31 +1058,43 @@ export const appwriteApi = {
       }
     }
 
-    // VERIFY TOKEN
-    if (path === 'auth/verify-token') {
-      try {
-        const session = await account.get();
-        if (!session || !session.userId) {
-          return failure('Invalid token', 401);
-        }
-        const { data: userProfile, error: userErr } = await db.get(
-          COLLECTIONS.USERS,
-          session.userId
-        );
-        if (userErr) throw userErr;
-        return success({
-          user: {
-            id: userProfile.id,
-            email: session.email,
-            username: userProfile.username,
-            role: userProfile.role,
-            organization_id: userProfile.organization_id,
-          },
-        });
-      } catch (error) {
-        return failure('Invalid token', 401);
-      }
-    }
+     // VERIFY TOKEN
+     if (path === 'auth/verify-token') {
+       try {
+         const session = await account.get();
+         if (!session || !session.userId) {
+           return failure('Invalid token', 401);
+         }
+         const { data: userProfile, error: userErr } = await db.get(
+           COLLECTIONS.USERS,
+           session.userId
+         );
+         if (userErr) {
+           // User document not found; fall back to session info
+           console.warn('User document not found during verify-token, using session data:', userErr);
+           return success({
+             user: {
+               id: session.userId,
+               email: session.email,
+               username: session.name || session.email,
+               role: 'individual',
+               organization_id: null,
+             },
+           });
+         }
+         return success({
+           user: {
+             id: userProfile.id,
+             email: session.email,
+             username: userProfile.username,
+             role: userProfile.role,
+             organization_id: userProfile.organization_id,
+           },
+         });
+       } catch (error) {
+         return failure('Invalid token', 401);
+       }
+     }
 
     // LOGOUT
     if (path === 'auth/logout') {
