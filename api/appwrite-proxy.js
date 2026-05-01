@@ -40,36 +40,37 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Get Appwrite credentials from Vercel environment
-  const projectId = process.env.APPWRITE_PROJECT_ID;
-  const apiKey = process.env.APPWRITE_API_KEY;
-  const endpoint = process.env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1';
+   // Get Appwrite credentials from Vercel environment
+   const projectId = process.env.APPWRITE_PROJECT_ID;
+   const apiKey = process.env.APPWRITE_API_KEY;
+   const endpoint = process.env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1';
 
-  if (!projectId || !apiKey) {
-    res.status(500).json({
-      error: 'Appwrite credentials not configured',
-      message: 'APPWRITE_PROJECT_ID and APPWRITE_API_KEY must be set in Vercel environment variables',
-    });
-    return;
-  }
+   if (!projectId) {
+     res.status(500).json({
+       error: 'Appwrite project ID not configured',
+       message: 'APPWRITE_PROJECT_ID must be set in Vercel environment variables',
+     });
+     return;
+   }
 
-  // Build target URL to Appwrite
-  const targetUrl = `${endpoint.replace(/\/$/, '')}/${appwritePath}${url.search}`;
+   // Build target URL to Appwrite
+   const targetUrl = `${endpoint.replace(/\/$/, '')}/${appwritePath}${url.search}`;
 
-  // Collect request body if present
-  let reqBody = null;
-  if (method !== 'GET' && method !== 'HEAD' && headers['content-type']) {
-    try {
-      reqBody = await collectBody(req);
-    } catch (err) {
-      console.error('Failed to read request body:', err);
-      res.status(400).json({ error: 'Failed to read request body' });
-      return;
-    }
-  }
+   // Collect request body if present
+   let reqBody = null;
+   if (method !== 'GET' && method !== 'HEAD' && headers['content-type']) {
+     try {
+       reqBody = await collectBody(req);
+     } catch (err) {
+       console.error('Failed to read request body:', err);
+       res.status(400).json({ error: 'Failed to read request body' });
+       return;
+     }
+   }
 
    // Prepare headers for Appwrite
    const appwriteHeaders = {
+     'X-Appwrite-Project': projectId,
      'Content-Type': headers['content-type'] || 'application/json',
    };
 
@@ -82,7 +83,41 @@ export default async function handler(req, res) {
      appwriteHeaders['Authorization'] = headers['authorization'];
    } else {
      // Only use API key if no user session provided (server-to-server)
-     const apiKey = process.env.APPWRITE_API_KEY;
+     if (apiKey) {
+       appwriteHeaders['X-Appwrite-Key'] = apiKey;
+     }
+   }
+
+   // Build target URL to Appwrite
+   const targetUrl = `${endpoint.replace(/\/$/, '')}/${appwritePath}${url.search}`;
+
+   // Collect request body if present
+   let reqBody = null;
+   if (method !== 'GET' && method !== 'HEAD' && headers['content-type']) {
+     try {
+       reqBody = await collectBody(req);
+     } catch (err) {
+       console.error('Failed to read request body:', err);
+       res.status(400).json({ error: 'Failed to read request body' });
+       return;
+     }
+   }
+
+   // Prepare headers for Appwrite
+   const appwriteHeaders = {
+     'X-Appwrite-Project': projectId,
+     'Content-Type': headers['content-type'] || 'application/json',
+   };
+
+   // Forward session for authenticated user requests (takes precedence over API key)
+   if (headers['x-appwrite-session']) {
+     appwriteHeaders['X-Appwrite-Session'] = headers['x-appwrite-session'];
+   } else if (headers['x-appwrite-jwt']) {
+     appwriteHeaders['X-Appwrite-JWT'] = headers['x-appwrite-jwt'];
+   } else if (headers['authorization']) {
+     appwriteHeaders['Authorization'] = headers['authorization'];
+   } else {
+     // Only use API key if no user session provided (server-to-server)
      if (apiKey) {
        appwriteHeaders['X-Appwrite-Key'] = apiKey;
      }
