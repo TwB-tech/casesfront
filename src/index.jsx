@@ -21,6 +21,17 @@ import { initializeSecurity } from './utils/enhancedSecurity';
 import { verifyConnection } from './lib/sdk/appwrite.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 
+// Set Appwrite JWT from localStorage if present (so /account works without re-login)
+try {
+  const { client } = await import('./lib/appwrite.js');
+  const storedJWT = localStorage.getItem('accessToken');
+  if (storedJWT && client) {
+    client.setJWT(storedJWT);
+  }
+} catch (e) {
+  console.warn('Failed to set Appwrite JWT on init:', e);
+}
+
 initializeSentry();
 
 // Initialize enhanced security systems

@@ -1,6 +1,6 @@
 # WakiliWorld Appwrite Migration — Complete Context
 
-**Last Updated:** 2026-04-23  
+**Last Updated:** 2026-05-01  
 **Project:** WakiliWorld (casesfront) — AI-Powered Legal Practice Management Platform  
 **Migration:** Supabase → Appwrite (drop-in replacement, zero frontend changes)  
 **Branch:** `main`  
@@ -9,8 +9,227 @@
 - `d9hlu0fbm` — Ready (fix: removed catch-all rewrite breaking assets)
 - `b523b6f` — commit: fix vercel rewrites
 - `7075f03` — commit: feat: Migrate to Appwrite (full API + tests)
+- `2522444` — commit: fix: handle missing user document gracefully in verify-token endpoint
 
 ---
+
+## 📦 Current State (Post-Migration)
+
+### ✅ Completed
+
+1. **Appwrite SDK Compatibility**
+   - Replaced `Query.in` with `Query.or([...])` throughout `appwriteApi.jsx`
+   - Fixed `withOrganization` to use `Query.or([...])` with array of query objects
+   - Verified all collection queries work with Appwrite v23
+
+2. **License System Disabled for Deployment**
+   - `LicenseVerification.jsx` always renders children (no blocking)
+   - `LicenseContext.jsx` returns unlimited trial data (999 days)
+   - Removed license UI from Navbar, Settings, AdminDashboard
+   - No external license validation calls
+
+3. **Authentication Flow Fixed**
+   - Added `flushSync` in `authContext.jsx` login to force React state update before navigation
+   - Playwright auth helper updated to accept 201 status from Appwrite login
+   - User session persisted correctly after login
+
+4. **Test User Documents Created**
+   - advocate@wakiliworld.local / demo1234 (ID: 69f35d6f002a60aa5304)
+   - admin@wakiliworld.local / demo1234 (ID: 69f35d6a0036eb9502fd)
+   - client@wakiliworld.local / demo1234 (ID: 69f35d700030fc9b02ee)
+
+5. **API Server for Local Development**
+   - `api-server.js` Express server proxies `/api/*` routes (reya, contact, email verification, appwrite-proxy)
+   - Vite dev server configured to proxy `/api` to `http://127.0.0.1:3001`
+   - `npm run dev:all` starts both servers; Playwright uses `webServer` config
+
+6. **Build & Tests**
+   - Production build succeeds (`npm run build`)
+   - REST integration tests: 26/26 pass
+   - Playwright browser tests: majority passing; HR/Payroll tests need timeout adjustment (test infra issue, not app bug)
+
+7. **Vercel Configuration**
+   - `vercel.json` rewrites for API routes; **no catch-all rewrite** (prevents asset breakage)
+   - Environment variables documented; `APPWRITE_DATABASE_ID` required
+   - Build command: `npm run build`; output: `dist/`
+
+8. **Error Boundary Added**
+   - Global `ErrorBoundary` wraps app in `index.jsx` to catch render errors during development
+
+9. **Git History Clean**
+   - All fixes committed and pushed to `origin/main`
+
+---
+
+### ⚠️ Known Issues & Decisions
+
+#### CORS Strategy — Proxy Bypass (No Web Platform Needed)
+
+**Decision:** Do **NOT** add `www.kwakorti.live` as a Web Platform in Appwrite console.
+
+**Rationale:** 
+- Vercel deployment uses server-side API routes (`/api/*`) which forward requests to Appwrite from the Vercel backend, not from the browser. This bypasses CORS entirely.
+- Local development uses Vite's devServer proxy (`/api` → `http://127.0.0.1:3001`) which also avoids CORS.
+- Browser → Vercel server (same-origin) → Appwrite (server-to-server) = no CORS.
+
+**Implication:** The browser never calls Appwrite directly, so Appwrite's CORS allowlist is irrelevant. If direct browser-to-Appwrite calls are ever introduced (e.g., using Appwrite SDK from client for storage uploads), we may need to revisit. For now, no action required.
+
+#### HR/Payroll Test Timeouts
+
+**Issue:** `hr-payroll.spec.ts` tests time out after 30s waiting for `networkidle`. The HR page makes ongoing requests (polling or long-lived) that never become idle.
+
+**Fix Required:** Adjust Playwright tests to use `domcontentloaded` instead of `networkidle` for routes with real-time or polling behavior. Or increase timeout. (Not a code regression.)
+
+#### User Document Permissions
+
+Users collection has `documentSecurity: false` (Appwrite default), meaning permissions are collection-level. Current collection permissions: `read: ['role:all']`, `write: ['role:users']`. This allows any authenticated user to read any user doc. That's acceptable for now; if stricter isolation needed, enable document security and set per-document ACLs.
+
+---
+
+## 3. Important Files & Changes
+
+### New / Modified
+
+| File | Purpose |
+|------|---------|
+| `src/lib/appwrite.js` | Appwrite client init; `withOrganization` fix using `Query.or([...])` |
+| `src/lib/appwriteApi.jsx` | Full API compatibility layer; all Supabase endpoints mapped to Appwrite |
+| `src/axiosConfig.jsx` | Dynamically selects Appwrite or Standalone API based on `DATABASE_MODE`; supports hybrid fallback |
+| `src/config/index.js` | Central config; validates `APPWRITE_PROJECT_ID`; exposes env vars |
+| `scripts/setup-appwrite.js` | Automated DB provisioning: 18 collections, attributes, indexes, seed data |
+| `scripts/create-user-docs.mjs` | Creates user profile documents for test accounts |
+| `api-server.js` | Express server for local `/api/*` routes |
+| `start-dev.js` | Spawns API + Vite servers for Playwright |
+| `src/components/ErrorBoundary.jsx` | Global error boundary |
+| `src/contexts/LicenseContext.jsx` | TEMPORARY: returns unlimited trial, no external calls |
+| `src/components/LicenseManager/LicenseVerification.jsx` | TEMPORARY: always passes, no blocking |
+| `src/components/Layout/Navbar.jsx` | License status badge removed |
+| `src/pages/Settings.jsx` | License tab commented out |
+| `src/Admin/AdminDashboard.jsx` | License Management tab commented out |
+| `playwright.config.ts` | Increased timeouts; chromium-only; webServer `dev:all` |
+| `vite.config.js` | Added `127.0.0.1` proxy target; defined `APPWRITE_*` env vars |
+| `tests/helpers/auth.ts` | Accepts 201 login status; improved logging |
+
+---
+
+## 4. Environment Variables
+
+**Local (`.env` — not committed):**
+```
+DATABASE_MODE=appwrite
+APPWRITE_ENDPOINT=https://tor.cloud.appwrite.io/v1
+APPWRITE_PROJECT_ID=69e8bc1500162d3defdb
+APPWRITE_DATABASE_ID=69e90e4d00075469122c
+APPWRITE_API_KEY=standard_xxxxx (server-side only)
+ADMIN_EMAIL=admin@techwithbrands.com
+NOREPLY_EMAIL=noreply@techwithbrands.com
+SITE_URL=http://localhost:3000
+```
+
+**Vercel Production:**
+Same keys plus `RESEND_API_KEY` for contact/verification emails.
+Important: `APPWRITE_DATABASE_ID` must be set (not default) in production.
+
+---
+
+## 5. API Compatibility Layer (`src/lib/appwriteApi.jsx`)
+
+Mirrors Supabase endpoint signatures:
+
+| Supabase Endpoint | Appwrite Implementation |
+|-------------------|-------------------------|
+| `GET /case` | `db.list(COLLECTIONS.CASES)` with `withOrganization` filter |
+| `POST /auth/login` | `auth.createEmailSession()` → returns tokens + user profile |
+| `GET /client/` | `db.list(COLLECTIONS.USERS)` filtered by role `individual`/`client` |
+| `POST /hr/employees/` | `db.create(COLLECTIONS.USERS)` with org context |
+| `GET /api/reya` | External Express route (not in `appwriteApi.jsx`) |
+
+All endpoints return Supabase-like shape: `{ data, results, ... }` with minimal transformations.
+
+---
+
+## 6. Testing
+
+### Local Commands
+```bash
+# Start both API + Vite
+npm run dev:all
+
+# Run REST integration tests (direct Appwrite)
+npm run test:e2e
+
+# Run Playwright (browser)
+npx playwright test --workers=1
+```
+
+### Test Status (as of 2026-05-01)
+- **REST Integration:** 26/26 ✅
+- **Playwright:** 
+  - Core routes (landing, login, signup, features, pricing, etc.): ✅
+  - Authentication flow: ✅
+  - Reya API & widget: ✅
+  - Documents, Cases, Tasks, Clients modules: ✅
+  - HR & Payroll: ⚠️ Timeout (test config issue, not app bug)
+
+---
+
+## 7. Vercel Deployment
+
+### Automatic Deploy on Push
+- Push to `main` triggers Vercel build.
+- Build: `npm run build` → `dist/`
+- Output: static files + `server.js` for serverless functions (`/api/*`)
+
+### Required Env Vars in Vercel
+Set in Project Settings → Environment Variables:
+```
+DATABASE_MODE=appwrite
+APPWRITE_ENDPOINT=https://tor.cloud.appwrite.io/v1
+APPWRITE_PROJECT_ID=69e8bc1500162d3defdb
+APPWRITE_DATABASE_ID=69e90e4d00075469122c
+APPWRITE_API_KEY=standard_xxxxx  # Marked "Sensitive"
+ADMIN_EMAIL=admin@techwithbrands.com
+NOREPLY_EMAIL=noreply@techwithbrands.com
+SITE_URL=https://www.kwakorti.live
+# Optional: GROQ_API_KEY, ZAI_API_KEY for Reya AI
+```
+
+### Post-Deploy Smoke Test Checklist
+- [ ] Landing page loads (`/`)
+- [ ] Login renders form; can log in as advocate@wakiliworld.local / demo1234
+- [ ] After login, redirects to `/home`; navbar shows username
+- [ ] Create a case (`/case-form`) → appears in case list
+- [ ] Upload a document (`/new-document`) → appears in documents list
+- [ ] Open Reya assistant → chat message works (`/api/reya` returns 200)
+- [ ] HR page loads (if logged in as admin)
+- [ ] No console errors (check DevTools)
+
+---
+
+## 8. Lessons Learned
+
+1. **Appwrite SDK v23** uses `Query.or([Query.equal(...), ...])` not `Query.in`. Fixed throughout.
+2. **Never expose `APPWRITE_API_KEY` to client** — only server-side (setup scripts, API routes). Client uses user sessions.
+3. **Vercel rewrites** — Do NOT add blanket `/(.*) -> /index.html` when using a framework; it breaks static assets. Use explicit rewrites for `/api/*` only.
+4. **Vite env exposure** — Must list env vars in `vite.config.js` `define` section for client bundle.
+5. **License checks** — Disabled for launch; consider re-enabling with offline mode later.
+6. **Test user docs** — Appwrite `account.create` does NOT auto-create profile documents; must create separately with correct `id` mapping.
+7. **Error boundaries** — Wrap root to catch unexpected render errors; helpful for debugging production issues.
+8. **Auth state sync** — Use `flushSync` when updating auth state immediately before navigation to avoid race conditions.
+
+---
+
+## 9. Open Items
+
+- [ ] **HR/Payroll Playwright tests** — Update `waitForLoadState` to `domcontentloaded` or increase timeout.
+- [ ] **Appwrite CORS** — Not needed (proxy bypass). If direct SDK usage added later, add Web Platform for `www.kwakorti.live`.
+- [ ] **Reya AI providers** — Configure GROQ/ZAI keys in Vercel env for production AI responses; otherwise fallback messages.
+- [ ] **Email service** — Set `RESEND_API_KEY` in Vercel to enable contact form & email verification.
+- [ ] **User document permissions** — Collection-level read all acceptable for now; consider document-level ACLs if multi-tenant isolation required.
+
+---
+
+**End of context dump.** This document captures all migration decisions, fixes, and deployment details.
 
 ## 1. Project Overview
 

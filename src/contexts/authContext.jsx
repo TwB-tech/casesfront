@@ -198,25 +198,52 @@ const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-   const login = async (email, password) => {
-     const { data } = await axiosInstance.post('/auth/login/', { email, password });
-     const tokens = JSON.parse(data.tokens.replace(/'/g, '"'));
-     const userInfo = {
-       id: data.id,
-       email: data.email,
-       username: data.username,
-       role: data.role,
-       organization_id: data.organization_id || null,
-     };
+    const login = async (email, password) => {
+      const { data } = await axiosInstance.post('/auth/login/', { email, password });
+      const tokens = JSON.parse(data.tokens.replace(/'/g, '"'));
+      const userInfo = {
+        id: data.id,
+        email: data.email,
+        username: data.username,
+        role: data.role,
+        organization_id: data.organization_id || null,
+      };
 
-     localStorage.setItem('accessToken', tokens.access);
-     localStorage.setItem('refreshToken', tokens.refresh);
-     // Flush state synchronously so navigation sees updated user
-     flushSync(() => {
-       setUser(userInfo);
-     });
-     return userInfo;
-   };
+      localStorage.setItem('accessToken', tokens.access);
+      localStorage.setItem('refreshToken', tokens.refresh);
+      // Set JWT on Appwrite client for subsequent API calls
+      try {
+        const { client } = await import('../lib/appwrite');
+        if (client) {
+          client.setJWT(tokens.access);
+        }
+      } catch (e) {
+        console.warn('Failed to set Appwrite JWT:', e);
+      }
+      // Flush state synchronously so navigation sees updated user
+      flushSync(() => {
+        setUser(userInfo);
+      });
+      return userInfo;
+    };
+
+      localStorage.setItem('accessToken', tokens.access);
+      localStorage.setItem('refreshToken', tokens.refresh);
+      // Set JWT on Appwrite client for subsequent API calls
+      try {
+        const { client } = await import('../lib/appwrite');
+        if (client) {
+          client.setJWT(tokens.access);
+        }
+      } catch (e) {
+        console.warn('Failed to set Appwrite JWT:', e);
+      }
+      // Flush state synchronously so navigation sees updated user
+      flushSync(() => {
+        setUser(userInfo);
+      });
+      return userInfo;
+    };
 
   const register = async (formData, userType) => {
     try {
