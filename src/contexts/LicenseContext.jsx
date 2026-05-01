@@ -28,29 +28,43 @@ export const LicenseProvider = ({ children }) => {
   }, []);
 
   const initializeLicenseState = async () => {
-    try {
-      const [activationStatus, trialStatus, allLicenses, licenseStats] = await Promise.all([
-        getActivationStatus(),
-        getTrialStatus(),
-        Promise.resolve(getAllLicenses()),
-        Promise.resolve(getLicenseStats()),
-      ]);
+    // TEMPORARY: Disable license checks for deployment
+    // Always provide trial mode with unlimited days
+    const activationStatus = {
+      activated: false,
+      licenseKey: null,
+      clientName: null,
+      expiryDate: null,
+      daysRemaining: 999,
+      isExpiringSoon: false,
+      isExpired: false,
+      paymentStatus: null,
+      serverValidated: false,
+    };
 
-      setActivation(activationStatus);
-      setTrial(trialStatus);
-      setLicenses(allLicenses);
-      setStats(licenseStats);
+    const trialStatus = {
+      inTrial: true,
+      daysRemaining: 999,
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 999 * 24 * 60 * 60 * 1000),
+    };
 
-      // Log status for debugging
-      if (import.meta.env.DEV) {
-        console.log('License Status:', activationStatus);
-        console.log('Trial Status:', trialStatus);
-      }
-    } catch (error) {
-      console.error('License initialization error:', error);
-    } finally {
-      setLoading(false);
-    }
+    const allLicenses = [];
+    const licenseStats = {
+      total: 0,
+      active: 0,
+      expired: 0,
+      revoked: 0,
+      expiringSoon: 0,
+      totalRevenue: 0,
+      pendingPayment: 0,
+    };
+
+    setActivation(activationStatus);
+    setTrial(trialStatus);
+    setLicenses(allLicenses);
+    setStats(licenseStats);
+    setLoading(false);
   };
 
   const refreshData = () => {

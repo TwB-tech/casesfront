@@ -180,20 +180,20 @@ export const withOrganization = (queries = [], userId = null) => {
   if (orgId) {
     queries.push(Query.equal('organization_id', orgId));
   }
-  // Also allow user's own records (client_id, advocate_id, owner, etc.)
-  if (userId) {
-    queries.push(
-      Query.or(
-        Query.equal('organization_id', orgId),
-        Query.equal('client_id', userId),
-        Query.equal('advocate_id', userId),
-        Query.equal('assigned_to', userId),
-        Query.equal('created_by', userId),
-        Query.equal('owner', userId),
-        Query.contains('shared_with', userId)
-      )
-    );
-  }
+   // Also allow user's own records (client_id, advocate_id, owner, etc.)
+   if (userId) {
+     queries.push(
+       Query.or([
+         Query.equal('organization_id', orgId),
+         Query.equal('client_id', userId),
+         Query.equal('advocate_id', userId),
+         Query.equal('assigned_to', userId),
+         Query.equal('created_by', userId),
+         Query.equal('owner', userId),
+         Query.contains('shared_with', userId)
+       ])
+     );
+   }
    return queries;
  };
 

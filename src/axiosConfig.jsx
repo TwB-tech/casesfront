@@ -1,6 +1,5 @@
 import DOMPurify from 'dompurify';
-import { USE_SUPABASE, USE_APPWRITE, USE_STANDALONE } from './config';
-import supabaseApi from './lib/supabaseApi';
+import { USE_APPWRITE, USE_STANDALONE } from './config';
 import appwriteApi from './lib/appwriteApi';
 import { standaloneApi } from './lib/standaloneApi';
 
@@ -108,30 +107,23 @@ const createHybridApi = (primary, fallback) => {
   return { get: wrap('get'), post: wrap('post'), put: wrap('put'), delete: wrap('delete') };
 };
 
-// Determine mode: Appwrite, Supabase, Standalone, or Hybrid fallback
+// Determine mode: Appwrite or Standalone (Supabase removed)
 let apiInstance;
 const ENABLE_FALLBACK = import.meta.env.VITE_ENABLE_FALLBACK === 'true' || import.meta.env.DEV;
-const DUAL_WRITE_MODE = import.meta.env.DUAL_WRITE_MODE === 'true';
 
 if (USE_APPWRITE) {
-  if (DUAL_WRITE_MODE && ENABLE_FALLBACK) {
-    console.warn('Initializing hybrid API: Appwrite primary, Supabase fallback (dual-write)');
-    apiInstance = createHybridApi(appwriteApi, supabaseApi);
+  if (ENABLE_FALLBACK) {
+    console.warn('Initializing hybrid API: Appwrite primary, Standalone fallback');
+    apiInstance = createHybridApi(appwriteApi, standaloneApi);
   } else {
     console.warn('Initializing Appwrite API');
     apiInstance = appwriteApi;
   }
-} else if (USE_SUPABASE) {
-  if (ENABLE_FALLBACK) {
-    console.warn('Initializing hybrid API: Supabase primary, standalone fallback');
-    apiInstance = createHybridApi(supabaseApi, standaloneApi);
-  } else {
-    console.warn('Initializing Supabase API');
-    apiInstance = supabaseApi;
-  }
-} else {
+} else if (USE_STANDALONE) {
   console.warn('Initializing standalone API (DATABASE_MODE=standalone)');
   apiInstance = standaloneApi;
+} else {
+  throw new Error('Unsupported DATABASE_MODE. Use "appwrite" or "standalone".');
 }
 
 export default apiInstance;

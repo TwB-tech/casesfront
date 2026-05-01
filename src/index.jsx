@@ -19,6 +19,7 @@ import LicenseVerification from './components/LicenseManager/LicenseVerification
 import { initializeSentry } from './config/sentry';
 import { initializeSecurity } from './utils/enhancedSecurity';
 import { verifyConnection } from './lib/sdk/appwrite.js';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 initializeSentry();
 
@@ -41,17 +42,19 @@ intitializeAnalytics();
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-    <AuthProvider>
-      <ThemeProvider>
-        <CurrencyProvider>
-          <LicenseProvider>
-            <LicenseVerification>
-              <App />
-            </LicenseVerification>
-          </LicenseProvider>
-        </CurrencyProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ThemeProvider>
+          <CurrencyProvider>
+            <LicenseProvider>
+              <LicenseVerification>
+                <App />
+              </LicenseVerification>
+            </LicenseProvider>
+          </CurrencyProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   </BrowserRouter>
 );
 

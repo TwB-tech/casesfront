@@ -24,17 +24,14 @@ import {
   SettingOutlined,
   TeamOutlined,
   BarChartOutlined,
-  KeyOutlined,
-  CheckCircleOutlined,
-  UnlockOutlined,
-  WarningOutlined,
 } from '@ant-design/icons';
 import axiosInstance from '../axiosConfig';
 import { useTheme } from '../contexts/ThemeContext';
 import { USE_STANDALONE } from '../config';
-import LicenseForm from '../components/LicenseManager/LicenseForm';
-import LicenseList from '../components/LicenseManager/LicenseList';
-import { useLicense } from '../contexts/LicenseContext';
+// LicenseForm and LicenseList imports temporarily removed
+// import LicenseForm from '../components/LicenseManager/LicenseForm';
+// import LicenseList from '../components/LicenseManager/LicenseList';
+// import { useLicense } from '../contexts/LicenseContext';
 
 const { Title, Text } = Typography;
 
@@ -42,7 +39,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [activeKey, setActiveKey] = useState('1');
   const { isFuturistic } = useTheme();
-  const { stats: licenseStats, refreshData: refreshLicense } = useLicense();
+  // License stats temporarily disabled
+  // const { stats: licenseStats, refreshData: refreshLicense } = useLicense();
 
   // Case Management Settings
   const [caseSettings, setCaseSettings] = useState({
@@ -76,11 +74,12 @@ const AdminDashboard = () => {
   // Backup State
   const [backupStatus, setBackupStatus] = useState('');
 
-  useEffect(() => {
-    if (activeKey === 'licenses') {
-      refreshLicense();
-    }
-  }, [activeKey, refreshLicense]);
+  // License refresh effect temporarily disabled
+  // useEffect(() => {
+  //   if (activeKey === 'licenses') {
+  //     refreshLicense();
+  //   }
+  // }, [activeKey, refreshLicense]);
 
   const fetchUsers = async () => {
     setUsersLoading(true);
@@ -417,77 +416,78 @@ const AdminDashboard = () => {
                     Last operation: {backupStatus}
                   </Text>
                 )}
-              </Card>
-            ),
-          },
-          {
-            key: 'licenses',
-            label: 'License Management',
-            children: (
-              <div>
-                <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-                  <Col xs={24} sm={6}>
-                    <Card>
-                      <Statistic
-                        title="Total Licenses"
-                        value={licenseStats?.total || 0}
-                        valueStyle={{ color: '#8b5cf6', fontSize: '18px' }}
-                        prefix={<KeyOutlined />}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={6}>
-                    <Card>
-                      <Statistic
-                        title="Active"
-                        value={licenseStats?.active || 0}
-                        valueStyle={{ color: '#52c41a', fontSize: '18px' }}
-                        prefix={<CheckCircleOutlined />}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={6}>
-                    <Card>
-                      <Statistic
-                        title="Expiring Soon"
-                        value={licenseStats?.expiringSoon || 0}
-                        valueStyle={{ color: '#faad14', fontSize: '18px' }}
-                        prefix={<WarningOutlined />}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={6}>
-                    <Card>
-                      <Statistic
-                        title="Revenue (KES)"
-                        value={licenseStats?.totalRevenue || 0}
-                        valueStyle={{ fontSize: '16px' }}
-                        prefix={<UnlockOutlined />}
-                      />
-                    </Card>
-                  </Col>
-                </Row>
+               </Card>
+             ),
+           },
+           // License Management tab temporarily hidden
+           // {
+           //   key: 'licenses',
+           //   label: 'License Management',
+           //   children: (
+           //     <div>
+           //       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+           //         <Col xs={24} sm={6}>
+           //           <Card>
+           //             <Statistic
+           //               title="Total Licenses"
+           //               value={licenseStats?.total || 0}
+           //               valueStyle={{ color: '#8b5cf6', fontSize: '18px' }}
+           //               prefix={<KeyOutlined />}
+           //             />
+           //           </Card>
+           //         </Col>
+           //         <Col xs={24} sm={6}>
+           //           <Card>
+           //             <Statistic
+           //               title="Active"
+           //               value={licenseStats?.active || 0}
+           //               valueStyle={{ color: '#52c41a', fontSize: '18px' }}
+           //               prefix={<CheckCircleOutlined />}
+           //             />
+           //           </Card>
+           //         </Col>
+           //         <Col xs={24} sm={6}>
+           //           <Card>
+           //             <Statistic
+           //               title="Expiring Soon"
+           //               value={licenseStats?.expiringSoon || 0}
+           //               valueStyle={{ color: '#faad14', fontSize: '18px' }}
+           //               prefix={<WarningOutlined />}
+           //             />
+           //           </Card>
+           //         </Col>
+           //         <Col xs={24} sm={6}>
+           //           <Card>
+           //             <Statistic
+           //               title="Revenue (KES)"
+           //               value={licenseStats?.totalRevenue || 0}
+           //               valueStyle={{ fontSize: '16px' }}
+           //               prefix={<UnlockOutlined />}
+           //             />
+           //           </Card>
+           //         </Col>
+           //       </Row>
 
-                <Tabs
-                  defaultActiveKey="list"
-                  items={[
-                    {
-                      key: 'list',
-                      label: 'All Licenses',
-                      children: <LicenseList />,
-                    },
-                    {
-                      key: 'generate',
-                      label: 'Generate License',
-                      children: <LicenseForm />,
-                    },
-                  ]}
-                />
-              </div>
-            ),
-          },
-        ]}
-      />
+           //       <Tabs
+           //         defaultActiveKey="list"
+           //         items={[
+           //           {
+           //             key: 'list',
+           //             label: 'All Licenses',
+           //             children: <LicenseList />,
+           //           },
+           //           {
+           //             key: 'generate',
+           //             label: 'Generate License',
+           //             children: <LicenseForm />,
+           //           },
+           //         ]}
+           //       />
+           //     </div>
+           //   ),
+           // },
+         ]}
+       />
     </div>
   );
 };

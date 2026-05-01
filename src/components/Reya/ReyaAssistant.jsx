@@ -34,7 +34,7 @@ import {
   quickAction as aiQuickAction,
   ACTIVE_PROVIDER,
 } from '../../lib/reyaAiService';
-import { getSessionId, initThread, appendMessage, getConversationContext } from '../../utils/reyaMemory';
+import { getSessionId, initThread, appendMessage, getConversationContext, getCurrentThreadId, setCurrentThreadId } from '../../utils/reyaMemory';
 
 import { message } from 'antd';
 
@@ -117,33 +117,51 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
 
    const messagesEndRef = useRef(null);
 
-   // Initialize conversation thread on mount (or when user becomes available)
-   useEffect(() => {
-     if (user && !threadId) {
-       const { threadId: newThreadId, memory } = initThread({
-         user_id: user.id,
-         role: user.role,
-         organization_id: user.organization_id,
-       });
-       setThreadId(newThreadId);
-       // Load any existing history for this thread
-       const context = getConversationContext(newThreadId);
-       if (context.history && context.history.length > 0) {
-         // Convert memory format to UI messages format
-         const uiMessages = context.history.map((msg, idx) => ({
-           id: Date.now() - context.history.length + idx,
-           type: msg.role === 'user' ? 'user' : 'assistant',
-           content: msg.content,
-           ...(msg.actions && { actions: msg.actions }),
-           ...(msg.suggestions && { suggestions: msg.suggestions }),
-         }));
-         setMessages(uiMessages.length > 0 ? uiMessages : []);
-         setConversationHistory(context.history);
-       } else {
-         setConversationHistory([]);
-       }
-     }
-   }, [user, threadId]);
+    // Initialize conversation thread on mount (or when user becomes available)
+    useEffect(() => {
+      if (user && !threadId) {
+        const existingThreadId = getCurrentThreadId();
+        if (existingThreadId) {
+          const context = getConversationContext(existingThreadId);
+          if (context && context.history && context.history.length > 0) {
+            setThreadId(existingThreadId);
+            setConversationHistory(context.history);
+            const uiMessages = context.history.map((msg, idx) => ({
+              id: Date.now() - context.history.length + idx,
+              type: msg.role === 'user' ? 'user' : 'assistant',
+              content: msg.content,
+              ...(msg.actions && { actions: msg.actions }),
+              ...(msg.suggestions && { suggestions: msg.suggestions }),
+            }));
+            setMessages(uiMessages.length > 0 ? uiMessages : []);
+            return;
+          }
+        }
+        // No existing thread or empty, create new
+        const { threadId: newThreadId, memory } = initThread({
+          user_id: user.id,
+          role: user.role,
+          organization_id: user.organization_id,
+        });
+        setThreadId(newThreadId);
+        setCurrentThreadId(newThreadId);
+        // Load any existing history for this thread (should be empty)
+        const context = getConversationContext(newThreadId);
+        if (context.history && context.history.length > 0) {
+          const uiMessages = context.history.map((msg, idx) => ({
+            id: Date.now() - context.history.length + idx,
+            type: msg.role === 'user' ? 'user' : 'assistant',
+            content: msg.content,
+            ...(msg.actions && { actions: msg.actions }),
+            ...(msg.suggestions && { suggestions: msg.suggestions }),
+          }));
+          setMessages(uiMessages.length > 0 ? uiMessages : []);
+          setConversationHistory(context.history);
+        } else {
+          setConversationHistory([]);
+        }
+      }
+    }, [user, threadId]);
 
   // Initialize with welcome message
   useEffect(() => {
@@ -249,6 +267,27 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
     }
     return "I'm here to help. Try asking about cases, documents, deadlines, clients, or billing.";
   }, []);
+
+    // Save assistant response to conversation memory
+    const saveToMemory = useCallback((userMsg, assistantData) => {
+      if (!threadId) return;
+      try {
+        appendMessage(threadId, userMsg, assistantData);
+        setConversationHistory((prev) => [
+          ...prev,
+          { role: 'user', content: userMsg, timestamp: new Date().toISOString() },
+          { 
+            role: 'assistant', 
+            content: assistantData.content,
+            timestamp: new Date().toISOString(),
+            actions: assistantData.actions || [],
+            suggestions: assistantData.suggestions || [],
+          },
+        ]);
+      } catch (e) {
+        console.warn('Failed to save to memory:', e);
+      }
+    }, [threadId]);
 
   // Send message function
   const sendMessage = useCallback(async () => {
@@ -518,26 +557,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
       return daysLeft <= 3;
     }).length + tasks.filter((t) => !t.status).length;
 
-   // Save assistant response to conversation memory
-   const saveToMemory = useCallback((userMsg, assistantData) => {
-     if (!threadId) return;
-     try {
-       appendMessage(threadId, userMsg, assistantData);
-       setConversationHistory((prev) => [
-         ...prev,
-         { role: 'user', content: userMsg, timestamp: new Date().toISOString() },
-         { 
-           role: 'assistant', 
-           content: assistantData.content,
-           timestamp: new Date().toISOString(),
-           actions: assistantData.actions || [],
-           suggestions: assistantData.suggestions || [],
-         },
-       ]);
-     } catch (e) {
-       console.warn('Failed to save to memory:', e);
-     }
-   }, [threadId]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);

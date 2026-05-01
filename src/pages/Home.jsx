@@ -385,54 +385,54 @@ function Home() {
     };
   }, [hasAccountingAccess]);
 
-  return (
-    <div style={{ padding: '20px', zIndex: 1 }}>
-      {/* License Status Banner */}
-      {!activation?.activated && (
-        <Alert
-          type="warning"
-          message={
-            <Space>
-              <LockOutlined />
-              <span>
-                <strong>License Required:</strong> Your trial expires in {trial?.daysRemaining || 0}{' '}
-                days. Activate now to avoid disruption.
-              </span>
-              <Button
-                type="link"
-                onClick={() => navigate('/settings?tab=license')}
-                style={{ color: '#1890ff', padding: '0 4px' }}
-              >
-                Activate
-              </Button>
-            </Space>
-          }
-          style={{ marginBottom: 16 }}
-        />
-      )}
+   return (
+     <div style={{ padding: '20px', zIndex: 1 }}>
+       {/* License Status Banner - TEMPORARILY HIDDEN FOR DEPLOYMENT */}
+       {/* {!activation?.activated && (
+         <Alert
+           type="warning"
+           message={
+             <Space>
+               <LockOutlined />
+               <span>
+                 <strong>License Required:</strong> Your trial expires in {trial?.daysRemaining || 0}{' '}
+                 days. Activate now to avoid disruption.
+               </span>
+               <Button
+                 type="link"
+                 onClick={() => navigate('/settings?tab=license')}
+                 style={{ color: '#1890ff', padding: '0 4px' }}
+               >
+                 Activate
+               </Button>
+             </Space>
+           }
+           style={{ marginBottom: 16 }}
+         />
+       )} */}
 
-      {activation?.activated && activation.isExpiringSoon && (
-        <Alert
-          type="warning"
-          message={
-            <Space>
-              <WarningOutlined />
-              <span>
-                <strong>License Expiring Soon:</strong> {activation.daysRemaining} days remaining.
-                Please contact Tech with Brands to renew.
-              </span>
-              <Button
-                type="link"
-                onClick={() => navigate('/admin-dashboard')}
-                style={{ color: '#1890ff', padding: '0 4px' }}
-              >
-                Renew
-              </Button>
-            </Space>
-          }
-          style={{ marginBottom: 16 }}
-        />
-      )}
+       {/* {activation?.activated && activation.isExpiringSoon && (
+         <Alert
+           type="warning"
+           message={
+             <Space>
+               <WarningOutlined />
+               <span>
+                 <strong>License Expiring Soon:</strong> {activation.daysRemaining} days remaining.
+                 Please contact Tech with Brands to renew.
+               </span>
+               <Button
+                 type="link"
+                 onClick={() => navigate('/admin-dashboard')}
+                 style={{ color: '#1890ff', padding: '0 4px' }}
+               >
+                 Renew
+               </Button>
+             </Space>
+           }
+           style={{ marginBottom: 16 }}
+         />
+       )} */}
 
       {/* Welcome & Insight Card */}
       <Card

@@ -21,6 +21,16 @@ export function getSessionId() {
   return sessionId;
 }
 
+export function getCurrentThreadId() {
+  if (typeof window === 'undefined') return null;
+  return sessionStorage.getItem('reya_current_thread');
+}
+
+export function setCurrentThreadId(threadId) {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem('reya_current_thread', threadId);
+}
+
 /**
  * Get full conversation memory from storage
  */

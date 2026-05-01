@@ -49,59 +49,23 @@ const Navbar = () => {
     { key: 'contact', label: 'Contact', path: '/contact' },
   ];
 
-  const userMenu = (
-    <Menu
-      theme="dark"
-      style={{
-        background: isFuturistic ? '#0f0f18' : '#1f1f1f',
-        border: '1px solid',
-        borderColor: isFuturistic ? '#2a2a3a' : '#333',
-      }}
-      className="user-dropdown-menu"
-    >
-      <div className="text-center mb-4" style={{ padding: '13px' }}>
-        <h2 style={{ color: '#ffffff', marginBottom: '10px', fontWeight: 600 }}>
-          {user?.username}
-        </h2>
-        <p style={{ color: '#aaaaaa', fontSize: '13px' }}>{user?.email}</p>
-        {activation?.activated ? (
-          <div style={{ marginTop: 8 }}>
-            <Tooltip title="Licensed Software">
-              <Badge
-                status="success"
-                text={
-                  <span style={{ color: '#52c41a', fontSize: '12px' }}>
-                    Licensed –{' '}
-                    {activation.daysRemaining > 0 ? `${activation.daysRemaining}d left` : 'Expired'}
-                  </span>
-                }
-              />
-            </Tooltip>
-          </div>
-        ) : trial?.inTrial ? (
-          <div style={{ marginTop: 8 }}>
-            <Tooltip title="Trial Period">
-              <Badge
-                status="processing"
-                text={
-                  <span style={{ color: '#faad14', fontSize: '12px' }}>
-                    Trial – {trial.daysRemaining}d remaining
-                  </span>
-                }
-              />
-            </Tooltip>
-          </div>
-        ) : (
-          <div style={{ marginTop: 8 }}>
-            <Tooltip title="Action Required">
-              <Badge
-                status="error"
-                text={<span style={{ color: '#f5222d', fontSize: '12px' }}>Unlicensed</span>}
-              />
-            </Tooltip>
-          </div>
-        )}
-      </div>
+   const userMenu = (
+     <Menu
+       theme="dark"
+       style={{
+         background: isFuturistic ? '#0f0f18' : '#1f1f1f',
+         border: '1px solid',
+         borderColor: isFuturistic ? '#2a2a3a' : '#333',
+       }}
+       className="user-dropdown-menu"
+     >
+       <div className="text-center mb-4" style={{ padding: '13px' }}>
+         <h2 style={{ color: '#ffffff', marginBottom: '10px', fontWeight: 600 }}>
+           {user?.username}
+         </h2>
+         <p style={{ color: '#aaaaaa', fontSize: '13px' }}>{user?.email}</p>
+         {/* License status hidden temporarily */}
+       </div>
       <Menu.Item onClick={() => navigate('/home')} style={{ color: '#8b5cf6' }}>
         Dashboard
       </Menu.Item>
@@ -179,27 +143,20 @@ const Navbar = () => {
       </div>
 
       <div className="flex items-center gap-4">
-        {user ? (
-          <Dropdown menu={{}} overlay={userMenu} trigger={['click']}>
-            <Badge
-              dot
-              color={activation?.activated ? '#52c41a' : trial?.inTrial ? '#faad14' : '#f5222d'}
-            >
-              <Avatar
-                icon={<UserOutlined />}
-                style={{
-                  background: '#8b5cf6',
-                  cursor: 'pointer',
-                  border: activation?.activated
-                    ? '2px solid #52c41a'
-                    : trial?.inTrial
-                      ? '2px solid #faad14'
-                      : '2px solid #f5222d',
-                }}
-              />
-            </Badge>
-          </Dropdown>
-        ) : (
+       {user ? (
+         <Dropdown menu={{}} overlay={userMenu} trigger={['click']}>
+           <Badge dot color="#8b5cf6">
+             <Avatar
+               icon={<UserOutlined />}
+               style={{
+                 background: '#8b5cf6',
+                 cursor: 'pointer',
+                 border: '2px solid #8b5cf6',
+               }}
+             />
+           </Badge>
+         </Dropdown>
+       ) : (
           <div className="flex items-center gap-3">
             <Link to="/login" style={{ ...linkStyle, color: '#fff' }}>
               Sign In

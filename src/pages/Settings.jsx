@@ -22,7 +22,8 @@ import { useLicense } from '../contexts/LicenseContext';
 import { getSupportedCurrencies, getCurrencyName } from '../utils/currency';
 
 const { Title, Text } = Typography;
-import LicenseActivationModal from '../components/LicenseManager/LicenseActivationModal';
+// LicenseActivationModal import temporarily removed
+// import LicenseActivationModal from '../components/LicenseManager/LicenseActivationModal';
 import { LockOutlined, KeyOutlined, UnlockOutlined, ClockCircleOutlined } from '@ant-design/icons';
 /* eslint-disable no-console, react-hooks/exhaustive-deps */
 
@@ -159,202 +160,203 @@ const UserSettings = () => {
               </Button>
             </Form.Item>
           </Form>
-        </TabPane>
+         </TabPane>
 
-        <TabPane tab="License & Activation" key="license">
-          <Card bordered={false} style={{ background: 'transparent' }}>
-            <div style={{ marginBottom: 24 }}>
-              <Title level={4}>Software License</Title>
-              <p>
-                WakiliWorld CRM is licensed software by Tech with Brands (TwB). Your license grants
-                you the right to use this software according to the terms of the license agreement.
-              </p>
-            </div>
+         {/* License & Activation Tab - HIDDEN TEMPORARILY FOR DEPLOYMENT */}
+         {/* <TabPane tab="License & Activation" key="license">
+           <Card bordered={false} style={{ background: 'transparent' }}>
+             <div style={{ marginBottom: 24 }}>
+               <Title level={4}>Software License</Title>
+               <p>
+                 WakiliWorld CRM is licensed software by Tech with Brands (TwB). Your license grants
+                 you the right to use this software according to the terms of the license agreement.
+               </p>
+             </div>
 
-            {activation.activated ? (
-              <Card
-                style={{
-                  background: activation.isExpiringSoon ? '#fffbe6' : '#f6ffed',
-                  borderColor: activation.isExpiringSoon ? '#ffe58f' : '#b7eb8f',
-                }}
-              >
-                <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <UnlockOutlined style={{ fontSize: 24, color: '#52c41a' }} />
-                    <div>
-                      <Title level={4} style={{ color: '#389e0d', margin: 0 }}>
-                        Software is Activated
-                      </Title>
-                      <Text type="secondary">License is valid and active</Text>
-                    </div>
-                  </div>
+             {activation.activated ? (
+               <Card
+                 style={{
+                   background: activation.isExpiringSoon ? '#fffbe6' : '#f6ffed',
+                   borderColor: activation.isExpiringSoon ? '#ffe58f' : '#b7eb8f',
+                 }}
+               >
+                 <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                     <UnlockOutlined style={{ fontSize: 24, color: '#52c41a' }} />
+                     <div>
+                       <Title level={4} style={{ color: '#389e0d', margin: 0 }}>
+                         Software is Activated
+                       </Title>
+                       <Text type="secondary">License is valid and active</Text>
+                     </div>
+                   </div>
 
-                  <Divider style={{ margin: '12px 0' }} />
+                   <Divider style={{ margin: '12px 0' }} />
 
-                  <Row gutter={[16, 16]}>
-                    <Col span={12}>
-                      <Text strong>Client Name:</Text>
-                      <br />
-                      <Text>{activation.clientName || 'N/A'}</Text>
-                    </Col>
-                    <Col span={12}>
-                      <Text strong>License Key:</Text>
-                      <br />
-                      <Text code style={{ fontSize: '14px' }}>
-                        {activation.licenseKey}
-                      </Text>
-                    </Col>
-                    <Col span={12}>
-                      <Text strong>Activated On:</Text>
-                      <br />
-                      <Text>
-                        {activation.activatedAt
-                          ? new Date(activation.activatedAt).toLocaleDateString()
-                          : 'N/A'}
-                      </Text>
-                    </Col>
-                    <Col span={12}>
-                      <Text strong>Expires On:</Text>
-                      <br />
-                      <Text
-                        style={{
-                          color: activation.isExpiringSoon ? '#faad14' : '#389e0d',
-                          fontWeight: activation.isExpiringSoon ? 600 : 400,
-                        }}
-                      >
-                        {activation.expiryDate
-                          ? new Date(activation.expiryDate).toLocaleDateString()
-                          : 'N/A'}
-                        {activation.isExpiringSoon &&
-                          ` (${activation.daysRemaining} days remaining)`}
-                      </Text>
-                    </Col>
-                  </Row>
+                   <Row gutter={[16, 16]}>
+                     <Col span={12}>
+                       <Text strong>Client Name:</Text>
+                       <br />
+                       <Text>{activation.clientName || 'N/A'}</Text>
+                     </Col>
+                     <Col span={12}>
+                       <Text strong>License Key:</Text>
+                       <br />
+                       <Text code style={{ fontSize: '14px' }}>
+                         {activation.licenseKey}
+                       </Text>
+                     </Col>
+                     <Col span={12}>
+                       <Text strong>Activated On:</Text>
+                       <br />
+                       <Text>
+                         {activation.activatedAt
+                           ? new Date(activation.activatedAt).toLocaleDateString()
+                           : 'N/A'}
+                       </Text>
+                     </Col>
+                     <Col span={12}>
+                       <Text strong>Expires On:</Text>
+                       <br />
+                       <Text
+                         style={{
+                           color: activation.isExpiringSoon ? '#faad14' : '#389e0d',
+                           fontWeight: activation.isExpiringSoon ? 600 : 400,
+                         }}
+                       >
+                         {activation.expiryDate
+                           ? new Date(activation.expiryDate).toLocaleDateString()
+                           : 'N/A'}
+                         {activation.isExpiringSoon &&
+                           ` (${activation.daysRemaining} days remaining)`}
+                       </Text>
+                     </Col>
+                   </Row>
 
-                  {activation.maintenanceDue && (
-                    <Alert
-                      type="warning"
-                      message="Quarterly maintenance fee due"
-                      description="Please ensure your maintenance payments are up to date to avoid service interruption."
-                      showIcon
-                      style={{ marginTop: 8 }}
-                    />
-                  )}
+                   {activation.maintenanceDue && (
+                     <Alert
+                       type="warning"
+                       message="Quarterly maintenance fee due"
+                       description="Please ensure your maintenance payments are up to date to avoid service interruption."
+                       showIcon
+                       style={{ marginTop: 8 }}
+                     />
+                   )}
 
-                  {activation.paymentStatus === 'pending' && (
-                    <Alert
-                      type="warning"
-                      message="Payment Pending"
-                      description="Please complete payment to activate your license."
-                      showIcon
-                    />
-                  )}
+                   {activation.paymentStatus === 'pending' && (
+                     <Alert
+                       type="warning"
+                       message="Payment Pending"
+                       description="Please complete payment to activate your license."
+                       showIcon
+                     />
+                   )}
 
-                  <div style={{ marginTop: 8 }}>
-                    <Button
-                      danger
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            'Deactivating will restrict access to the software. Continue?'
-                          )
-                        ) {
-                          setShowActivationModal(true);
-                        }
-                      }}
-                    >
-                      Deactivate License
-                    </Button>
-                  </div>
-                </Space>
-              </Card>
-            ) : (
-              <Card
-                style={{
-                  background: trial?.inTrial ? '#f6ffed' : '#fff2e8',
-                  borderColor: trial?.inTrial ? '#b7eb8f' : '#ffbb96',
-                }}
-              >
-                <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    {trial?.inTrial ? (
-                      <>
-                        <ClockCircleOutlined style={{ fontSize: 24, color: '#52c41a' }} />
-                        <div>
-                          <Title level={4} style={{ color: '#389e0d', margin: 0 }}>
-                            Trial Mode Active
-                          </Title>
-                          <Text type="secondary">
-                            {trial.daysRemaining} days remaining in trial period
-                          </Text>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <LockOutlined style={{ fontSize: 24, color: '#fa541c' }} />
-                        <div>
-                          <Title level={4} style={{ color: '#d4380d', margin: 0 }}>
-                            License Required
-                          </Title>
-                          <Text type="secondary">
-                            Trial period has expired. Please activate your license.
-                          </Text>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                   <div style={{ marginTop: 8 }}>
+                     <Button
+                       danger
+                       onClick={() => {
+                         if (
+                           window.confirm(
+                             'Deactivating will restrict access to the software. Continue?'
+                           )
+                         ) {
+                           setShowActivationModal(true);
+                         }
+                       }}
+                     >
+                       Deactivate License
+                     </Button>
+                   </div>
+                 </Space>
+               </Card>
+             ) : (
+               <Card
+                 style={{
+                   background: trial?.inTrial ? '#f6ffed' : '#fff2e8',
+                   borderColor: trial?.inTrial ? '#b7eb8f' : '#ffbb96',
+                 }}
+               >
+                 <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                     {trial?.inTrial ? (
+                       <>
+                         <ClockCircleOutlined style={{ fontSize: 24, color: '#52c41a' }} />
+                         <div>
+                           <Title level={4} style={{ color: '#389e0d', margin: 0 }}>
+                             Trial Mode Active
+                           </Title>
+                           <Text type="secondary">
+                             {trial.daysRemaining} days remaining in trial period
+                           </Text>
+                         </div>
+                       </>
+                     ) : (
+                       <>
+                         <LockOutlined style={{ fontSize: 24, color: '#fa541c' }} />
+                         <div>
+                           <Title level={4} style={{ color: '#d4380d', margin: 0 }}>
+                             License Required
+                           </Title>
+                           <Text type="secondary">
+                             Trial period has expired. Please activate your license.
+                           </Text>
+                         </div>
+                       </>
+                     )}
+                   </div>
 
-                  <Divider style={{ margin: '12px 0' }} />
+                   <Divider style={{ margin: '12px 0' }} />
 
-                  <Row gutter={[16, 16]}>
-                    <Col span={12}>
-                      <Text strong>Trial Started:</Text>
-                      <br />
-                      <Text>
-                        {trial.startDate ? new Date(trial.startDate).toLocaleDateString() : 'N/A'}
-                      </Text>
-                    </Col>
-                    <Col span={12}>
-                      <Text strong>Trial Expires:</Text>
-                      <br />
-                      <Text>
-                        {trial.endDate ? new Date(trial.endDate).toLocaleDateString() : 'N/A'}
-                      </Text>
-                    </Col>
-                  </Row>
+                   <Row gutter={[16, 16]}>
+                     <Col span={12}>
+                       <Text strong>Trial Started:</Text>
+                       <br />
+                       <Text>
+                         {trial.startDate ? new Date(trial.startDate).toLocaleDateString() : 'N/A'}
+                       </Text>
+                     </Col>
+                     <Col span={12}>
+                       <Text strong>Trial Expires:</Text>
+                       <br />
+                       <Text>
+                         {trial.endDate ? new Date(trial.endDate).toLocaleDateString() : 'N/A'}
+                       </Text>
+                     </Col>
+                   </Row>
 
-                  <div>
-                    <Button
-                      type="primary"
-                      size="large"
-                      icon={<KeyOutlined />}
-                      onClick={() => setShowActivationModal(true)}
-                      style={{ marginRight: 8 }}
-                    >
-                      {trial.inTrial ? 'Activate License' : 'Enter License Key'}
-                    </Button>
-                    <Button onClick={() => setShowActivationModal(true)}>Learn More</Button>
-                  </div>
+                   <div>
+                     <Button
+                       type="primary"
+                       size="large"
+                       icon={<KeyOutlined />}
+                       onClick={() => setShowActivationModal(true)}
+                       style={{ marginRight: 8 }}
+                     >
+                       {trial.inTrial ? 'Activate License' : 'Enter License Key'}
+                     </Button>
+                     <Button onClick={() => setShowActivationModal(true)}>Learn More</Button>
+                   </div>
 
-                  <Alert
-                    message="Need a License?"
-                    description={
-                      <Space direction="vertical">
-                        <Text>Contact Tech with Brands (TwB) to purchase:</Text>
-                        <Text>• Email: support@techwithbrands.com</Text>
-                        <Text>• Mpesa Till: 8352474 | KCB: 1261709403</Text>
-                        <Text>• Initial Fee: KES 250,000 | Quarterly Maintenance: KES 40,000</Text>
-                      </Space>
-                    }
-                    type="info"
-                    showIcon
-                    style={{ marginTop: 8 }}
-                  />
-                </Space>
-              </Card>
-            )}
-          </Card>
-        </TabPane>
+                   <Alert
+                     message="Need a License?"
+                     description={
+                       <Space direction="vertical">
+                         <Text>Contact Tech with Brands (TwB) to purchase:</Text>
+                         <Text>• Email: support@techwithbrands.com</Text>
+                         <Text>• Mpesa Till: 8352474 | KCB: 1261709403</Text>
+                         <Text>• Initial Fee: KES 250,000 | Quarterly Maintenance: KES 40,000</Text>
+                       </Space>
+                     }
+                     type="info"
+                     showIcon
+                     style={{ marginTop: 8 }}
+                   />
+                 </Space>
+               </Card>
+             )}
+           </Card>
+          </TabPane> */}
 
         <TabPane tab="Communication Settings" key="2">
           <Form form={form} onFinish={handleCommunicationSettingsSubmit}>
@@ -408,17 +410,18 @@ const UserSettings = () => {
             </Form.Item>
           </Form>
         </TabPane>
-      </Tabs>
+       </Tabs>
 
-      <LicenseActivationModal
-        visible={showActivationModal}
-        onClose={() => {
-          setShowActivationModal(false);
-        }}
-        isAdmin={false}
-      />
-    </div>
-  );
-};
+       {/* LicenseActivationModal - Temporarily removed for deployment */}
+       {/* <LicenseActivationModal
+         visible={showActivationModal}
+         onClose={() => {
+           setShowActivationModal(false);
+         }}
+         isAdmin={false}
+       /> */}
+     </div>
+   );
+ };
 
-export default UserSettings;
+ export default UserSettings;

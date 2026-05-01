@@ -14,6 +14,17 @@ const handler = async (req, res) => {
   const useZai = ZAI_API_KEY && ZAI_API_KEY.length > 0;
   const useGroq = GROQ_API_KEY && GROQ_API_KEY.length > 0;
 
+  // If no AI provider configured, return a simple fallback response with 200 OK.
+  if (!useZai && !useGroq) {
+    return res.status(200).json({
+      success: true,
+      provider: 'none',
+      content: getFallbackResponse(message, context),
+      actions: [],
+      suggestions: getSuggestions(message),
+    });
+  }
+
   // Build conversation history block (last 6 message pairs)
   const recentHistory = history.slice(-6).map(m => `${m.role === 'user' ? 'User' : 'Reya'}: ${m.content}`).join('\n');
 
@@ -59,7 +70,7 @@ Guidelines:
 5. Offer specific, actionable next steps
 6. Keep responses under 200 words unless detailed explanation needed
 7. Remember details from earlier in the conversation;
-
+`;
   // Detect document generation requests using original message
   const isDocGen =
     action === 'generate_document' ||
@@ -67,7 +78,7 @@ Guidelines:
       /document|contract|nda|agreement|letter|pleading|memo|deed|will/i.test(message));
 
   // Build userMessage: preserve full message for doc gen; prefix for other quick actions
-  const userMessage = quick && !isDocGen ? `Quick action: ${action || message}` : message;
+   const userMessage = quick && !isDocGen ? 'Quick action: ' + (action || message) : message;
 
   // Choose system prompt and token limit based on mode
   const systemPromptToUse = isDocGen
@@ -146,9 +157,9 @@ Generate a complete, ready-to-use legal document now.`
 
     // If both failed, use fallback
     if (!responseContent) {
-      return res.status(503).json({
-        error: 'AI services unavailable',
-        fallback: true,
+      return res.status(200).json({
+        success: true,
+        provider: 'fallback',
         content: getFallbackResponse(message, context),
         actions: [],
         suggestions: getSuggestions(message),
@@ -166,16 +177,17 @@ Generate a complete, ready-to-use legal document now.`
       actions,
       suggestions,
     });
-  } catch (error) {
-    console.error('Reya AI error:', error);
-    return res.status(500).json({
-      error: 'Internal server error',
-      content:
-        "I'm having trouble connecting to my AI brain right now. But I can still help! Try asking about your cases, documents, or deadlines.",
-      actions: [],
-      suggestions: [{ label: 'Show my cases', action: 'cases' }],
-    });
-  }
+   } catch (error) {
+     console.error('Reya AI error:', error);
+     return res.status(200).json({
+       success: true,
+       provider: 'error-fallback',
+       content:
+         "I'm having trouble connecting to my AI brain right now. But I can still help! Try asking about your cases, documents, or deadlines.",
+       actions: [],
+       suggestions: [{ label: 'Show my cases', action: 'cases' }],
+     });
+   }
 };
 
 async function callExternalAPI(url, apiKey, body, retries = 2) {

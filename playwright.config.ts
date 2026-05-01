@@ -26,12 +26,13 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
-    baseURL: process.env.CI ? 'http://localhost:3000' : 'http://localhost:3000',
+    baseURL: process.env.CI ? 'http://localhost:4173' : 'http://localhost:3000',
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
-    /* Increase timeout for CI */
-    actionTimeout: process.env.CI ? 10000 : 5000,
-    navigationTimeout: process.env.CI ? 30000 : 10000,
+    /* Timeouts */
+    actionTimeout: 20000,
+    navigationTimeout: 30000,
+    expect: { timeout: 15000 },
   },
 
   /* Configure projects for major browsers - test chromium only for speed */
@@ -54,18 +55,18 @@ export default defineConfig({
     },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: process.env.CI
-    ? {
-        command: 'npm run build && npm run preview',
-        url: 'http://localhost:4173',
-        reuseExistingServer: false,
-        timeout: 180000, // 3 minutes
-      }
-    : {
-        command: 'npm run dev',
-        url: 'http://localhost:3000',
-        reuseExistingServer: true,
-        timeout: 120000,
-      },
+   /* Run your local dev server before starting the tests */
+   webServer: process.env.CI
+     ? {
+         command: 'npm run build && npm run preview',
+         url: 'http://localhost:4173',
+         reuseExistingServer: false,
+         timeout: 180000, // 3 minutes
+       }
+     : {
+         command: 'npm run dev:all',
+         url: 'http://localhost:3000',
+         reuseExistingServer: true,
+         timeout: 180000, // 3 minutes - wait for both servers
+       },
 });

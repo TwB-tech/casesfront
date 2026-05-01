@@ -180,12 +180,12 @@ export const appwriteApi = {
       return success(enriched);
     }
 
-     // CLIENTS: GET individual clients
-     if (['individual', 'client'].includes(path)) {
-       const { data, error } = await db.list(COLLECTIONS.USERS, [
-         Query.in('role', ['individual', 'client']),
-       ]);
-       if (error) throw error;
+      // CLIENTS: GET individual clients
+      if (['individual', 'client'].includes(path)) {
+        const { data, error } = await db.list(COLLECTIONS.USERS, [
+          Query.or([Query.equal('role', 'individual'), Query.equal('role', 'client')]),
+        ]);
+        if (error) throw error;
        return success({
          results: data.map((doc) => ({
            ...doc,
@@ -211,7 +211,7 @@ export const appwriteApi = {
      // ADVOCATES: GET advocates and firm users
      if (['advocate', 'advocate/firm-advocates', 'individual/case-advocates'].includes(path)) {
        const { data, error } = await db.list(COLLECTIONS.USERS, [
-         Query.in('role', ['advocate', 'firm', 'administrator']),
+         Query.or([Query.equal('role', 'advocate'), Query.equal('role', 'firm'), Query.equal('role', 'administrator')]),
        ]);
        if (error) throw error;
        return success({ results: data.map((doc) => ({ ...doc, id: doc.id })) });
@@ -245,11 +245,11 @@ export const appwriteApi = {
        ]);
        if (caseErr) throw caseErr;
 
-       const clientIds = [...new Set(cases.map((c) => c.client_id))];
-       const { data: clients, error: clientErr } = await db.list(COLLECTIONS.USERS, [
-         Query.in('$id', clientIds),
-       ]);
-       if (clientErr) throw clientErr;
+        const clientIds = [...new Set(cases.map((c) => c.client_id))];
+        const { data: clients, error: clientErr } = await db.list(COLLECTIONS.USERS, [
+          Query.or(clientIds.map(id => Query.equal('$id', id))),
+        ]);
+        if (clientErr) throw clientErr;
 
        return success({
          clients_count: clients.length,
@@ -325,13 +325,13 @@ export const appwriteApi = {
       return success(enriched);
     }
 
-     // INDIVIDUAL CASES: Cases where user is client or advocate
-     if (path === 'case/individual-cases') {
-       const user = getCurrentUser();
-       const { data, error } = await db.list(COLLECTIONS.CASES, [
-         Query.or(Query.equal('client_id', user.id), Query.equal('advocate_id', user.id)),
-       ]);
-       if (error) throw error;
+      // INDIVIDUAL CASES: Cases where user is client or advocate
+      if (path === 'case/individual-cases') {
+        const user = getCurrentUser();
+        const { data, error } = await db.list(COLLECTIONS.CASES, [
+          Query.or([Query.equal('client_id', user.id), Query.equal('advocate_id', user.id)]),
+        ]);
+        if (error) throw error;
        const enriched = await Promise.all(data.map(enrichCase));
        return success(enriched);
      }
@@ -384,12 +384,12 @@ export const appwriteApi = {
        return success({ detail: 'Email verified successfully.' });
      }
 
-     // USER STATS
-     if (path === 'users/stats') {
-       const user = getCurrentUser();
-       const { data: cases, error: caseErr } = await db.list(COLLECTIONS.CASES, [
-         Query.or(Query.equal('client_id', user.id), Query.equal('advocate_id', user.id)),
-       ]);
+      // USER STATS
+      if (path === 'users/stats') {
+        const user = getCurrentUser();
+        const { data: cases, error: caseErr } = await db.list(COLLECTIONS.CASES, [
+          Query.or([Query.equal('client_id', user.id), Query.equal('advocate_id', user.id)]),
+        ]);
        const { data: tasks, error: taskErr } = await db.list(COLLECTIONS.TASKS, [
          Query.equal('assigned_to', user.id),
        ]);
@@ -703,7 +703,7 @@ export const appwriteApi = {
   // POST - Create operations
   // ============================================
   async post(url, payload = {}) {
-    const path = url.replace(/^\/api\//, '').replace(/^\//, '');
+    const path = url.replace(/^\/api\//, '').replace(/^\//, '').replace(/\/$/, '');
     const user = getCurrentUser();
     let organization_id = getCurrentOrganizationId();
 
@@ -1592,7 +1592,7 @@ export const appwriteApi = {
   // PUT - Update operations
   // ============================================
   async put(url, payload) {
-    const path = url.replace(/^\/api\//, '').replace(/^\//, '');
+    const path = url.replace(/^\/api\//, '').replace(/^\//, '').replace(/\/$/, '');
     const parts = path.split('/').filter(Boolean);
 
     if (!url.includes('/auth/')) {
@@ -1694,7 +1694,7 @@ export const appwriteApi = {
   // DELETE - Remove operations
   // ============================================
   async delete(url) {
-    const path = url.replace(/^\/api\//, '').replace(/^\//, '');
+    const path = url.replace(/^\/api\//, '').replace(/^\//, '').replace(/\/$/, '');
     const parts = path.split('/').filter(Boolean);
 
     // DELETE TASK
