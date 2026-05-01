@@ -35,25 +35,9 @@ async function main() {
 
   console.log('✅ Both servers started. Press Ctrl+C to stop.\n');
 
-  // Handle graceful shutdown
-  const shutdown = (signal) => {
-    console.log(`\n${signal} received, stopping servers...`);
-    processes.forEach((p) => {
-      try { p.kill('SIGTERM'); } catch (_) {}
-    });
-    // Force exit after 5 seconds if any still running
-    setTimeout(() => process.exit(0), 5000);
-  };
-
-  process.on('SIGINT', () => shutdown('SIGINT'));
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-
-  // If any child exits unexpectedly, propagate exit
-  const handleChildExit = (p) => () => {
-    console.log(`⚠️ ${p.processName} exited. Shutting down.`);
-    shutdown('child-exit');
-  };
-  processes.forEach((p) => p.on('exit', handleChildExit(p)));
+  // Keep the process alive with a dummy interval.
+  // Playwright will kill this process when tests complete.
+  setInterval(() => {}, 1000);
 }
 
 main().catch((err) => {
