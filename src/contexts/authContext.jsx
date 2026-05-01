@@ -348,6 +348,15 @@ const AuthProvider = ({ children }) => {
     } catch {
       // Ignore logout errors - user is logging out anyway
     }
+    // Clear Appwrite JWT
+    try {
+      const { client } = await import('../lib/appwrite');
+      if (client) {
+        client.setJWT(null);
+      }
+    } catch (e) {
+      console.warn('Failed to clear Appwrite JWT:', e);
+    }
     localStorage.removeItem('userInfo');
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');

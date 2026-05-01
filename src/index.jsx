@@ -18,18 +18,19 @@ import { LicenseProvider } from './contexts/LicenseContext.jsx';
 import LicenseVerification from './components/LicenseManager/LicenseVerification.jsx';
 import { initializeSentry } from './config/sentry';
 import { initializeSecurity } from './utils/enhancedSecurity';
-import { verifyConnection } from './lib/sdk/appwrite.js';
+import { verifyConnection, client as appwriteClient } from './lib/appwrite.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 
-// Set Appwrite JWT from localStorage if present (so /account works without re-login)
-try {
-  const { client } = await import('./lib/appwrite.js');
+// Restore Appwrite JWT from localStorage to maintain session across page reloads
+if (typeof window !== 'undefined') {
   const storedJWT = localStorage.getItem('accessToken');
-  if (storedJWT && client) {
-    client.setJWT(storedJWT);
+  if (storedJWT && appwriteClient) {
+    try {
+      appwriteClient.setJWT(storedJWT);
+    } catch (e) {
+      console.warn('Failed to set Appwrite JWT on init:', e);
+    }
   }
-} catch (e) {
-  console.warn('Failed to set Appwrite JWT on init:', e);
 }
 
 initializeSentry();

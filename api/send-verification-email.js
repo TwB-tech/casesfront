@@ -3,7 +3,7 @@
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@techwithbrands.com';
-const NOREPLY_EMAIL = process.env.NOREPLY_EMAIL || 'noreply@techwithbrands.com';
+const NOREPLY_EMAIL = process.env.NOREPLY_EMAIL || 'noreply@news.techwithbrands.com';
 const SITE_URL = process.env.SITE_URL || (typeof global !== 'undefined' && global.SITE_URL) || 'https://www.kwakorti.live';
 
 function buildVerificationEmail(username, token) {
