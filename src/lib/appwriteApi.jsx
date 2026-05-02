@@ -10,6 +10,7 @@ const {
   db,
   auth,
   account,
+  databases,
   COLLECTIONS,
   DATABASE_ID,
   getCurrentUser,
@@ -655,13 +656,88 @@ export const appwriteApi = {
       return success(data);
     }
 
-    // FIRM: LIST FIRMS
+    // FIRM: LIST FIRMS (enriched with org data and counts)
     if (path === 'firm') {
-      const { data, error } = await db.list(COLLECTIONS.USERS, [
-        Query.equal('role', 'firm'),
-      ]);
-      if (error) throw error;
-      return success({ results: data.map((doc) => ({ ...doc, id: doc.id })) });
+      // Fetch all firms (no org isolation - public directory)
+      const { data: rawFirms, error: firmsErr } = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.USERS,
+        [Query.equal('role', 'firm')]
+      );
+      if (firmsErr) throw firmsErr;
+
+      const firms = rawFirms.map(doc => db.normalize(doc));
+
+      if (firms.length === 0) {
+        return success({ results: [] });
+      }
+
+      // Collect unique organization IDs
+      const orgIds = [...new Set(firms.map(f => f.organization_id).filter(id => id))];
+
+      // Fetch organizations
+      let orgMap = {};
+      if (orgIds.length > 0) {
+        const orgQueries = Query.or(orgIds.map(id => Query.equal('$id', id)));
+        const { data: rawOrgs } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.ORGANIZATIONS,
+          [orgQueries]
+        );
+        const orgs = rawOrgs.map(doc => db.normalize(doc));
+        orgMap = orgs.reduce((acc, org) => { acc[org.id] = org; return acc; }, {});
+      }
+
+      // Count advocates per organization
+      let advocatesCountMap = {};
+      if (orgIds.length > 0) {
+        const { data: rawAdvocates } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.USERS,
+          [
+            Query.equal('role', 'advocate'),
+            Query.or(orgIds.map(id => Query.equal('organization_id', id)))
+          ]
+        );
+        const advocates = rawAdvocates.map(doc => db.normalize(doc));
+        advocates.forEach(emp => {
+          advocatesCountMap[emp.organization_id] = (advocatesCountMap[emp.organization_id] || 0) + 1;
+        });
+      }
+
+      // Count cases per organization
+      let casesCountMap = {};
+      if (orgIds.length > 0) {
+        const { data: rawCases } = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.CASES,
+          [Query.or(orgIds.map(id => Query.equal('organization_id', id)))]
+        );
+        const cases = rawCases.map(doc => db.normalize(doc));
+        cases.forEach(c => {
+          casesCountMap[c.organization_id] = (casesCountMap[c.organization_id] || 0) + 1;
+        });
+      }
+
+      // Enrich firm data
+      const enriched = firms.map(firm => {
+        const org = orgMap[firm.organization_id] || {};
+        return {
+          id: firm.id,
+          name: firm.username || firm.name || 'Unknown Firm',
+          email: firm.email,
+          phone: firm.phone || '',
+          bio: firm.bio || 'Professional legal services',
+          practice_areas: Array.isArray(firm.practice_areas) ? firm.practice_areas : (firm.practice_areas ? firm.practice_areas.split(',').map(s => s.trim()).filter(Boolean) : []),
+          address: org.address || '',
+          verified: org.is_verified || false,
+          memberSince: firm.created_at ? firm.created_at.split('T')[0] : '',
+          advocatesCount: advocatesCountMap[firm.organization_id] || 0,
+          completedProjects: casesCountMap[firm.organization_id] || 0,
+        };
+      });
+
+      return success({ results: enriched });
     }
 
     // NOTES: LIST NOTES FOR CURRENT USER
@@ -903,6 +979,8 @@ export const appwriteApi = {
             name: payload.username,
             email: payload.email,
             plan_type: 'free',
+            address: payload.address || '',
+            registration_number: payload.registration_number || '',
           });
          if (orgErr || !org) {
            console.error('Organization creation error:', orgErr);
@@ -913,21 +991,23 @@ export const appwriteApi = {
          organization_id = resolvedOrganizationId;
        }
 
-         // Create user profile in 'users' collection
-         const userProfile = {
-           id: newUser.user.$id,
-           username: payload.username.trim(),
-           email: payload.email.trim(),
-           role: requestedRole,
-           phone: payload.phone_number || '',
-           timezone: 'EAT',
-           status: 'Active',
-           messaging_enabled: true,
-           deadline_notifications: true,
-           organization_id: resolvedOrganizationId,
-           verification_token: verificationToken,
-           email_verified: false,
-         };
+          // Create user profile in 'users' collection
+          const userProfile = {
+            id: newUser.user.$id,
+            username: payload.username.trim(),
+            email: payload.email.trim(),
+            role: requestedRole,
+            phone: payload.phone_number || '',
+            timezone: 'EAT',
+            status: 'Active',
+            messaging_enabled: true,
+            deadline_notifications: true,
+            organization_id: resolvedOrganizationId,
+            verification_token: verificationToken,
+            email_verified: false,
+            bio: payload.bio || '',
+            practice_areas: Array.isArray(payload.practice_areas) ? payload.practice_areas : (payload.practice_areas ? payload.practice_areas.split(',').map(s => s.trim()).filter(Boolean) : []),
+          };
          console.log('[register] userProfile created:', { ...userProfile, verification_token: userProfile.verification_token ? `${userProfile.verification_token.substring(0, 10)}...` : 'MISSING' });
 
          const { data: createdUser, error: createUserErr } = await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);

@@ -287,23 +287,27 @@ const ProfilePage = () => {
               </p>
             )}
 
-            {profileData?.practice_areas && (
-              <div
-                style={{
-                  marginTop: '12px',
-                  display: 'flex',
-                  gap: '8px',
-                  flexWrap: 'wrap',
-                  justifyContent: isSmallScreen ? 'center' : 'flex-start',
-                }}
-              >
-                {profileData.practice_areas.split(',').map((area, idx) => (
-                  <Tag key={idx} style={{ borderRadius: '12px' }}>
-                    {area.trim()}
-                  </Tag>
-                ))}
-              </div>
-            )}
+                {profileData.practice_areas && (
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      display: 'flex',
+                      gap: '8px',
+                      flexWrap: 'wrap',
+                      justifyContent: isSmallScreen ? 'center' : 'flex-start',
+                    }}
+                  >
+                    {(Array.isArray(profileData.practice_areas)
+                      ? profileData.practice_areas
+                      : profileData.practice_areas.split(',')
+                    )
+                      .map((area, idx) => (
+                        <Tag key={idx} style={{ borderRadius: '12px' }}>
+                          {area.trim()}
+                        </Tag>
+                      ))}
+                  </div>
+                )}
           </div>
         </div>
 

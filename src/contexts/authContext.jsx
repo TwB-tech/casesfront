@@ -122,22 +122,28 @@ const normalizeRegisterPayload = (formData, userType) => {
      };
    }
 
-   if (userType === 'firm') {
-     const firmName = lowered['law firm name'];
-     if (!firmName || firmName === '') {
-       throw new Error('Law firm name is required');
-     }
-     return {
-       email,
-       username: firmName,
-       password,
-       role: 'firm',
-       phone_number: lowered['phone number'] || '',
-       alternative_phone_number: lowered['alternative phone number'] || '',
-       address: lowered.address || '',
-       occupation: 'Law Firm',
-     };
-   }
+    if (userType === 'firm') {
+      const firmName = lowered['law firm name'];
+      if (!firmName || firmName === '') {
+        throw new Error('Law firm name is required');
+      }
+      // Parse practice areas into array
+      const practiceAreas = lowered['practice areas']
+        ? lowered['practice areas'].split(',').map(a => a.trim()).filter(Boolean)
+        : [];
+      return {
+        email,
+        username: firmName,
+        password,
+        role: 'firm',
+        phone_number: lowered['phone number'] || '',
+        alternative_phone_number: lowered['alternative phone number'] || '',
+        address: lowered.address || '',
+        bio: lowered.bio || '',
+        practice_areas: practiceAreas,
+        registration_number: lowered['registration number'] || '',
+      };
+    }
 
    if (userType === 'law_school') {
      const instName = lowered['institution name'];
@@ -169,25 +175,30 @@ const normalizeRegisterPayload = (formData, userType) => {
      };
    }
 
-   // Default case (advocate, individual)
-   const fullName = lowered['full name'];
-   if (!fullName || fullName === '') {
-     throw new Error('Full name is required');
-   }
-
-   return {
-     email,
-     username: fullName,
-     password,
-     role: userType === 'advocate' ? 'advocate' : 'individual',
-     phone_number: lowered['phone number'] || '',
-     alternative_phone_number: lowered['alternative phone number'] || '',
-     id_passport_number: lowered['id number or passport number'] || '',
-     marital_status: lowered['marital status'] || '',
-     occupation: lowered.occupation || '',
-     address: lowered.address || '',
-     date_of_birth: lowered['date of birth'] || '',
-   };
+    // Default case: Advocate or Individual
+    const fullName = lowered['full name'];
+    if (!fullName || fullName === '') {
+      throw new Error('Full name is required');
+    }
+    // Parse practice areas if provided
+    const practiceAreas = lowered['practice areas']
+      ? lowered['practice areas'].split(',').map(a => a.trim()).filter(Boolean)
+      : [];
+    return {
+      email,
+      username: fullName,
+      password,
+      role: userType === 'advocate' ? 'advocate' : 'individual',
+      phone_number: lowered['phone number'] || '',
+      alternative_phone_number: lowered['alternative phone number'] || '',
+      id_passport_number: lowered['id number or passport number'] || '',
+      marital_status: lowered['marital status'] || '',
+      occupation: lowered.occupation || '',
+      address: lowered.address || '',
+      date_of_birth: lowered['date of birth'] || '',
+      bio: lowered.bio || '',
+      practice_areas: practiceAreas,
+    };
 };
 
 const AuthProvider = ({ children }) => {

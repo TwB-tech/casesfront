@@ -118,7 +118,7 @@ const BASE_ROUTES = [
     label: 'HR & Payroll',
     icon: TeamOutlined,
     routes: ['/hr', '/payroll'],
-    roles: ['admin', 'partner', 'hr', 'manager', 'advocate', 'firm'],
+    roles: ['admin', 'partner', 'hr', 'manager', 'firm'],
   },
   {
     key: 'reports',

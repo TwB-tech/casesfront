@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Search,
   Filter,
@@ -28,37 +28,35 @@ const FirmsMarketplace = () => {
   const { currency } = useCurrency();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
+  const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [firms, setFirms] = useState([]);
 
   // Fetch function defined before useEffect to avoid use-before-define
-  const fetchFirms = async () => {
+  const fetchFirms = useCallback(async () => {
     try {
       setLoading(true);
-      // Fetch law firms from backend
+      // Fetch law firms from backend (enriched)
       const response = await api.get('/firm/');
-      // Transform to firm-like structure
-      const firms = (response.data.results || response.data).map((firm) => ({
+      const firmsData = (response.data.results || response.data).map((firm) => ({
         id: firm.id,
-        name: firm.username || firm.name || 'Unknown Firm',
+        name: firm.name || firm.username || 'Unknown Firm',
         email: firm.email,
-        phone: firm.phone_number || '',
+        phone: firm.phone || '',
         bio: firm.bio || 'Professional legal services',
-        rating: 4.5 + Math.random() * 0.5,
-        reviews: Math.floor(Math.random() * 50) + 10,
-        hourlyRate: `${CURRENCIES[currency].symbol}120-250/hr`,
-        specialties: firm.practice_areas ? firm.practice_areas.split(',').slice(0, 3) : ['Corporate', 'Litigation'],
+        specialties: Array.isArray(firm.practice_areas)
+          ? firm.practice_areas.slice(0, 3)
+          : firm.practice_areas
+          ? String(firm.practice_areas).split(',').slice(0, 3)
+          : [],
         location: firm.address || 'Nairobi, Kenya',
-        verified: true,
-        responseTime: 'within 2h',
-        availability: 'Now',
-        memberSince: firm.created_at ? firm.created_at.split('T')[0] : '2023-01-15',
-        avatar: firm.username?.charAt(0).toUpperCase() || 'F',
-        advocatesCount: Math.floor(Math.random() * 10) + 2,
-        completedProjects: Math.floor(Math.random() * 100) + 20,
+        verified: firm.verified || false,
+        memberSince: firm.memberSince || (firm.created_at ? firm.created_at.split('T')[0] : ''),
+        advocatesCount: firm.advocatesCount || 0,
+        completedProjects: firm.completedProjects || 0,
       }));
-      setFirms(firms);
+      setFirms(firmsData);
     } catch (error) {
       console.error('Error fetching firms:', error);
       message.error('Failed to load law firms. Please try again later.');
@@ -66,20 +64,35 @@ const FirmsMarketplace = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api]);
 
   useEffect(() => {
     fetchFirms();
-  }, []);
+    const interval = setInterval(fetchFirms, 30000); // Refresh every 30 seconds
+    return () => clearInterval(interval);
+  }, [fetchFirms]);
 
-  const categories = [
-    { key: 'all', label: 'All Practice Areas', icon: Briefcase, count: 42 },
-    { key: 'corporate', label: 'Corporate Law', icon: Building, count: 15 },
-    { key: 'litigation', label: 'Litigation', icon: Scale, count: 12 },
-    { key: 'realestate', label: 'Real Estate', icon: MapPin, count: 8 },
-    { key: 'ip', label: 'Intellectual Property', icon: Award, count: 5 },
-    { key: 'family', label: 'Family Law', icon: Users, count: 4 },
+  // Define base categories (without counts)
+  const categoryDefs = [
+    { key: 'all', label: 'All Practice Areas', icon: Briefcase },
+    { key: 'corporate', label: 'Corporate Law', icon: Building },
+    { key: 'litigation', label: 'Litigation', icon: Scale },
+    { key: 'realestate', label: 'Real Estate', icon: MapPin },
+    { key: 'ip', label: 'Intellectual Property', icon: Award },
+    { key: 'family', label: 'Family Law', icon: Users },
   ];
+
+  // Compute counts based on firms data
+  const categories = categoryDefs.map((cat) => {
+    if (cat.key === 'all') {
+      return { ...cat, count: firms.length };
+    }
+    const keyword = cat.label.split(' ')[0].toLowerCase(); // e.g., 'corporate'
+    const count = firms.filter((firm) =>
+      firm.specialties && firm.specialties.some((spec) => spec.toLowerCase().includes(keyword))
+    ).length;
+    return { ...cat, count };
+  });
 
   const services = [
     {
@@ -126,7 +139,10 @@ const FirmsMarketplace = () => {
       firm.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       firm.specialties.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase())) ||
       firm.location.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+    const matchesCategory =
+      activeCategory === 'all' ||
+      (firm.specialties && firm.specialties.some((spec) => spec.toLowerCase().includes(activeCategory)));
+    return matchesSearch && matchesCategory;
   });
 
   const handleContact = (firm) => {
@@ -145,37 +161,8 @@ const FirmsMarketplace = () => {
         </div>
       ),
     },
-    {
-      key: 'available',
-      label: (
-        <span className="flex items-center gap-2">
-          Available Now
-          <span className="w-2 h-2 bg-success-500 rounded-full animate-pulse" />
-        </span>
-      ),
-      children: (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredFirms
-            .filter((f) => f.availability.includes('Now'))
-            .map((firm) => (
-              <FirmCard key={firm.id} firm={firm} onContact={() => handleContact(firm)} />
-            ))}
-        </div>
-      ),
-    },
-    {
-      key: 'toprated',
-      label: 'Top Rated',
-      children: (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredFirms
-            .filter((f) => f.rating >= 4.8)
-            .map((firm) => (
-              <FirmCard key={firm.id} firm={firm} onContact={() => handleContact(firm)} />
-            ))}
-        </div>
-      ),
-    },
+
+
     {
       key: 'emergency',
       label: 'Emergency Support',
@@ -254,7 +241,7 @@ const FirmsMarketplace = () => {
             </div>
             <div className="flex items-center gap-1 text-sm text-success-600">
               <span className="w-2 h-2 bg-success-500 rounded-full animate-pulse" />
-              {firms.filter((f) => f.availability.includes('Now')).length} Firms Available Now
+              {firms.filter((f) => f.verified).length} Verified Firms
             </div>
           </div>
 
@@ -370,7 +357,7 @@ const FirmsMarketplace = () => {
                 <button
                   key={cat.key}
                   className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
-                    activeTab === cat.key
+                    activeCategory === cat.key
                       ? isFuturistic
                         ? 'bg-aurora-primary/20 text-aurora-primary border border-aurora-primary/30'
                         : 'bg-primary-50 text-primary-700 border border-primary-200'
@@ -378,7 +365,7 @@ const FirmsMarketplace = () => {
                         ? 'text-aurora-muted hover:bg-cyber-hover'
                         : 'text-neutral-600 hover:bg-neutral-50'
                   }`}
-                  onClick={() => setActiveTab(cat.key)}
+                  onClick={() => setActiveCategory(cat.key)}
                 >
                   <div className="flex items-center gap-3">
                     <cat.icon size={18} />
@@ -559,7 +546,7 @@ const FirmCard = ({ firm, onContact }) => {
                 : 'bg-primary-100 text-primary-800'
             }`}
           >
-            {firm.avatar}
+            {firm.name ? firm.name.charAt(0).toUpperCase() : 'F'}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -570,24 +557,9 @@ const FirmCard = ({ firm, onContact }) => {
               </h3>
               {firm.verified && <CheckCircle2 className="w-4 h-4 text-success-500 flex-shrink-0" />}
             </div>
-            <div className="flex items-center gap-2 mt-1">
-              <Star className="w-4 h-4 text-warning-500 fill-warning-500" />
-              <span
-                className={`text-sm font-medium ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}
-              >
-                {firm.rating}
-              </span>
-              <span
-                className={`text-sm ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
-              >
-                ({firm.reviews} reviews)
-              </span>
-            </div>
             <div className="flex items-center gap-1 mt-1 text-sm">
               <MapPin className="w-3 h-3 text-neutral-400" />
-              <span className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}>
-                {firm.location}
-              </span>
+              <span className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}>{firm.location}</span>
             </div>
           </div>
         </div>
@@ -629,11 +601,15 @@ const FirmCard = ({ firm, onContact }) => {
         >
           <div className="flex items-center gap-2">
             <Users size={14} />
-            <span>{firm.advocatesCount} advocates</span>
+            <span>
+              {firm.advocatesCount} advocate{firm.advocatesCount !== 1 ? 's' : ''}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <CheckCircle2 size={14} className="text-success-500" />
-            <span>{firm.completedProjects} cases</span>
+            <span>
+              {firm.completedProjects} case{firm.completedProjects !== 1 ? 's' : ''}
+            </span>
           </div>
         </div>
 
@@ -644,15 +620,9 @@ const FirmCard = ({ firm, onContact }) => {
         >
           <div>
             <div
-              className={`text-lg font-bold ${isFuturistic ? 'text-aurora-primary' : 'text-primary-700'}`}
+              className={`text-sm font-medium ${isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}`}
             >
-              ${firm.hourlyRate}/hr
-            </div>
-            <div className="flex items-center gap-1 text-xs">
-              <span className="w-1.5 h-1.5 bg-success-500 rounded-full animate-pulse" />
-              <span className={isFuturistic ? 'text-aurora-muted' : 'text-success-600'}>
-                {firm.availability}
-              </span>
+              Member since {firm.memberSince}
             </div>
           </div>
           <div className="flex gap-2">

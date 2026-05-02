@@ -2,58 +2,43 @@ import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, message, Spin } from 'antd';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { UserPlus, CheckCircle } from 'lucide-react';
+import api from '../axiosConfig';
 
 const AcceptInvite = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [inviteValid, setInviteValid] = useState(false);
-  const [inviteData, setInviteData] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
 
   const token = searchParams.get('token');
 
   useEffect(() => {
-    const validateToken = async () => {
-      if (!token) {
-        message.error('Invalid invitation link');
-        navigate('/login');
-        return;
-      }
-
-      try {
-        // In a real implementation, you'd validate the token server-side
-        // For now, we'll assume it's valid if present
-        setInviteValid(true);
-        setInviteData({ email: 'employee@example.com', role: 'employee' });
-      } catch (error) {
-        message.error('Invalid or expired invitation');
-        navigate('/login');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    validateToken();
+    if (!token) {
+      message.error('Invalid invitation link');
+      navigate('/login');
+      return;
+    }
+    // Token exists, consider it valid; actual validation on submit
+    setInviteValid(true);
+    setLoading(false);
   }, [token, navigate]);
 
   const handleSubmit = async (values) => {
     setSubmitting(true);
     try {
-      // For now, just simulate success and redirect
-      console.log('Accepting invite with:', { token, ...values });
-      message.success('Account created successfully!');
-
+      await api.post('/auth/accept-invite', {
+        token,
+        fullName: values.fullName,
+        password: values.password,
+      });
+      message.success('Account created successfully! You can now log in.');
       setCompleted(true);
-
-      // Redirect to login after a delay
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+      setTimeout(() => navigate('/login'), 3000);
     } catch (error) {
-      console.error('Account creation error:', error);
-      message.error('Failed to create account');
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to create account';
+      message.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -115,10 +100,6 @@ const AcceptInvite = () => {
             rules={[{ required: true, message: 'Please enter your full name' }]}
           >
             <Input placeholder="Enter your full name" />
-          </Form.Item>
-
-          <Form.Item label="Email">
-            <Input value={inviteData?.email} disabled />
           </Form.Item>
 
           <Form.Item
