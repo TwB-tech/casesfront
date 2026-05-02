@@ -68,8 +68,10 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email_verified: true,
-        verification_token: null,
+        data: {
+          email_verified: true,
+          verification_token: null,
+        },
       }),
     });
 
