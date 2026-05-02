@@ -17,12 +17,17 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Verification token is required' });
   }
 
-  // Build query to find user by verification_token
-  const query = new URLSearchParams({
-    'queries[0][attribute]': 'verification_token',
-    'queries[0][operator]': 'equal',
-    'queries[0][value]': token,
-  });
+  // Build query in Appwrite-compatible JSON format.
+  // Appwrite expects each `queries[n]` value as a JSON string object.
+  const query = new URLSearchParams();
+  query.append(
+    'queries[0]',
+    JSON.stringify({
+      method: 'equal',
+      attribute: 'verification_token',
+      values: [token],
+    })
+  );
 
   const url = `${endpoint}/databases/${databaseId}/collections/${collectionId}/documents?${query}`;
 

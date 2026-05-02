@@ -1,9 +1,11 @@
-import { createContext, useEffect, useMemo, useState, flushSync } from 'react';
+import { createContext, useEffect, useMemo, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { notification } from 'antd';
 import axiosInstance from '../axiosConfig';
 import { auth } from '../lib/appwrite';
 
 const AuthContext = createContext(null);
+const SESSION_STORAGE_KEY = 'appwrite_session_secret';
 
 const parseStoredUser = () => {
   if (typeof window === 'undefined') {
@@ -12,6 +14,19 @@ const parseStoredUser = () => {
   try {
     return JSON.parse(localStorage.getItem('userInfo') || 'null');
   } catch (error) {
+    return null;
+  }
+};
+
+const parseSessionSecret = (tokensValue) => {
+  if (!tokensValue || typeof tokensValue !== 'string') {
+    return null;
+  }
+  try {
+    const normalized = tokensValue.replace(/'/g, '"');
+    const parsed = JSON.parse(normalized);
+    return typeof parsed?.access === 'string' ? parsed.access : null;
+  } catch {
     return null;
   }
 };
@@ -190,33 +205,40 @@ const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-    const login = async (email, password) => {
-      // Use Appwrite auth directly
-      const { data, error } = await auth.createEmailSession(email, password);
-      if (error) {
-        throw new Error(error.message || 'Login failed');
-      }
+  const login = async (email, password) => {
+    const { data } = await axiosInstance.post('/auth/login/', { email, password });
 
-      // Get user details from Appwrite session
-      const { data: user } = await auth.get();
-
-      const userInfo = {
-        id: user?.$id || user?.userId,
-        email: user?.email,
-        username: user?.name || user?.email,
-        role: user?.role || 'individual',
-        organization_id: user?.organization_id || null,
-      };
-
-      // Persist user info
-      localStorage.setItem('userInfo', JSON.stringify(userInfo));
-
-      // Flush state synchronously so navigation sees updated user
-      flushSync(() => {
-        setUser(userInfo);
-      });
-      return userInfo;
+    const userInfo = {
+      id: data?.id || data?.user?.id || null,
+      email: data?.email || data?.user?.email || email,
+      username: data?.username || data?.user?.username || email,
+      role: data?.role || data?.user?.role || 'individual',
+      organization_id: data?.organization_id || data?.user?.organization_id || null,
     };
+
+    const sessionSecret = parseSessionSecret(data?.tokens);
+    if (sessionSecret) {
+      localStorage.setItem(SESSION_STORAGE_KEY, sessionSecret);
+      auth.setSessionSecret(sessionSecret);
+    } else {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      auth.setSessionSecret('');
+    }
+
+    if (userInfo.organization_id) {
+      localStorage.setItem('organization_id', userInfo.organization_id);
+    } else {
+      localStorage.removeItem('organization_id');
+    }
+
+    localStorage.setItem('userInfo', JSON.stringify(userInfo));
+
+    // Flush state synchronously so navigation sees updated user
+    flushSync(() => {
+      setUser(userInfo);
+    });
+    return userInfo;
+  };
 
    const register = async (formData, userType) => {
     try {
@@ -330,15 +352,30 @@ const AuthProvider = ({ children }) => {
     localStorage.removeItem('userInfo');
     localStorage.removeItem('organization_id');
     localStorage.removeItem('user_permissions');
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+    auth.setSessionSecret('');
     setUser(null);
   };
 
   const verifyToken = async () => {
     try {
-      const { data } = await auth.get();
-      return Boolean(data);
+      const { data } = await axiosInstance.post('/auth/verify-token');
+      const verifiedUser = data?.user;
+      if (!verifiedUser?.id) {
+        return false;
+      }
+
+      localStorage.setItem('userInfo', JSON.stringify(verifiedUser));
+      if (verifiedUser.organization_id) {
+        localStorage.setItem('organization_id', verifiedUser.organization_id);
+      }
+
+      flushSync(() => {
+        setUser(verifiedUser);
+      });
+      return true;
     } catch (error) {
-      logout();
+      await logout();
       return false;
     }
   };

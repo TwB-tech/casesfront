@@ -482,13 +482,14 @@ function DocumentList() {
          >
            <Row gutter={16}>
              <Col span={18}>
-               <Input.TextArea
-                 placeholder="Describe the legal document you need (e.g., 'A lease agreement for a 2-bedroom apartment in Kenya with monthly rent of KES 50,000')"
-                 value={docPrompt}
-                 onChange={(e) => setDocPrompt(e.target.value)}
-                 rows={3}
-                 style={{ marginBottom: isSmallScreen ? '12px' : 0 }}
-               />
+                <Input.TextArea
+                  placeholder="Describe the legal document you need (e.g., 'A lease agreement for a 2-bedroom apartment in Kenya with monthly rent of KES 50,000')"
+                  value={docPrompt}
+                  onChange={(e) => setDocPrompt(e.target.value)}
+                  rows={3}
+                  style={{ marginBottom: isSmallScreen ? '12px' : 0 }}
+                  data-testid="doc-prompt-input"
+                />
              </Col>
              <Col span={6}>
                <Select
@@ -505,16 +506,17 @@ function DocumentList() {
                  <Option value="usa">USA</Option>
                  <Option value="uk">UK</Option>
                </Select>
-               <Button
-                 type="primary"
-                 icon={<Bot size={16} />}
-                 loading={generatingDoc}
-                 onClick={generateDocument}
-                 block
-                 disabled={!docPrompt.trim() || generatingDoc}
-               >
-                 Generate
-               </Button>
+                <Button
+                  type="primary"
+                  icon={<Bot size={16} />}
+                  loading={generatingDoc}
+                  onClick={generateDocument}
+                  block
+                  disabled={!docPrompt.trim() || generatingDoc}
+                  data-testid="generate-doc-button"
+                >
+                  Generate
+                </Button>
              </Col>
            </Row>
          </Card>

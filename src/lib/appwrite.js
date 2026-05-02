@@ -33,11 +33,18 @@ let account = null;
 let databases = null;
 let storage = null;
 let functions = null;
+const SESSION_STORAGE_KEY = 'appwrite_session_secret';
 
 if (isAppwriteMode) {
   client = new Client();
   client.setEndpoint(endpoint);
   client.setProject(projectId);
+  if (typeof window !== 'undefined') {
+    const storedSessionSecret = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (storedSessionSecret) {
+      client.setSession(storedSessionSecret);
+    }
+  }
   // No JWT set here — user sessions are managed by Account methods
   account = new Account(client);
   databases = new Databases(client);
@@ -84,6 +91,9 @@ export const auth = {
   async createEmailSession(email, password) {
     try {
       const session = await account.createEmailPasswordSession(email, password);
+      if (session?.secret) {
+        client.setSession(session.secret);
+      }
       return { data: session };
     } catch (error) {
       return { error };
@@ -138,11 +148,18 @@ export const auth = {
 
   async deleteSession() {
     try {
-      await account.deleteSession();
+      await account.deleteSession('current');
       return { data: {} };
     } catch (error) {
       return { error };
     }
+  },
+
+  setSessionSecret(secret) {
+    if (!client || typeof secret !== 'string') {
+      return;
+    }
+    client.setSession(secret);
   },
 
   // Get current session user ID
@@ -400,3 +417,4 @@ export { client, account, databases, storage, functions };
    verifyConnection,
    getPingStatus,
  };
+

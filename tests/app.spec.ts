@@ -27,6 +27,8 @@ test.describe('WakiliWorld App', () => {
     await page.waitForLoadState('domcontentloaded');
     const url = page.url();
     expect(url).toBeTruthy();
+    await expect(page.getByRole('button', { name: /Individual/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Advocate/i })).toBeVisible();
   });
 
   test('features page loads', async ({ page }) => {

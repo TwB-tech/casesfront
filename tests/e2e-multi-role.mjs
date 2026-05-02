@@ -8,8 +8,8 @@ const OUT = join(__dirname, 'e2e-results');
 if (existsSync(OUT)) try { rmdirSync(OUT, { recursive: true, force: true }); } catch {}
 mkdirSync(OUT, { recursive: true });
 
-const BASE = 'https://www.kwakorti.live';
-const PASSWORD = 'TestPass123!';
+const BASE = process.env.E2E_BASE_URL || 'https://www.kwakorti.live';
+const PASSWORD = process.env.E2E_PASSWORD || 'TestPass123!';
 
 const roles = {
   individual: {

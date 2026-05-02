@@ -752,7 +752,7 @@ export const appwriteApi = {
         role,
         organization_id: userData?.organization_id,
         tokens: JSON.stringify({
-          access: data.session?.secret || `token-${data.userId}`,
+          access: data.secret || `token-${data.userId}`,
           refresh: `refresh-${data.userId}-${Date.now()}`,
         }).replace(/"/g, "'"),
       });
@@ -1061,22 +1061,23 @@ export const appwriteApi = {
      // VERIFY TOKEN
      if (path === 'auth/verify-token') {
        try {
-         const session = await account.get();
-         if (!session || !session.userId) {
+         const currentAccount = await account.get();
+         const userId = currentAccount?.$id || currentAccount?.userId;
+         if (!currentAccount || !userId) {
            return failure('Invalid token', 401);
          }
          const { data: userProfile, error: userErr } = await db.get(
            COLLECTIONS.USERS,
-           session.userId
+           userId
          );
          if (userErr) {
            // User document not found; fall back to session info
            console.warn('User document not found during verify-token, using session data:', userErr);
            return success({
              user: {
-               id: session.userId,
-               email: session.email,
-               username: session.name || session.email,
+               id: userId,
+               email: currentAccount.email,
+               username: currentAccount.name || currentAccount.email,
                role: 'individual',
                organization_id: null,
              },
@@ -1085,7 +1086,7 @@ export const appwriteApi = {
          return success({
            user: {
              id: userProfile.id,
-             email: session.email,
+             email: currentAccount.email,
              username: userProfile.username,
              role: userProfile.role,
              organization_id: userProfile.organization_id,
@@ -1452,6 +1453,7 @@ export const appwriteApi = {
         const response = await fetch('/api/reya', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(15000),
           body: JSON.stringify({
             message: `Generate a professional legal ${docType} document for ${countryLaw.name} jurisdiction under ${countryLaw.law}.${userPrompt ? `\nUser requirements: ${userPrompt}` : ''}`,
             context: { docType, country: countryLaw.name, law: countryLaw.law, ...context },

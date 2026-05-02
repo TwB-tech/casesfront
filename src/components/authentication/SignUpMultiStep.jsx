@@ -4,6 +4,7 @@ import { AuthContext } from '../../contexts/authContext';
 import { notification } from 'antd';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
+import LogoNoBg from '../../assets/LogoNoBg.png';
 
 function SignUpMultiStep() {
   const [userType, setUserType] = useState('');
@@ -138,7 +139,7 @@ function SignUpMultiStep() {
       <div className="text-center mb-8">
         <Link to="/" className="inline-block mb-4">
           <img
-            src={require('../../assets/LogoNoBg.png').default}
+            src={LogoNoBg}
             alt="WakiliWorld Logo"
             style={{ maxHeight: '60px', maxWidth: '60px' }}
           />

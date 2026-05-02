@@ -15,12 +15,14 @@ const app = express();
 // CORS: allow all origins in development
 app.use(cors({ origin: true, credentials: true }));
 
-// Parse JSON bodies
+// Keep proxy before JSON parsing so it can read raw request streams.
+app.use('/api/appwrite-proxy', appwriteProxyHandler);
+
+// Parse JSON bodies for API routes that read req.body.
 app.use(express.json());
 
 // API Routes
 app.post('/api/reya', (req, res) => reyaHandler(req, res));
-app.use('/api/appwrite-proxy', appwriteProxyHandler);
 app.post('/api/contact', (req, res) => contactHandler(req, res));
 app.post('/api/send-verification-email', (req, res) => sendVerificationEmailHandler(req, res));
 app.post('/api/verify-email', (req, res) => verifyEmailHandler(req, res));

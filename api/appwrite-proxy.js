@@ -13,6 +13,16 @@ import { URL } from 'url';
 
 function collectBody(req) {
   return new Promise((resolve, reject) => {
+    // If an upstream middleware already parsed the body, rebuild it here.
+    if (req.body !== undefined) {
+      const serialized =
+        typeof req.body === 'string' || Buffer.isBuffer(req.body)
+          ? req.body
+          : JSON.stringify(req.body);
+      resolve(Buffer.from(serialized || ''));
+      return;
+    }
+
     const chunks = [];
     req.on('data', chunk => chunks.push(chunk));
     req.on('end', () => resolve(Buffer.concat(chunks)));
@@ -25,9 +35,14 @@ export default async function handler(req, res) {
 
   // Parse URL to extract the path after /api/appwrite-proxy
   const url = new URL(req.url, `http://${req.headers.host}`);
-  const pathSegments = url.pathname.split('/').filter(Boolean);
-  // Remove 'api' and 'appwrite-proxy' segments
-  const appwritePath = pathSegments.slice(2).join('/');
+  // Works both for direct serverless route:
+  //   /api/appwrite-proxy/account
+  // and Express-mounted route:
+  //   /account
+  const normalizedPath = url.pathname.replace(/^\/+/, '');
+  const appwritePath = normalizedPath
+    .replace(/^api\/appwrite-proxy\/?/, '')
+    .replace(/^appwrite-proxy\/?/, '');
   
   // If no specific path, return status
   if (!appwritePath) {
@@ -74,6 +89,10 @@ export default async function handler(req, res) {
      'Content-Type': headers['content-type'] || 'application/json',
    };
 
+   if (headers['x-fallback-cookies']) {
+     appwriteHeaders['X-Fallback-Cookies'] = headers['x-fallback-cookies'];
+   }
+
    // Forward session for authenticated user requests (takes precedence over API key)
    if (headers['x-appwrite-session']) {
      appwriteHeaders['X-Appwrite-Session'] = headers['x-appwrite-session'];
@@ -103,7 +122,7 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.setHeader(
       'Access-Control-Allow-Headers',
-      'Content-Type, X-Appwrite-Project, X-Appwrite-Key, X-Appwrite-Session, X-Appwrite-JWT, Authorization'
+      'Content-Type, X-Appwrite-Project, X-Appwrite-Key, X-Appwrite-Session, X-Appwrite-JWT, X-Fallback-Cookies, Authorization'
     );
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.statusCode = 204;
@@ -135,6 +154,7 @@ export default async function handler(req, res) {
       'x-appwrite-message',
       'x-appwrite-code',
       'x-appwrite-version',
+      'x-fallback-cookies',
       'etag',
       'cache-control',
       'last-modified',
