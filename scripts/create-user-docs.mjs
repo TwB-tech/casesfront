@@ -22,22 +22,27 @@ async function createUserDoc(accountId, email, role, name) {
       status: 'Active',
       created_at: new Date().toISOString(),
     },
-    // Set permissions: anyone can read, only the user (by ID) can write
-    permissions: {
-      read: ['role:all'],
-      write: [`user:${accountId}`],
-    },
+    // Permissions are already set at collection level; document-level not required
+    // permissions: {
+    //   read: ['role:all'],
+    //   write: [`user:${accountId}`],
+    // },
   };
   const res = await fetch(`${endpoint}/databases/${DB_ID}/collections/${USERS_COL}/documents/${accountId}`, {
     method: 'PUT',
     headers,
     body: JSON.stringify(payload),
   });
+  const text = await res.text();
   if (res.ok) {
     console.log(`✅ Created/updated user document for ${email}`);
   } else {
-    const err = await res.json();
-    console.error(`❌ Failed for ${email}:`, err.message);
+    try {
+      const err = JSON.parse(text);
+      console.error(`❌ Failed for ${email}:`, err.message);
+    } catch {
+      console.error(`❌ Failed for ${email}:`, text);
+    }
   }
 }
 

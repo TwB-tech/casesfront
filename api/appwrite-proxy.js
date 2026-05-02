@@ -82,47 +82,11 @@ export default async function handler(req, res) {
    } else if (headers['authorization']) {
      appwriteHeaders['Authorization'] = headers['authorization'];
    } else {
-     // Only use API key if no user session provided (server-to-server)
-     if (apiKey) {
-       appwriteHeaders['X-Appwrite-Key'] = apiKey;
-     }
-   }
-
-   // Build target URL to Appwrite
-   const targetUrl = `${endpoint.replace(/\/$/, '')}/${appwritePath}${url.search}`;
-
-   // Collect request body if present
-   let reqBody = null;
-   if (method !== 'GET' && method !== 'HEAD' && headers['content-type']) {
-     try {
-       reqBody = await collectBody(req);
-     } catch (err) {
-       console.error('Failed to read request body:', err);
-       res.status(400).json({ error: 'Failed to read request body' });
-       return;
-     }
-   }
-
-   // Prepare headers for Appwrite
-   const appwriteHeaders = {
-     'X-Appwrite-Project': projectId,
-     'Content-Type': headers['content-type'] || 'application/json',
-   };
-
-   // Forward session for authenticated user requests (takes precedence over API key)
-   if (headers['x-appwrite-session']) {
-     appwriteHeaders['X-Appwrite-Session'] = headers['x-appwrite-session'];
-   } else if (headers['x-appwrite-jwt']) {
-     appwriteHeaders['X-Appwrite-JWT'] = headers['x-appwrite-jwt'];
-   } else if (headers['authorization']) {
-     appwriteHeaders['Authorization'] = headers['authorization'];
-   } else {
-     // Only use API key if no user session provided (server-to-server)
-     if (apiKey) {
-       appwriteHeaders['X-Appwrite-Key'] = apiKey;
-     }
-   }
-   }
+    // Only use API key if no user session provided (server-to-server)
+    if (apiKey) {
+      appwriteHeaders['X-Appwrite-Key'] = apiKey;
+    }
+  }
 
   // Determine allowed CORS origins (comma-separated env var, fallback to production domain + localhost)
   const allowedOrigins = process.env.ALLOWED_ORIGINS

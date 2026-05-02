@@ -225,27 +225,9 @@ const AuthProvider = ({ children }) => {
         setUser(userInfo);
       });
       return userInfo;
-    };
+     };
 
-      localStorage.setItem('accessToken', tokens.access);
-      localStorage.setItem('refreshToken', tokens.refresh);
-      // Set JWT on Appwrite client for subsequent API calls
-      try {
-        const { client } = await import('../lib/appwrite');
-        if (client) {
-          client.setJWT(tokens.access);
-        }
-      } catch (e) {
-        console.warn('Failed to set Appwrite JWT:', e);
-      }
-      // Flush state synchronously so navigation sees updated user
-      flushSync(() => {
-        setUser(userInfo);
-      });
-      return userInfo;
-    };
-
-  const register = async (formData, userType) => {
+   const register = async (formData, userType) => {
     try {
       // Check rate limiting before processing
       checkRegistrationRateLimit();

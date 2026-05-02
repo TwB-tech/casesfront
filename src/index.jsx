@@ -18,7 +18,9 @@ import { LicenseProvider } from './contexts/LicenseContext.jsx';
 import LicenseVerification from './components/LicenseManager/LicenseVerification.jsx';
 import { initializeSentry } from './config/sentry';
 import { initializeSecurity } from './utils/enhancedSecurity';
-import { verifyConnection, client as appwriteClient } from './lib/appwrite.js';
+import { verifyConnection } from './lib/appwrite.js';
+import appwrite from './lib/appwrite.js';
+const { client: appwriteClient } = appwrite;
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 // Restore Appwrite JWT from localStorage to maintain session across page reloads

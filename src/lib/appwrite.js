@@ -345,6 +345,39 @@ export const logAudit = async (action, tableName, recordId, changes = {}) => {
   }
 };
 
+// Ping status tracking
+let pingStatus = null;
+let pingError = null;
+
+export async function verifyConnection() {
+  try {
+    const result = await client.ping();
+    pingStatus = 'connected';
+    pingError = null;
+    console.log('✅ Appwrite connection verified:', result);
+    return true;
+  } catch (error) {
+    pingStatus = 'error';
+    pingError = error;
+    console.error('❌ Appwrite connection failed:', error.message);
+    return false;
+  }
+}
+
+export function getPingStatus() {
+  return { status: pingStatus, error: pingError };
+}
+
+// Auto-ping on module load (non-blocking)
+if (isAppwriteMode) {
+  verifyConnection().catch(console.error);
+}
+
+// ============================================
+// NAMED EXPORTS (for direct named imports)
+// ============================================
+export { client, account, databases, storage, functions };
+
 // ============================================
 // DEFAULT EXPORT BUNDLE
 // ============================================
@@ -365,4 +398,6 @@ export const logAudit = async (action, tableName, recordId, changes = {}) => {
    getCurrentOrganizationId,
    withOrganization,
    ID,
+   verifyConnection,
+   getPingStatus,
  };
