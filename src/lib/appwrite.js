@@ -12,12 +12,11 @@ const isAppwriteMode = dbMode === 'appwrite';
 const appwriteEndpoint = import.meta.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
 const projectId = import.meta.env.APPWRITE_PROJECT_ID;
 
-// In Vercel production, use same-origin proxy to avoid CORS
+// In browser (both dev and prod), use same-origin proxy to avoid CORS
 // The proxy is at /api/appwrite-proxy and forwards to Appwrite
-const isProduction = import.meta.env.PROD;
 let endpoint = appwriteEndpoint;
-if (isProduction && typeof window !== 'undefined') {
-  // Use absolute URL for the proxy in production
+if (typeof window !== 'undefined') {
+  // Build absolute URL to proxy
   endpoint = `${window.location.origin}/api/appwrite-proxy`;
 }
 

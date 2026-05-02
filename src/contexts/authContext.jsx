@@ -1,6 +1,7 @@
 import { createContext, useEffect, useMemo, useState, flushSync } from 'react';
 import { notification } from 'antd';
 import axiosInstance from '../axiosConfig';
+import { auth } from '../lib/appwrite';
 
 const AuthContext = createContext(null);
 
@@ -9,15 +10,6 @@ const parseStoredUser = () => {
     return null;
   }
   try {
-    if (!localStorage.getItem('accessToken')) {
-      return null;
-    }
-    const encrypted = localStorage.getItem('userInfo_encrypted');
-    if (encrypted) {
-      // TODO: In production, derive key from user password
-      // For now, fallback to unencrypted for demo
-      return JSON.parse(localStorage.getItem('userInfo') || 'null');
-    }
     return JSON.parse(localStorage.getItem('userInfo') || 'null');
   } catch (error) {
     return null;
@@ -199,33 +191,32 @@ const AuthProvider = ({ children }) => {
   }, [user]);
 
     const login = async (email, password) => {
-      const { data } = await axiosInstance.post('/auth/login/', { email, password });
-      const tokens = JSON.parse(data.tokens.replace(/'/g, '"'));
+      // Use Appwrite auth directly
+      const { data, error } = await auth.createEmailSession(email, password);
+      if (error) {
+        throw new Error(error.message || 'Login failed');
+      }
+
+      // Get user details from Appwrite session
+      const { data: user } = await auth.get();
+
       const userInfo = {
-        id: data.id,
-        email: data.email,
-        username: data.username,
-        role: data.role,
-        organization_id: data.organization_id || null,
+        id: user?.$id || user?.userId,
+        email: user?.email,
+        username: user?.name || user?.email,
+        role: user?.role || 'individual',
+        organization_id: user?.organization_id || null,
       };
 
-      localStorage.setItem('accessToken', tokens.access);
-      localStorage.setItem('refreshToken', tokens.refresh);
-      // Set JWT on Appwrite client for subsequent API calls
-      try {
-        const { client } = await import('../lib/appwrite');
-        if (client) {
-          client.setJWT(tokens.access);
-        }
-      } catch (e) {
-        console.warn('Failed to set Appwrite JWT:', e);
-      }
+      // Persist user info
+      localStorage.setItem('userInfo', JSON.stringify(userInfo));
+
       // Flush state synchronously so navigation sees updated user
       flushSync(() => {
         setUser(userInfo);
       });
       return userInfo;
-     };
+    };
 
    const register = async (formData, userType) => {
     try {
@@ -330,46 +321,37 @@ const AuthProvider = ({ children }) => {
     } catch {
       // Ignore logout errors - user is logging out anyway
     }
-    // Clear Appwrite JWT
+    // Clear Appwrite session
     try {
-      const { client } = await import('../lib/appwrite');
-      if (client) {
-        client.setJWT(null);
-      }
+      await auth.deleteSession();
     } catch (e) {
-      console.warn('Failed to clear Appwrite JWT:', e);
+      console.warn('Failed to clear Appwrite session:', e);
     }
     localStorage.removeItem('userInfo');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     localStorage.removeItem('organization_id');
     localStorage.removeItem('user_permissions');
     setUser(null);
   };
 
   const verifyToken = async () => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      return false;
-    }
     try {
-      await axiosInstance.post('/auth/verify-token', { token });
-      return true;
+      const { data } = await auth.get();
+      return Boolean(data);
     } catch (error) {
       logout();
       return false;
     }
   };
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || !localStorage.getItem('accessToken')) {
-      return;
-    }
+   useEffect(() => {
+     if (typeof window === 'undefined' || !localStorage.getItem('userInfo')) {
+       return;
+     }
 
-    queueMicrotask(() => {
-      void verifyToken();
-    });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+     queueMicrotask(() => {
+       void verifyToken();
+     });
+   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const value = useMemo(
     () => ({

@@ -18,30 +18,12 @@ import { LicenseProvider } from './contexts/LicenseContext.jsx';
 import LicenseVerification from './components/LicenseManager/LicenseVerification.jsx';
 import { initializeSentry } from './config/sentry';
 import { initializeSecurity } from './utils/enhancedSecurity';
-import { verifyConnection } from './lib/appwrite.js';
-import appwrite from './lib/appwrite.js';
-const { client: appwriteClient } = appwrite;
 import ErrorBoundary from './components/ErrorBoundary.jsx';
-
-// Restore Appwrite JWT from localStorage to maintain session across page reloads
-if (typeof window !== 'undefined') {
-  const storedJWT = localStorage.getItem('accessToken');
-  if (storedJWT && appwriteClient) {
-    try {
-      appwriteClient.setJWT(storedJWT);
-    } catch (e) {
-      console.warn('Failed to set Appwrite JWT on init:', e);
-    }
-  }
-}
 
 initializeSentry();
 
 // Initialize enhanced security systems
 initializeSecurity();
-
-// Verify Appwrite connection on app startup
-verifyConnection().catch(console.error);
 
 window.addEventListener('error', (event) => {
   console.error('Global error caught:', event.error);
