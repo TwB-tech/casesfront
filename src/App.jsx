@@ -179,303 +179,301 @@ function AppContent() {
                 <Breadcrumbs />
               </div>
             )}
-            <Content style={{ background: getContentBackground() }}>
-              <ErrorBoundary>
-                <Suspense
-                  fallback={
-                    <div>
-                      <Skeleton active avatar paragraph={{ rows: 4 }} />
-                    </div>
-                  }
-                >
-                  <Routes>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route
-                      path="/home"
-                      element={
-                        <ProtectedRoute>
-                          <Home />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/client-home"
-                      element={
-                        <ProtectedRoute roles={['client']}>
-                          <ClientDashboard />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/profile"
-                      element={
-                        <ProtectedRoute>
-                          <Profile />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/case-form"
-                      element={
-                        <ProtectedRoute>
-                          <CaseForm />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/case-list"
-                      element={
-                        <ProtectedRoute>
-                          <CaseList />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/case-details/:id"
-                      element={
-                        <ProtectedRoute>
-                          <CaseDetails />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/clients"
-                      element={
-                        <ProtectedRoute>
-                          <ClientList />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/clients-details/:id"
-                      element={
-                        <ProtectedRoute>
-                          <ClientDetails />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/client-form"
-                      element={
-                        <ProtectedRoute>
-                          <OnboardingRequest />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/new-client"
-                      element={
-                        <ProtectedRoute>
-                          <OnboardingRequest />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/documents"
-                      element={
-                        <ProtectedRoute>
-                          <DocumentList />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/documents-details/:id"
-                      element={
-                        <ProtectedRoute>
-                          <DocumentDetails />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/new-document"
-                      element={
-                        <ProtectedRoute>
-                          <NewDocument />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/calendar-tasks"
-                      element={
-                        <ProtectedRoute>
-                          <CalendarTasks />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/reports"
-                      element={
-                        <ProtectedRoute>
-                          <CaseReports />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/performanceReports"
-                      element={
-                        <ProtectedRoute>
-                          <PerformanceReports />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/invoices"
-                      element={
-                        <ProtectedRoute>
-                          <InvoiceList />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/invoice-details/:id"
-                      element={
-                        <ProtectedRoute>
-                          <InvoiceDetails />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/new-invoice"
-                      element={
-                        <ProtectedRoute>
-                          <NewInvoice />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/chat"
-                      element={
-                        <ProtectedRoute>
-                          <Chat />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/tasks/"
-                      element={
-                        <ProtectedRoute>
-                          <Tasks />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/tasks/create/"
-                      element={
-                        <ProtectedRoute>
-                          <TaskCreate />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/mailing"
-                      element={
-                        <ProtectedRoute>
-                          <MailList />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/new-mail"
-                      element={
-                        <ProtectedRoute>
-                          <NewMail />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/mail-details/:id"
-                      element={
-                        <ProtectedRoute>
-                          <MailDetails />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/settings"
-                      element={
-                        <ProtectedRoute>
-                          <Settings />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/notes"
-                      element={
-                        <ProtectedRoute>
-                          <Notes />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/admin-dashboard"
-                      element={
-                        <AdminRoute>
-                          <AdminDashboard />
-                        </AdminRoute>
-                      }
-                    />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<SignUp />} />
-                    <Route path="/register-success" element={<RegisterSuccess />} />
-                    <Route path="/verify-email" element={<EmailVerification />} />
-                    <Route path="/auth/accept-invite" element={<AcceptInvite />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/reset-password/:token" element={<ResetPassword />} />
-                    <Route path="/password-reset-success" element={<PasswordResetSuccess />} />
-                    <Route path="/about" element={<AboutPage />} />
-                    <Route path="/contact" element={<ContactUsPage />} />
-                    <Route path="/pricing" element={<Pricing />} />
-                    <Route path="/features" element={<Features />} />
-                    <Route path="/privacy" element={<Privacy />} />
-                    <Route path="/terms" element={<Terms />} />
-                    <Route path="/onboarding" element={<OnboardingRequest />} />
-                    <Route path="/client-register" element={<ClientRegister />} />
-                    <Route path="/firms" element={<FirmsMarketplace />} />
-                    <Route
-                      path="/accounting"
-                      element={
-                        <AccountingRoute>
-                          <AccountingDashboard />
-                        </AccountingRoute>
-                      }
-                    />
-                    <Route
-                      path="/expenses"
-                      element={
-                        <AccountingRoute>
-                          <ExpenseManagement />
-                        </AccountingRoute>
-                      }
-                    />
-                    <Route
-                      path="/hr"
-                      element={
-                        <HRRoute>
-                          <HRManagement />
-                        </HRRoute>
-                      }
-                    />
-                    <Route
-                      path="/reports/financial"
-                      element={
-                        <AccountingRoute>
-                          <FinancialReports />
-                        </AccountingRoute>
-                      }
-                    />
-                    <Route
-                      path="/payroll"
-                      element={
-                        <HRRoute>
-                          <PayrollManagement />
-                        </HRRoute>
-                      }
-                    />
-                    <Route path="*" element={<PageNotFound />} />
-                  </Routes>
-                </Suspense>
-              </ErrorBoundary>
-            </Content>
+             <Content style={{ background: getContentBackground() }}>
+                 <Suspense
+                   fallback={
+                     <div>
+                       <Skeleton active avatar paragraph={{ rows: 4 }} />
+                     </div>
+                   }
+                 >
+                   <Routes>
+                     <Route path="/" element={<LandingPage />} />
+                     <Route
+                       path="/home"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><Home /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/client-home"
+                       element={
+                         <ProtectedRoute roles={['client']}>
+                           <ErrorBoundary><ClientDashboard /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/profile"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><Profile /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/case-form"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><CaseForm /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/case-list"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><CaseList /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/case-details/:id"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><CaseDetails /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/clients"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><ClientList /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/clients-details/:id"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><ClientDetails /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/client-form"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><OnboardingRequest /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/new-client"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><OnboardingRequest /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/documents"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><DocumentList /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/documents-details/:id"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><DocumentDetails /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/new-document"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><NewDocument /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/calendar-tasks"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><CalendarTasks /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/reports"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><CaseReports /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/performanceReports"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><PerformanceReports /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/invoices"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><InvoiceList /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/invoice-details/:id"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><InvoiceDetails /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/new-invoice"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><NewInvoice /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/chat"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><Chat /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/tasks/"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><Tasks /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/tasks/create/"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><TaskCreate /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/mailing"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><MailList /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/new-mail"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><NewMail /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/mail-details/:id"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><MailDetails /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/settings"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><Settings /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/notes"
+                       element={
+                         <ProtectedRoute>
+                           <ErrorBoundary><Notes /></ErrorBoundary>
+                         </ProtectedRoute>
+                       }
+                     />
+                     <Route
+                       path="/admin-dashboard"
+                       element={
+                         <AdminRoute>
+                           <ErrorBoundary><AdminDashboard /></ErrorBoundary>
+                         </AdminRoute>
+                       }
+                     />
+                     <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
+                     <Route path="/signup" element={<ErrorBoundary><SignUp /></ErrorBoundary>} />
+                     <Route path="/register-success" element={<ErrorBoundary><RegisterSuccess /></ErrorBoundary>} />
+                     <Route path="/verify-email" element={<ErrorBoundary><EmailVerification /></ErrorBoundary>} />
+                     <Route path="/auth/accept-invite" element={<ErrorBoundary><AcceptInvite /></ErrorBoundary>} />
+                     <Route path="/forgot-password" element={<ErrorBoundary><ForgotPassword /></ErrorBoundary>} />
+                     <Route path="/reset-password/:token" element={<ErrorBoundary><ResetPassword /></ErrorBoundary>} />
+                     <Route path="/password-reset-success" element={<ErrorBoundary><PasswordResetSuccess /></ErrorBoundary>} />
+                     <Route path="/about" element={<ErrorBoundary><AboutPage /></ErrorBoundary>} />
+                     <Route path="/contact" element={<ErrorBoundary><ContactUsPage /></ErrorBoundary>} />
+                     <Route path="/pricing" element={<ErrorBoundary><Pricing /></ErrorBoundary>} />
+                     <Route path="/features" element={<ErrorBoundary><Features /></ErrorBoundary>} />
+                     <Route path="/privacy" element={<ErrorBoundary><Privacy /></ErrorBoundary>} />
+                     <Route path="/terms" element={<ErrorBoundary><Terms /></ErrorBoundary>} />
+                     <Route path="/onboarding" element={<ErrorBoundary><OnboardingRequest /></ErrorBoundary>} />
+                     <Route path="/client-register" element={<ErrorBoundary><ClientRegister /></ErrorBoundary>} />
+                     <Route path="/firms" element={<ErrorBoundary><FirmsMarketplace /></ErrorBoundary>} />
+                     <Route
+                       path="/accounting"
+                       element={
+                         <AccountingRoute>
+                           <ErrorBoundary><AccountingDashboard /></ErrorBoundary>
+                         </AccountingRoute>
+                       }
+                     />
+                     <Route
+                       path="/expenses"
+                       element={
+                         <AccountingRoute>
+                           <ErrorBoundary><ExpenseManagement /></ErrorBoundary>
+                         </AccountingRoute>
+                       }
+                     />
+                     <Route
+                       path="/hr"
+                       element={
+                         <HRRoute>
+                           <ErrorBoundary><HRManagement /></ErrorBoundary>
+                         </HRRoute>
+                       }
+                     />
+                     <Route
+                       path="/reports/financial"
+                       element={
+                         <AccountingRoute>
+                           <ErrorBoundary><FinancialReports /></ErrorBoundary>
+                         </AccountingRoute>
+                       }
+                     />
+                     <Route
+                       path="/payroll"
+                       element={
+                         <HRRoute>
+                           <ErrorBoundary><PayrollManagement /></ErrorBoundary>
+                         </HRRoute>
+                       }
+                     />
+                     <Route path="*" element={<ErrorBoundary><PageNotFound /></ErrorBoundary>} />
+                   </Routes>
+                 </Suspense>
+             </Content>
             {!shouldHideSidebar && <AppFooter />}
           </Layout>
         </Layout>
