@@ -143,7 +143,7 @@ async function testRole(roleConfig) {
     // Submit
     console.log('  Submitting registration...');
     await page.getByRole('button', { name: /submit/i }).click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(5000);
     await page.screenshot({ path: `${outDir}/06-result.png`, fullPage: true });
 

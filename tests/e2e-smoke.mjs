@@ -72,7 +72,7 @@ async function run() {
     page.screenshot({ path: join(OUT, `${safe}.png`), fullPage:true });
   };
 
-  const idle = async () => { await page.waitForLoadState('networkidle'); await page.waitForTimeout(1000); };
+  const idle = async () => { await page.waitForLoadState('domcontentloaded'); await page.waitForTimeout(1000); };
 
   async function login(email, pwd) {
     await page.goto(`${BASE}/login`, { waitUntil:'domcontentloaded' });

@@ -63,7 +63,7 @@ async function testRole(roleKey, config) {
 
   try {
     // Go to signup
-    await page.goto(`${BASE}/signup`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}/signup`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(1500);
     await page.screenshot({ path: `${outDir}/01-page.png`, fullPage: true });
 
@@ -126,7 +126,7 @@ async function testRole(roleKey, config) {
     console.log('  Submitting...');
     await page.screenshot({ path: `${outDir}/02-summary.png`, fullPage: true });
     await page.getByRole('button', { name: /submit/i }).click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(5000);
     await page.screenshot({ path: `${outDir}/03-result.png`, fullPage: true });
 

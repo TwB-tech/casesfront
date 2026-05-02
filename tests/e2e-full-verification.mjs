@@ -69,7 +69,7 @@ async function testRole(roleKey, cfg) {
 
    try {
      console.log('  1/4: Starting signup...');
-     await page.goto(`${BASE}/signup`, { waitUntil: 'networkidle' });
+     await page.goto(`${BASE}/signup`, { waitUntil: 'domcontentloaded' });
      await page.waitForTimeout(1500);
      await page.screenshot({ path: join(outDir, '00-signup-page.png'), fullPage: true });
 
@@ -155,7 +155,7 @@ async function testRole(roleKey, cfg) {
       console.log(`  ✓ Captured verification token from email API request`);
       // Verify email using that token
       console.log('  2/4: Verifying email using token...');
-      await page.goto(`${BASE}/verify-email?token=${token}`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/verify-email?token=${token}`, { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(5000);
       await page.screenshot({ path: join(outDir, '02-verified.png'), fullPage: true });
 
@@ -184,12 +184,12 @@ async function testRole(roleKey, cfg) {
 
     // 3. Test login
     console.log('  3/4: Testing login...');
-    await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(1500);
     await page.fill('input[name="email"]', email);
     await page.fill('input[name="password"]', PASSWORD);
     await page.getByRole('button', { name: /login|sign in/i }).click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(3000);
     await page.screenshot({ path: join(outDir, '03-login.png'), fullPage: true });
 

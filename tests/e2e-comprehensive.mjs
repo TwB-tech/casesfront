@@ -97,7 +97,7 @@ async function run() {
   }
 
   const waitIdle = async () => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
   };
 

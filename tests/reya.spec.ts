@@ -9,7 +9,7 @@ test.describe('Reya AI Assistant', () => {
 
     test('Reya button is visible on home page', async ({ page }) => {
       await page.goto('/home');
-      await page.waitForLoadState('networkidle', { timeout: 15000 });
+      await page.waitForLoadState('domcontentloaded');
 
       const reyaButton = page.getByTestId('reya-open-button');
       await expect(reyaButton).toBeVisible({ timeout: 10000 });
@@ -17,7 +17,7 @@ test.describe('Reya AI Assistant', () => {
 
     test('Reya widget opens when clicked', async ({ page }) => {
       await page.goto('/home');
-      await page.waitForLoadState('networkidle', { timeout: 15000 });
+      await page.waitForLoadState('domcontentloaded');
 
       const reyaButton = page.getByTestId('reya-open-button');
       await reyaButton.click();
@@ -28,7 +28,7 @@ test.describe('Reya AI Assistant', () => {
 
     test('Reya chat sends message and receives response', async ({ page }) => {
       await page.goto('/home');
-      await page.waitForLoadState('networkidle', { timeout: 15000 });
+      await page.waitForLoadState('domcontentloaded');
 
       await page.getByTestId('reya-open-button').click();
       await page.waitForTimeout(1500);
@@ -48,7 +48,7 @@ test.describe('Reya AI Assistant', () => {
 
     test('Reya shows action buttons based on suggestions', async ({ page }) => {
       await page.goto('/home');
-      await page.waitForLoadState('networkidle', { timeout: 15000 });
+      await page.waitForLoadState('domcontentloaded');
 
       await page.getByTestId('reya-open-button').click();
       await page.waitForTimeout(3000);
@@ -61,7 +61,7 @@ test.describe('Reya AI Assistant', () => {
 
     test('Reya suggestions navigate correctly', async ({ page }) => {
       await page.goto('/home');
-      await page.waitForLoadState('networkidle', { timeout: 15000 });
+      await page.waitForLoadState('domcontentloaded');
 
       await page.getByTestId('reya-open-button').click();
       await page.waitForTimeout(3000);
@@ -76,7 +76,7 @@ test.describe('Reya AI Assistant', () => {
 
     test('Reya chat handles errors gracefully when APIs fail', async ({ page }) => {
       await page.goto('/home');
-      await page.waitForLoadState('networkidle', { timeout: 15000 });
+      await page.waitForLoadState('domcontentloaded');
 
       await page.getByTestId('reya-open-button').click();
       await page.waitForTimeout(1000);
@@ -153,7 +153,7 @@ test.describe('Reya AI Assistant', () => {
 
     test('Reya can generate document via chat', async ({ page }) => {
       await page.goto('/home');
-      await page.waitForLoadState('networkidle', { timeout: 15000 });
+      await page.waitForLoadState('domcontentloaded');
 
       await page.getByTestId('reya-open-button').click();
       await page.waitForTimeout(1500);
@@ -180,7 +180,7 @@ test.describe('Reya AI Assistant', () => {
 
     test('Reya maintains context across messages', async ({ page }) => {
       await page.goto('/home');
-      await page.waitForLoadState('networkidle', { timeout: 15000 });
+      await page.waitForLoadState('domcontentloaded');
 
       await page.getByTestId('reya-open-button').click();
       await page.waitForTimeout(1500);
@@ -208,7 +208,7 @@ test.describe('Reya AI Assistant', () => {
 
     test('Documents page generator uses Reya AI correctly', async ({ page }) => {
       await page.goto('/documents');
-      await page.waitForLoadState('networkidle', { timeout: 15000 });
+      await page.waitForLoadState('domcontentloaded');
 
       // Check that document generator is visible
       const generatorCard = page.getByTestId('doc-generator-card');

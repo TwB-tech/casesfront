@@ -30,7 +30,7 @@ test.describe('Comprehensive App Tests', () => {
 
   test('navbar renders', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const html = await page.content();
     expect(html.length).toBeGreaterThan(100);
   });
@@ -74,7 +74,7 @@ test.describe('Authentication', () => {
 
   test('signup renders', async ({ page }) => {
     await page.goto('/signup');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toContain('signup');
   });
 });
@@ -82,43 +82,43 @@ test.describe('Authentication', () => {
 test.describe('Modules', () => {
   test('cases module loads', async ({ page }) => {
     await page.goto('/case-list');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toBeTruthy();
   });
 
   test('clients module loads', async ({ page }) => {
     await page.goto('/clients');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toBeTruthy();
   });
 
   test('documents module loads', async ({ page }) => {
     await page.goto('/documents');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toBeTruthy();
   });
 
   test('tasks module loads', async ({ page }) => {
     await page.goto('/tasks');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toBeTruthy();
   });
 
   test('invoices module loads', async ({ page }) => {
     await page.goto('/invoices');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toBeTruthy();
   });
 
   test('calendar loads', async ({ page }) => {
     await page.goto('/calendar');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toBeTruthy();
   });
 
   test('profile loads', async ({ page }) => {
     await page.goto('/profile');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toBeTruthy();
   });
 });
@@ -126,20 +126,20 @@ test.describe('Modules', () => {
 test.describe('Reya Integration', () => {
   test('reya in markup', async ({ page }) => {
     await page.goto('/home');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const content = await page.content();
     expect(content.toLowerCase().includes('reya')).toBe(true);
   });
 
   test('chat/reya loads', async ({ page }) => {
     await page.goto('/chat/reya');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toBeTruthy();
   });
 
   test('chat route works', async ({ page }) => {
     await page.goto('/chat/test');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toBeTruthy();
   });
 });
@@ -163,14 +163,14 @@ test.describe('Responsive', () => {
   test('mobile viewport', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toContain(BASE_URL);
   });
 
   test('desktop viewport', async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toContain(BASE_URL);
   });
 });

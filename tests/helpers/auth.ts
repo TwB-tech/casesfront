@@ -7,7 +7,7 @@ export const login = async (page) => {
   // Check if already logged in by trying to access home
   try {
     await page.goto('/home');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     // If we're on login page, we need to login
     if (page.url().includes('/login')) {
       await performLogin(page);
@@ -45,7 +45,7 @@ const performLogin = async (page) => {
   });
 
   await page.goto('/login');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 
   // Fill credentials
   await page.fill('input[type="email"]', 'advocate@wakiliworld.local');
@@ -71,7 +71,7 @@ const performLogin = async (page) => {
   }
 
   // Wait for navigation to settle
-  await page.waitForNavigation({ waitUntil: 'networkidle' }).catch(() => {});
+  await page.waitForNavigation({ waitUntil: 'domcontentloaded' }).catch(() => {});
 
   console.log('Login completed. Current URL:', page.url());
   if (logs.length > 0) {
@@ -82,14 +82,14 @@ const performLogin = async (page) => {
 export const ensureAuthenticated = async (page) => {
   // Try to go to home; if redirected to login, perform login
   await page.goto('/home');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 
   // If we're on login page, we need to authenticate
   if (page.url().includes('/login')) {
     await login(page);
     // After login, navigate again to home and wait
     await page.goto('/home');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   }
 
   // Verify we're on home
