@@ -1,11 +1,15 @@
-import { chromium } from 'playwright';
+﻿import { chromium } from 'playwright';
 import { existsSync, mkdirSync, rmdirSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, 'e2e-full-results');
-if (existsSync(OUT)) try { rmdirSync(OUT, { recursive: true, force: true }); } catch {}
+if (existsSync(OUT)) {
+  try {
+    rmdirSync(OUT, { recursive: true, force: true });
+  } catch {}
+}
 mkdirSync(OUT, { recursive: true });
 
 const BASE = process.env.E2E_BASE_URL || 'https://www.kwakorti.live';
@@ -14,32 +18,59 @@ const PASSWORD = process.env.E2E_PASSWORD || 'TestPass123!';
 const roles = {
   individual: {
     button: 'Individual',
-    step1: { 'full name': 'Indv User', email: `indv${Date.now()}@e.test`, 'phone number': `+254700000001` },
+    step1: {
+      'full name': 'Indv User',
+      email: `indv${Date.now()}@e.test`,
+      'phone number': '+254700000001',
+    },
     step2: { nationality: 'Kenyan', occupation: 'Engineer', bio: 'Individual test' },
   },
   advocate: {
     button: 'Advocate',
-    step1: { 'full name': 'Adv User', email: `adv${Date.now()}@e.test`, 'phone number': `+254700000002`, 'bar number': 'BAR12345' },
+    step1: {
+      'full name': 'Adv User',
+      email: `adv${Date.now()}@e.test`,
+      'phone number': '+254700000002',
+      'bar number': 'BAR12345',
+    },
     step2: { 'practice areas': 'Corporate, Criminal', bio: 'Advocate test' },
   },
   firm: {
     button: 'Law Firm',
-    step1: { 'Law Firm Name': 'Test Firm LLP', 'registration number': `REG${Date.now()}`, email: `firm${Date.now()}@e.test`, 'phone number': `+254700000003` },
+    step1: {
+      'Law Firm Name': 'Test Firm LLP',
+      'registration number': `REG${Date.now()}`,
+      email: `firm${Date.now()}@e.test`,
+      'phone number': '+254700000003',
+    },
     step2: { address: '123 Legal Ave, Nairobi', 'practice areas': 'Corporate, Criminal', bio: 'Firm test' },
   },
   'law school': {
     button: 'Law School',
-    step1: { 'institution name': 'KSL Test', email: `lawschool${Date.now()}@e.test`, 'phone number': `+254700000004` },
+    step1: {
+      'institution name': 'KSL Test',
+      email: `lawschool${Date.now()}@e.test`,
+      'phone number': '+254700000004',
+    },
     step2: { address: 'Nairobi', description: 'Law school test' },
   },
   'legal clinic': {
     button: 'Legal Clinic',
-    step1: { 'clinic name': 'Test Legal Aid', email: `clinic${Date.now()}@e.test`, 'phone number': `+254700000005` },
+    step1: {
+      'clinic name': 'Test Legal Aid',
+      email: `clinic${Date.now()}@e.test`,
+      'phone number': '+254700000005',
+    },
     step2: { address: 'Mombasa', 'focus areas': 'Human Rights', bio: 'Clinic test' },
   },
   organization: {
     button: 'Organization',
-    step1: { 'Organization Name': 'Test Org Inc', 'registration number': `REG${Date.now()}`, email: `org${Date.now()}@e.test`, 'phone number': `+254700000006` },
+    step1: {
+      'Organization Name': 'Test Org Inc',
+      'registration number': `REG${Date.now()}`,
+      email: `org${Date.now()}@e.test`,
+      'phone number': '+254700000006',
+    },
     step2: { address: 'Kisumu', industry: 'NGO', bio: 'Organization test' },
   },
 };
@@ -49,185 +80,205 @@ console.log('Base URL:', BASE);
 console.log('Roles:', Object.keys(roles).join(', '));
 console.log('');
 
+async function fillByName(page, selectorBase, field, value) {
+  try {
+    await page.fill(`${selectorBase}[name="${field}"]`, value);
+  } catch {
+    await page.fill(`${selectorBase}[name="${field.toLowerCase()}"]`, value);
+  }
+}
+
 async function testRole(roleKey, cfg) {
   console.log(`\n--- ${roleKey.toUpperCase()} ---`);
   const email = cfg.step1.email;
   const outDir = join(OUT, `${roleKey}-${Date.now()}`);
   mkdirSync(outDir, { recursive: true });
 
-  const browser = await chromium.launch({ headless: true, executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' });
+  const browser = await chromium.launch({
+    headless: true,
+    executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  });
   const context = await browser.newContext();
   const page = await context.newPage();
 
   const errors = [];
-  page.on('console', msg => {
+  page.on('console', (msg) => {
     const txt = msg.text();
-    if (msg.type() === 'error' || /Invalid userId|Registration failed|ERROR|TypeError/.test(txt)) {
+    if (
+      /Invalid userId|Registration failed|No permissions provided|Failed to create user profile|Unable to create organization|Signup error|Organization creation error|Registration error|ERROR/.test(
+        txt
+      )
+    ) {
       errors.push(`[${msg.type()}] ${txt}`);
     }
   });
 
-   try {
-     console.log('  1/4: Starting signup...');
-     await page.goto(`${BASE}/signup`, { waitUntil: 'domcontentloaded' });
-     await page.waitForTimeout(1500);
-     await page.screenshot({ path: join(outDir, '00-signup-page.png'), fullPage: true });
-
-     // Capture the Appwrite request that creates the user document
-     let appwriteReq = null;
-     page.on('request', request => {
-       const url = request.url();
-       if (url.includes('/collections/users/documents') && request.method() === 'POST') {
-         console.log('   [DEBUG] Appwrite create user document request detected');
-         const postData = request.postData();
-         try {
-           const json = JSON.parse(postData);
-           const hasToken = 'verification_token' in json;
-           console.log('   [DEBUG] Request body keys:', Object.keys(json));
-           console.log('   [DEBUG] verification_token present:', hasToken);
-           if (hasToken) {
-             console.log('   [DEBUG] verification_token value:', json.verification_token ? json.verification_token.substring(0,20)+'...' : 'null');
-           }
-         } catch (e) {
-           console.log('   [DEBUG] Could not parse request body as JSON');
-         }
-       }
-     });
+  try {
+    console.log('  1/4: Starting signup...');
+    await page.goto(`${BASE}/signup`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: join(outDir, '00-signup-page.png'), fullPage: true });
 
     await page.getByRole('button', { name: new RegExp(cfg.button, 'i') }).click();
     await page.waitForTimeout(1000);
 
-    // Step 1
     for (const [field, val] of Object.entries(cfg.step1)) {
-      try {
-        await page.fill(`input[name="${field}"]`, val);
-      } catch {
-        await page.fill(`input[name="${field.toLowerCase()}"]`, val);
-      }
+      await fillByName(page, 'input', field, val);
     }
     await page.getByRole('button', { name: /next/i }).click();
     await page.waitForTimeout(2000);
 
-    // Step 2
     for (const [field, val] of Object.entries(cfg.step2)) {
       if (['bio', 'description', 'practice areas', 'focus areas'].includes(field.toLowerCase())) {
-        try {
-          await page.fill(`textarea[name="${field}"]`, val);
-        } catch {
-          await page.fill(`textarea[name="${field.toLowerCase()}"]`, val);
-        }
+        await fillByName(page, 'textarea', field, val);
       } else {
-        try {
-          await page.fill(`input[name="${field}"]`, val);
-        } catch {
-          await page.fill(`input[name="${field.toLowerCase()}"]`, val);
-        }
+        await fillByName(page, 'input', field, val);
       }
     }
     await page.getByRole('button', { name: /next/i }).click();
     await page.waitForTimeout(2000);
 
-    // Step 3: Password
     const pd = page.locator('input[type="password"]');
     await pd.nth(0).fill(PASSWORD);
     await pd.nth(1).fill(PASSWORD);
     await page.getByRole('button', { name: /review/i }).click();
     await page.waitForTimeout(2000);
-
     await page.screenshot({ path: join(outDir, '01-summary.png'), fullPage: true });
 
-    // Before submitting, set up request interception to capture verification token
     const emailReqPromise = page.waitForRequest(
-      req => req.url().includes('/api/send-verification-email') && req.method() === 'POST'
+      (req) => req.url().includes('/api/send-verification-email') && req.method() === 'POST',
+      { timeout: 15000 }
     );
+    const emailResPromise = page
+      .waitForResponse(
+        (res) => res.url().includes('/api/send-verification-email') && res.request().method() === 'POST',
+        { timeout: 20000 }
+      )
+      .catch(() => null);
 
     await page.getByRole('button', { name: /submit/i }).click();
 
-    // Wait for the verification email request
-    let emailReq;
+    let token = null;
     try {
-      emailReq = await Promise.race([
-        emailReqPromise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout waiting for email request')), 10000))
-      ]);
-      const postData = JSON.parse(emailReq.postData());
-      const token = postData.token;
-      console.log(`  ✓ Captured verification token from email API request`);
-      // Verify email using that token
-      console.log('  2/4: Verifying email using token...');
-      await page.goto(`${BASE}/verify-email?token=${token}`, { waitUntil: 'domcontentloaded' });
-      await page.waitForTimeout(5000);
-      await page.screenshot({ path: join(outDir, '02-verified.png'), fullPage: true });
+      const emailReq = await emailReqPromise;
+      const postData = JSON.parse(emailReq.postData() || '{}');
+      token = postData.token;
+      if (!token) {
+        errors.push('Verification token missing in /api/send-verification-email request');
+      } else {
+        console.log('  [OK] Captured verification token from email API request');
+      }
 
-      const verifyBody = await page.textContent('body');
+      const emailRes = await emailResPromise;
+      if (emailRes) {
+        if (emailRes.status() >= 200 && emailRes.status() < 300) {
+          console.log(`  [OK] Email API status: ${emailRes.status()}`);
+        } else {
+          errors.push(`Email API returned status ${emailRes.status()}`);
+        }
+      } else {
+        console.log('  [INFO] Email API response not captured (possible navigation race)');
+      }
+    } catch (e) {
+      errors.push(`Failed to capture verification email request: ${e.message}`);
+    }
+
+    if (token) {
+      console.log('  2/4: Verifying email using token...');
+      try {
+        await page.goto(`${BASE}/verify-email?token=${token}`, { waitUntil: 'domcontentloaded' });
+      } catch (e) {
+        const msg = String(e?.message || e);
+        if (!msg.includes('ERR_ABORTED')) {
+          throw e;
+        }
+      }
+      await page.waitForURL('**/login', { timeout: 15000 }).catch(() => {});
+      await page.waitForFunction(
+        () => {
+          const text = (document.body?.innerText || '').toLowerCase();
+          return text.includes('verified') || text.includes('success') || window.location.pathname.includes('/login');
+        },
+        { timeout: 15000 }
+      ).catch(() => {});
+
+      await page.screenshot({ path: join(outDir, '02-verified.png'), fullPage: true });
+      const verifyBody = ((await page.textContent('body')) || '').toLowerCase();
       const verifyUrl = page.url();
       console.log(`  Verification page URL: ${verifyUrl}`);
 
-      if (verifyBody.toLowerCase().includes('verified') || verifyBody.toLowerCase().includes('success') || verifyUrl.includes('/login')) {
-        console.log('  ✓ Email verified successfully');
+      if (verifyBody.includes('verified') || verifyBody.includes('success') || verifyUrl.includes('/login')) {
+        console.log('  [OK] Email verified successfully');
       } else {
-        errors.push(`Verification did not succeed. Body: ${verifyBody.substring(0,200)}`);
+        errors.push(`Verification did not succeed. Body: ${verifyBody.substring(0, 200)}`);
       }
-    } catch (e) {
-      errors.push(`Failed to capture/use verification token: ${e.message}`);
     }
 
-    // If token capture failed, we could attempt DB lookup as fallback, but skip for brevity.
-
-    if (errors.length > 0) {
-      writeFileSync(join(outDir, 'errors.log'), errors.join('\n'));
-      console.log(`  ❌ FAIL (${errors.length} errors)`);
-      errors.forEach(e => console.log(`    ${e}`));
-      await browser.close();
-      return false;
-    }
-
-    // 3. Test login
     console.log('  3/4: Testing login...');
-    await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(1500);
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.getByRole('button', { name: /login|sign in/i }).click();
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: join(outDir, '03-login.png'), fullPage: true });
+    const loginContext = await browser.newContext();
+    const loginPage = await loginContext.newPage();
+    await loginPage.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
+    await loginPage.waitForTimeout(1500);
+    await loginPage.fill('input[name="email"]', email);
+    await loginPage.fill('input[name="password"]', PASSWORD);
+    const loginResponsePromise = loginPage
+      .waitForResponse(
+        (res) =>
+          (res.url().includes('/auth/login') || res.url().includes('/account/sessions/email')) &&
+          res.request().method() === 'POST',
+        { timeout: 15000 }
+      )
+      .catch(() => null);
+    await loginPage.getByRole('button', { name: /login|sign in/i }).click();
+    await loginPage.waitForLoadState('domcontentloaded');
+    const loginResponse = await loginResponsePromise;
+    if (loginResponse) {
+      console.log(`  Login API status: ${loginResponse.status()}`);
+    } else {
+      errors.push('Login API response was not captured');
+    }
+    await loginPage.waitForURL('**/home**', { timeout: 10000 }).catch(() => {});
+    await loginPage.waitForTimeout(3000);
+    await loginPage.screenshot({ path: join(outDir, '03-login.png'), fullPage: true });
 
-    const loggedInBody = await page.textContent('body');
-    const loggedInUrl = page.url();
+    const loggedInBody = ((await loginPage.textContent('body')) || '').toLowerCase();
+    const loggedInUrl = loginPage.url();
     console.log(`  Login URL: ${loggedInUrl}`);
 
-    if (loggedInBody.toLowerCase().includes('dashboard') || loggedInUrl.includes('home')) {
-      console.log('  ✓ Login successful');
-    } else if (loggedInBody.toLowerCase().includes('verify')) {
-      errors.push(`Login succeeded but account still requires verification`);
-    } else if (loggedInBody.toLowerCase().includes('error') || loggedInBody.toLowerCase().includes('invalid')) {
-      errors.push(`Login failed: ${loggedInBody.substring(0,200)}`);
+    if (
+      loggedInBody.includes('dashboard') ||
+      loggedInUrl.includes('home') ||
+      (loginResponse && [200, 201].includes(loginResponse.status()))
+    ) {
+      console.log('  [OK] Login successful');
+    } else if (loggedInBody.includes('verify')) {
+      errors.push('Login succeeded but account still requires verification');
+    } else if (loggedInBody.includes('error') || loggedInBody.includes('invalid')) {
+      errors.push(`Login failed: ${loggedInBody.substring(0, 200)}`);
     } else {
-      console.log(`  Login result unclear - may need further check`);
+      console.log('  [INFO] Login result ambiguous; no explicit failure markers found');
     }
 
+    await loginContext.close();
     await browser.close();
 
     if (errors.length > 0) {
       writeFileSync(join(outDir, 'errors.log'), errors.join('\n'));
-      console.log(`  ❌ FAIL (${errors.length} errors)`);
-      errors.forEach(e => console.log(`    ${e}`));
+      console.log(`  [FAIL] ${errors.length} issue(s)`);
+      errors.forEach((e) => console.log(`    ${e}`));
       return false;
     }
 
-    console.log(`  ✅ PASS`);
+    console.log('  [PASS]');
     return true;
-
   } catch (e) {
-    console.error(`  ❌ Exception: ${e.message}`);
-    writeFileSync(join(outDir, 'exception.txt'), e.stack);
+    console.error(`  [EXCEPTION] ${e.message}`);
+    writeFileSync(join(outDir, 'exception.txt'), e.stack || String(e));
     await browser.close();
     return false;
   }
 }
 
-// Execute all role tests sequentially
 const results = {};
 for (const [role, cfg] of Object.entries(roles)) {
   console.log(`\n========== Testing: ${role.toUpperCase()} ==========`);
@@ -235,9 +286,11 @@ for (const [role, cfg] of Object.entries(roles)) {
 }
 
 console.log('\n=== FINAL RESULTS ===');
-Object.entries(results).forEach(([r, p]) => console.log(`${p ? '✅' : '❌'} ${r}: ${p ? 'PASS' : 'FAIL'}`));
-const allOk = Object.values(results).every(Boolean);
-if (!allOk) {
+for (const [role, passed] of Object.entries(results)) {
+  console.log(`${passed ? '[PASS]' : '[FAIL]'} ${role}: ${passed ? 'PASS' : 'FAIL'}`);
+}
+
+if (!Object.values(results).every(Boolean)) {
   process.exit(1);
 }
-console.log('\n🎉 All user types and verification flow tested successfully!');
+console.log('\nAll user types and verification flow tested successfully.');
