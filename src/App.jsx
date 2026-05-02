@@ -33,8 +33,7 @@ const RegisterSuccess = lazy(() => import('./components/Auth/RegisterSuccess'));
 const AcceptInvite = lazy(() => import('./pages/AcceptInvite'));
 const CaseForm = lazy(() => import('./components/CaseManagement/CaseForm'));
 const CaseList = lazy(() => import('./components/CaseManagement/CaseList'));
-const Chats = lazy(() => import('./pages/Chats'));
-const ChatUsers = lazy(() => import('./pages/ChatUsers'));
+const Chat = lazy(() => import('./pages/Chat'));
 const CaseDetails = lazy(() => import('./components/CaseManagement/CaseDetails'));
 const ClientList = lazy(() => import('./components/ClientManagement/ClientList'));
 const ClientDetails = lazy(() => import('./components/ClientManagement/ClientDetails'));
@@ -69,6 +68,7 @@ const FinancialReports = lazy(() => import('./pages/FinancialReports'));
 const PayrollManagement = lazy(() => import('./pages/PayrollManagement'));
 
 const Settings = lazy(() => import('./pages/Settings'));
+const Notes = lazy(() => import('./pages/Notes'));
 const AdminDashboard = lazy(() => import('./Admin/AdminDashboard'));
 
 const Login = lazy(() => import('./components/authentication/SignIn'));
@@ -343,26 +343,10 @@ function AppContent() {
                       }
                     />
                     <Route
-                      path="/chats"
+                      path="/chat"
                       element={
                         <ProtectedRoute>
-                          <Chats />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/chat-users"
-                      element={
-                        <ProtectedRoute>
-                          <ChatUsers />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/chat/:roomName"
-                      element={
-                        <ProtectedRoute>
-                          <Chats />
+                          <Chat />
                         </ProtectedRoute>
                       }
                     />
@@ -411,6 +395,14 @@ function AppContent() {
                       element={
                         <ProtectedRoute>
                           <Settings />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/notes"
+                      element={
+                        <ProtectedRoute>
+                          <Notes />
                         </ProtectedRoute>
                       }
                     />

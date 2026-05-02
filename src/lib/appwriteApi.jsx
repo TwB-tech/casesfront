@@ -736,10 +736,39 @@ export const appwriteApi = {
         return failure('Invalid email or password', 401, { error });
       }
 
-      // Get user details
-      const { data: userData, error: userErr } = await db.get(COLLECTIONS.USERS, data.userId);
-      if (userErr) {
-        console.warn('User fetch failed:', userErr);
+      // Get or create user details
+      let userData = null;
+      try {
+        const { data: existingUser, error: userErr } = await db.get(COLLECTIONS.USERS, data.userId);
+        if (!userErr) {
+          userData = existingUser;
+        }
+      } catch (e) {
+        // User document doesn't exist, will create one
+      }
+
+      // If user document doesn't exist, create it
+      if (!userData) {
+        try {
+          const accountUser = await account.get();
+          const { data: newUser, error: createErr } = await db.create(COLLECTIONS.USERS, {
+            id: data.userId,
+            email: payload.email,
+            username: accountUser?.name || payload.email.split('@')[0],
+            role: 'individual',
+            organization_id: null,
+            status: 'Active',
+            messaging_enabled: true,
+            deadline_notifications: true,
+            email_verified: false,
+          }, data.userId);
+
+          if (!createErr) {
+            userData = newUser;
+          }
+        } catch (createError) {
+          console.warn('Failed to create user document:', createError);
+        }
       }
 
       // Determine role
@@ -750,7 +779,7 @@ export const appwriteApi = {
         email: payload.email,
         username: userData?.username || payload.email,
         role,
-        organization_id: userData?.organization_id,
+        organization_id: userData?.organization_id || null,
         tokens: JSON.stringify({
           access: data.secret || `token-${data.userId}`,
           refresh: `refresh-${data.userId}-${Date.now()}`,
@@ -1331,8 +1360,32 @@ export const appwriteApi = {
       );
     }
 
+    // CHATS: CREATE TEAM ROOM (for organization-wide chat)
+    if (path === 'chats/team-room') {
+      const user = getCurrentUser();
+      const orgId = getCurrentOrganizationId();
+      const roomName = `team_${orgId || 'default'}`;
+
+      // Check existing
+      const { data: existing, error: findErr } = await db.list(COLLECTIONS.CHAT_ROOMS, [
+        Query.equal('room_name', roomName),
+      ]);
+      if (!findErr && existing.length > 0) {
+        return success(existing[0]);
+      }
+
+      // Create new team room
+      const { data, error } = await db.create(COLLECTIONS.CHAT_ROOMS, {
+        room_name: roomName,
+        participants: [], // Team rooms are open to all org members
+        organization_id: orgId,
+      });
+      if (error) throw error;
+      return success(data, 201);
+    }
+
     // CHATS: CREATE ROOM
-     if (path === 'chats/create-or-get-chat-room') {
+    if (path === 'chats/create-or-get-chat-room') {
       const first = String(payload.user_id);
       const second = String(payload.other_user_id);
       const roomName = `room-${[first, second].sort((a, b) => a.localeCompare(b)).join('-')}`;

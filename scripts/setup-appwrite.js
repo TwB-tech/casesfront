@@ -293,19 +293,20 @@ const collections = [
     ],
     permissions: { read: ['role:all'], write: ['role:users'] },
   },
-  {
-    name: 'chat_messages',
-    attributes: [
-      { key: 'id', type: 'string', size: 255, required: true },
-      { key: 'room', type: 'string', size: 255, required: true },
-      { key: 'sender', type: 'string', size: 255, required: true },
-      { key: 'content', type: 'text', required: true },
-      { key: 'timestamp', type: 'datetime', required: true },
-      { key: 'attachments', type: 'string', array: true },
-      { key: 'created_at', type: 'datetime' },
-    ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
-  },
+    {
+      name: 'chat_messages',
+      attributes: [
+        { key: 'id', type: 'string', size: 255, required: true },
+        { key: 'room', type: 'string', size: 255, required: true },
+        { key: 'sender', type: 'string', size: 255, required: true },
+        { key: 'content', type: 'text', required: true },
+        { key: 'timestamp', type: 'datetime', required: true },
+        { key: 'attachments', type: 'string', array: true },
+        { key: 'organization_id', type: 'string', size: 255 },
+        { key: 'created_at', type: 'datetime' },
+      ],
+      permissions: { read: ['role:all'], write: ['role:users'] },
+    },
   {
     name: 'audit_logs',
     attributes: [

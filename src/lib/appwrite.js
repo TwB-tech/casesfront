@@ -185,55 +185,92 @@ export const getCurrentUser = () => {
   }
 };
 
+// Fix: handle string "null" and don't fall back to user.id for organization_id
 export const getCurrentOrganizationId = () => {
   const user = getCurrentUser();
-  return localStorage.getItem('organization_id') || user?.organization_id || user?.id;
+  const orgId = localStorage.getItem('organization_id') || user?.organization_id || null;
+  // Handle string "null" that might be stored in localStorage
+  if (orgId === 'null' || orgId === 'undefined' || orgId === '') {
+    return null;
+  }
+  return orgId;
 };
 
 // Organization isolation filter (replaces RLS)
-export const withOrganization = (queries = [], userId = null) => {
-  const orgId = getCurrentOrganizationId();
-  if (orgId) {
-    queries.push(Query.equal('organization_id', orgId));
-  }
-   // Also allow user's own records (client_id, advocate_id, owner, etc.)
-   if (userId) {
-     queries.push(
-       Query.or([
-         Query.equal('organization_id', orgId),
-         Query.equal('client_id', userId),
-         Query.equal('advocate_id', userId),
-         Query.equal('assigned_to', userId),
-         Query.equal('created_by', userId),
-         Query.equal('owner', userId),
-         Query.contains('shared_with', userId)
-       ])
-     );
+// Only queries attributes that exist in the collection schema
+export const withOrganization = (queries = [], userId = null, collection = null) => {
+   const orgId = getCurrentOrganizationId();
+   // Skip organization_id query if orgId is null/undefined/empty
+   if (orgId && orgId !== 'null' && orgId !== 'undefined') {
+     queries.push(Query.equal('organization_id', orgId));
    }
-   return queries;
- };
+    // Also allow user's own records - but only query attributes that exist
+    if (userId && collection && COLLECTION_ORG_ATTRIBUTES[collection]) {
+      const validAttrs = COLLECTION_ORG_ATTRIBUTES[collection];
+      const orConditions = [];
+      // Only add org condition if we have a valid orgId
+      if (orgId && orgId !== 'null' && orgId !== 'undefined') {
+        orConditions.push(Query.equal('organization_id', orgId));
+      }
+      if (validAttrs.includes('client_id')) orConditions.push(Query.equal('client_id', userId));
+      if (validAttrs.includes('advocate_id')) orConditions.push(Query.equal('advocate_id', userId));
+      if (validAttrs.includes('assigned_to')) orConditions.push(Query.equal('assigned_to', userId));
+      if (validAttrs.includes('created_by')) orConditions.push(Query.equal('created_by', userId));
+      if (validAttrs.includes('owner')) orConditions.push(Query.equal('owner', userId));
+      if (validAttrs.includes('submitted_by')) orConditions.push(Query.equal('submitted_by', userId));
+      if (validAttrs.includes('user_id')) orConditions.push(Query.equal('user_id', userId));
+      if (validAttrs.includes('invited_by')) orConditions.push(Query.equal('invited_by', userId));
+      if (validAttrs.includes('shared_with')) orConditions.push(Query.contains('shared_with', userId));
+      if (orConditions.length > 0) {
+        queries.push(Query.or(orConditions));
+      }
+    }
+    return queries;
+  };
 
 // Collections that have organization_id field and need org isolation
-// Note: 'organizations' and 'courts' are excluded — they are top-level
+// Note: 'organizations', 'courts', 'chat_messages', 'admin_settings' are excluded — they don't have organization_id
 export const ORG_SCOPED = new Set([
-  'users',
-  'cases',
-  'tasks',
-  'documents',
-  'communications',
-  'invoices',
-  'invoice_items',
-  'chat_rooms',
-  'chat_messages',
-  'audit_logs',
-  'expenses',
-  'payroll_runs',
-  'admin_settings',
-  'subscriptions',
-  'onboarding',
-  'invites',
-  // 'courts' is global, not org-scoped
-]);
+   'users',
+   'cases',
+   'tasks',
+   'documents',
+   'communications',
+   'invoices',
+   'invoice_items',
+   'chat_rooms',
+   'audit_logs',
+   'expenses',
+   'payroll_runs',
+   'subscriptions',
+   'onboarding',
+   'invites',
+   'notes',
+   // 'courts' is global, not org-scoped
+   // 'chat_messages' doesn't have organization_id
+   // 'admin_settings' doesn't have organization_id
+ ]);
+
+// Map of collection -> attributes that exist in Appwrite schema for org-aware queries
+// This prevents querying attributes that don't exist in the schema
+const COLLECTION_ORG_ATTRIBUTES = {
+   users: ['organization_id'],
+   cases: ['organization_id', 'client_id', 'advocate_id', 'created_by'],
+   tasks: ['organization_id', 'assigned_to', 'created_by'],
+   documents: ['organization_id', 'owner', 'shared_with'],
+   communications: ['organization_id', 'created_by'],
+   invoices: ['organization_id'],
+   invoice_items: ['organization_id'],
+   chat_rooms: ['organization_id'],
+   chat_messages: ['organization_id', 'room', 'sender'],
+   audit_logs: ['organization_id', 'user_id'],
+   expenses: ['organization_id', 'submitted_by'],
+   payroll_runs: ['organization_id'],
+   subscriptions: ['organization_id'],
+   onboarding: ['organization_id'],
+   invites: ['organization_id', 'invited_by'],
+   notes: ['organization_id', 'user_id'],
+ };
 
 // ============================================
 // CRUD OPERATIONS
@@ -252,22 +289,22 @@ export const db = {
   },
 
    // LIST documents with optional filters
-   // Auto-applies organization isolation for org-scoped collections
-   async list(collection, queries = []) {
-     try {
-       const userId = getCurrentUser()?.id;
-       if (ORG_SCOPED.has(collection)) {
-         queries = withOrganization(queries, userId);
-       }
+    // Auto-applies organization isolation for org-scoped collections
+    async list(collection, queries = []) {
+      try {
+        const userId = getCurrentUser()?.id;
+        if (ORG_SCOPED.has(collection)) {
+          queries = withOrganization(queries, userId, collection);
+        }
 
-       const result = await databases.listDocuments(DATABASE_ID, collection, queries);
-       const documents = (result.documents || []).map((doc) => this.normalize(doc));
-       return { data: documents };
-     } catch (error) {
-       console.error(`Appwrite list ${collection}:`, error);
-       return { error, data: [] };
-     }
-   },
+        const result = await databases.listDocuments(DATABASE_ID, collection, queries);
+        const documents = (result.documents || []).map((doc) => this.normalize(doc));
+        return { data: documents };
+      } catch (error) {
+        console.error(`Appwrite list ${collection}:`, error);
+        return { error, data: [] };
+      }
+    },
 
   // GET single document
   async get(collection, docId) {

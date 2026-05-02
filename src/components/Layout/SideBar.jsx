@@ -52,6 +52,7 @@ const BASE_ROUTES = [
     label: 'Clients',
     icon: UserOutlined,
     routes: ['/clients', '/client-details', '/new-client'],
+    roles: ['admin', 'advocate', 'firm'], // Not for individual/clients
   },
   {
     key: 'documents',
@@ -80,22 +81,20 @@ const BASE_ROUTES = [
     label: 'Law Firms',
     icon: ShopOutlined,
     routes: ['/firms'],
-    dividerAfter: true,
+    roles: ['admin', 'advocate', 'firm'],
   },
   {
-    key: 'accounting',
-    path: '/accounting',
-    label: 'Accounting',
-    icon: DollarOutlined,
-    routes: ['/accounting', '/invoices', '/expenses', '/reports/financial'],
+    key: 'chat',
+    path: '/chat',
+    label: 'Team Chat',
+    icon: WechatWorkOutlined,
+    routes: ['/chat'],
   },
   {
-    key: 'hr',
-    path: '/hr',
-    label: 'HR & Payroll',
-    icon: TeamOutlined,
-    routes: ['/hr', '/payroll'],
-    dividerAfter: true,
+    key: 'notes',
+    path: '/notes',
+    label: 'Notes',
+    routes: ['/notes'],
   },
   {
     key: 'mailing',
@@ -103,21 +102,31 @@ const BASE_ROUTES = [
     label: 'Mailing',
     icon: MailOutlined,
     routes: ['/mailing', '/mail-details', '/new-mail'],
+    roles: ['admin', 'advocate', 'firm'],
   },
   {
-    key: 'chats',
-    path: '/chat-users',
-    label: 'Chats',
-    icon: WechatWorkOutlined,
-    routes: ['/chat', '/chats', '/new-chat', '/chat-users'],
-    dividerAfter: true,
+    key: 'accounting',
+    path: '/accounting',
+    label: 'Accounting',
+    icon: DollarOutlined,
+    routes: ['/accounting', '/invoices', '/expenses', '/reports/financial'],
+    roles: ['admin', 'accountant', 'manager', 'advocate', 'firm'],
+  },
+  {
+    key: 'hr',
+    path: '/hr',
+    label: 'HR & Payroll',
+    icon: TeamOutlined,
+    routes: ['/hr', '/payroll'],
+    roles: ['admin', 'partner', 'hr', 'manager', 'advocate', 'firm'],
   },
   {
     key: 'reports',
     path: '/reports',
-    label: 'Case Reports',
+    label: 'Reports',
     icon: SolutionOutlined,
     routes: ['/reports', '/report-details', '/new-report'],
+    roles: ['admin', 'advocate', 'firm'],
   },
   {
     key: 'profile',
@@ -158,13 +167,21 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
   // Combine base routes with admin routes if user is admin
   const ROUTE_CONFIG = useMemo(() => {
-    let routes = [...BASE_ROUTES];
-    if (user && user.role === 'client') {
-      routes = routes.filter(r => ['dashboard', 'cases', 'documents'].includes(r.key));
-    }
+    let routes = user?.role === 'client' || user?.role === 'individual' 
+      ? BASE_ROUTES.filter(r => ['dashboard', 'cases', 'documents', 'chat', 'profile', 'settings'].includes(r.key))
+      : [...BASE_ROUTES];
+    
+    // Add admin routes if user is admin/administrator
     if (user && (user.role === 'admin' || user.role === 'administrator')) {
       routes = [...routes, ...ADMIN_ROUTES];
     }
+    
+    // Filter routes by role if specified
+    routes = routes.filter(route => {
+      if (!route.roles) return true; // No role restriction
+      return route.roles.includes(user?.role || '');
+    });
+    
     return routes;
   }, [user]);
 
