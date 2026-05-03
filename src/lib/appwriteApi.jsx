@@ -656,17 +656,17 @@ export const appwriteApi = {
       return success(data);
     }
 
-    // FIRM: LIST FIRMS (enriched with org data and counts)
-    if (path === 'firm') {
-      // Fetch all firms (no org isolation - public directory)
-      const { data: rawFirms, error: firmsErr } = await databases.listDocuments(
-        DATABASE_ID,
-        COLLECTIONS.USERS,
-        [Query.equal('role', 'firm')]
-      );
-      if (firmsErr) throw firmsErr;
+     // FIRM: LIST FIRMS (enriched with org data and counts)
+     if (path === 'firm') {
+       // Fetch all firms (no org isolation - public directory)
+       const firmsResult = await databases.listDocuments(
+         DATABASE_ID,
+         COLLECTIONS.USERS,
+         [Query.equal('role', 'firm')]
+       );
+       const rawFirms = firmsResult.documents || [];
 
-      const firms = rawFirms.map(doc => db.normalize(doc));
+       const firms = rawFirms.map(doc => db.normalize(doc));
 
       if (firms.length === 0) {
         return success({ results: [] });
@@ -679,27 +679,27 @@ export const appwriteApi = {
       let orgMap = {};
       if (orgIds.length > 0) {
         const orgQueries = Query.or(orgIds.map(id => Query.equal('id', id)));
-        const { data: rawOrgs } = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.ORGANIZATIONS,
-          [orgQueries]
-        );
-        const orgs = rawOrgs.map(doc => db.normalize(doc));
+         const orgResult = await databases.listDocuments(
+           DATABASE_ID,
+           COLLECTIONS.ORGANIZATIONS,
+           [orgQueries]
+         );
+         const orgs = orgResult.documents.map(doc => db.normalize(doc));
         orgMap = orgs.reduce((acc, org) => { acc[org.id] = org; return acc; }, {});
       }
 
       // Count advocates per organization
       let advocatesCountMap = {};
       if (orgIds.length > 0) {
-        const { data: rawAdvocates } = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.USERS,
-          [
-            Query.equal('role', 'advocate'),
-            Query.or(orgIds.map(id => Query.equal('organization_id', id)))
-          ]
-        );
-        const advocates = rawAdvocates.map(doc => db.normalize(doc));
+         const advocatesResult = await databases.listDocuments(
+           DATABASE_ID,
+           COLLECTIONS.USERS,
+           [
+             Query.equal('role', 'advocate'),
+             Query.or(orgIds.map(id => Query.equal('organization_id', id)))
+           ]
+         );
+         const advocates = advocatesResult.documents.map(doc => db.normalize(doc));
         advocates.forEach(emp => {
           advocatesCountMap[emp.organization_id] = (advocatesCountMap[emp.organization_id] || 0) + 1;
         });
@@ -708,12 +708,12 @@ export const appwriteApi = {
       // Count cases per organization
       let casesCountMap = {};
       if (orgIds.length > 0) {
-        const { data: rawCases } = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.CASES,
-          [Query.or(orgIds.map(id => Query.equal('organization_id', id)))]
-        );
-        const cases = rawCases.map(doc => db.normalize(doc));
+         const casesResult = await databases.listDocuments(
+           DATABASE_ID,
+           COLLECTIONS.CASES,
+           [Query.or(orgIds.map(id => Query.equal('organization_id', id)))]
+         );
+         const cases = casesResult.documents.map(doc => db.normalize(doc));
         cases.forEach(c => {
           casesCountMap[c.organization_id] = (casesCountMap[c.organization_id] || 0) + 1;
         });
