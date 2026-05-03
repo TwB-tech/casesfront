@@ -90,19 +90,44 @@ export const BUCKETS = {
 export const auth = {
   async createEmailSession(email, password) {
     try {
-      // Delete any existing session first to avoid "session already active" conflict
-      try {
-        await account.deleteSession('current');
-      } catch (e) {
-        // No existing session — ignore
+      // Use direct fetch to avoid SDK's internal session check
+      const baseEndpoint = import.meta.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+      // In browser, go through Vercel proxy to avoid CORS
+      const url = typeof window !== 'undefined'
+        ? `${window.location.origin}/api/appwrite-proxy/account/sessions/email`
+        : `${baseEndpoint}/account/sessions/email`;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const err = new Error(errBody.message || 'Failed to create session');
+        err.status = res.status;
+        err.body = errBody;
+        return { error: err };
       }
-      // Clear client-side session to avoid sending stale credentials
-      client.setSession('');
-      const session = await account.createEmailPasswordSession(email, password);
-      if (session?.secret) {
-        client.setSession(session.secret);
+
+      const data = await res.json();
+
+      // Store session secret in client and localStorage
+      if (data?.secret) {
+        client.setSession(data.secret);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(SESSION_STORAGE_KEY, data.secret);
+        }
+      } else {
+        // No secret returned — clear any existing session
+        client.setSession(null);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(SESSION_STORAGE_KEY);
+        }
       }
-      return { data: session };
+
+      return { data };
     } catch (error) {
       return { error };
     }
@@ -154,14 +179,30 @@ export const auth = {
     return { data: {} };
   },
 
-  async deleteSession() {
-    try {
-      await account.deleteSession('current');
-      return { data: {} };
-    } catch (error) {
-      return { error };
-    }
-  },
+   async deleteSession() {
+     try {
+       // Use direct fetch to be explicit
+       const baseEndpoint = import.meta.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+       const url = typeof window !== 'undefined'
+         ? `${window.location.origin}/api/appwrite-proxy/account/sessions/current`
+         : `${baseEndpoint}/account/sessions/current`;
+       const res = await fetch(url, {
+         method: 'DELETE',
+         headers: { 'Content-Type': 'application/json' },
+       });
+       // Clear local session regardless of response
+       client.setSession(null);
+       if (typeof window !== 'undefined') {
+         localStorage.removeItem(SESSION_STORAGE_KEY);
+       }
+       if (!res.ok) {
+         return { error: new Error('Logout failed') };
+       }
+       return { data: await res.json() };
+     } catch (error) {
+       return { error };
+     }
+   },
 
   setSessionSecret(secret) {
     if (!client || typeof secret !== 'string') {
