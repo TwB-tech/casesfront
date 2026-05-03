@@ -124,7 +124,7 @@ const collections = [
       { key: 'created_at', type: 'datetime' },
       { key: 'updated_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
+    permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'users',
@@ -147,7 +147,7 @@ const collections = [
       { key: 'created_at', type: 'datetime' },
       { key: 'updated_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
+    permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'courts',
@@ -158,7 +158,7 @@ const collections = [
       { key: 'address', type: 'text' },
       { key: 'created_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
+    permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'cases',
@@ -178,7 +178,7 @@ const collections = [
       { key: 'created_at', type: 'datetime' },
       { key: 'updated_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
+    permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'tasks',
@@ -196,7 +196,7 @@ const collections = [
       { key: 'created_at', type: 'datetime' },
       { key: 'updated_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
+    permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'documents',
@@ -213,7 +213,7 @@ const collections = [
       { key: 'created_at', type: 'datetime' },
       { key: 'updated_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
+    permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'communications',
@@ -227,7 +227,7 @@ const collections = [
       { key: 'created_by', type: 'string', size: 255, required: true },
       { key: 'created_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
+    permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'invites',
@@ -243,7 +243,7 @@ const collections = [
       { key: 'expires_at', type: 'datetime', required: true },
       { key: 'created_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:users'], write: ['role:users'] },
+    permissions: ['read("users")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'invoices',
@@ -268,7 +268,7 @@ const collections = [
       { key: 'created_at', type: 'datetime' },
       { key: 'updated_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
+    permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'invoice_items',
@@ -280,7 +280,7 @@ const collections = [
       { key: 'unit_price', type: 'float' },
       { key: 'total', type: 'float' },
     ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
+    permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'chat_rooms',
@@ -291,7 +291,7 @@ const collections = [
       { key: 'participants', type: 'string', array: true, required: true },
       { key: 'created_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
+    permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
     {
       name: 'chat_messages',
@@ -305,7 +305,7 @@ const collections = [
         { key: 'organization_id', type: 'string', size: 255 },
         { key: 'created_at', type: 'datetime' },
       ],
-      permissions: { read: ['role:all'], write: ['role:users'] },
+      permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
     },
   {
     name: 'audit_logs',
@@ -320,7 +320,7 @@ const collections = [
       { key: 'user_agent', type: 'string', size: 500 },
       { key: 'created_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:users'], write: ['role:users'] },
+    permissions: ['read("users")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'expenses',
@@ -336,7 +336,7 @@ const collections = [
       { key: 'submitted_by', type: 'string', size: 255 },
       { key: 'created_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
+    permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'payroll_runs',
@@ -349,7 +349,7 @@ const collections = [
       { key: 'status', type: 'string', size: 50 },
       { key: 'created_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:users'], write: ['role:users'] },
+    permissions: ['read("users")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'admin_settings',
@@ -363,7 +363,7 @@ const collections = [
       { key: 'client_portal_access', type: 'boolean', default: false },
       { key: 'updated_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:users'], write: ['role:users'] },
+    permissions: ['read("users")', 'create("users")', 'update("users")', 'delete("users")'],
   },
   {
     name: 'subscriptions',
@@ -375,7 +375,7 @@ const collections = [
       { key: 'current_period_end', type: 'string', size: 20 },
       { key: 'created_at', type: 'datetime' },
     ],
-    permissions: { read: ['role:all'], write: ['role:users'] },
+    permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
    {
      name: 'onboarding',
@@ -386,7 +386,7 @@ const collections = [
        { key: 'completed', type: 'boolean', default: false },
        { key: 'created_at', type: 'datetime' },
      ],
-     permissions: { read: ['role:all'], write: ['role:users'] },
+     permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
    },
    {
      name: 'notes',
@@ -399,7 +399,7 @@ const collections = [
        { key: 'created_at', type: 'datetime' },
        { key: 'updated_at', type: 'datetime' },
      ],
-     permissions: { read: ['role:all'], write: ['role:users'] },
+     permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
    },
  ];
 
@@ -412,14 +412,20 @@ async function ensureCollection(def) {
     if (e.status !== 404) throw e;
   }
 
-  const payload = {
-    collectionId: def.name,
-    name: def.name.charAt(0).toUpperCase() + def.name.slice(1),
-    read: def.permissions.read,
-    write: def.permissions.write,
-    documentSecurity: false, // use collection-level permissions
-  };
-  await api('POST', `/databases/${databaseId}/collections`, payload);
+   const payload = {
+     collectionId: def.name,
+     name: def.name.charAt(0).toUpperCase() + def.name.slice(1),
+     documentSecurity: false, // use collection-level permissions
+   };
+   // Use permissions array if provided
+   if (Array.isArray(def.permissions)) {
+     payload.permissions = def.permissions;
+   } else if (def.permissions) {
+     // fallback to read/write object
+     payload.read = def.permissions.read;
+     payload.write = def.permissions.write;
+   }
+   await api('POST', `/databases/${databaseId}/collections`, payload);
   log.success(`  ✓ Created collection ${def.name}`);
 }
 
