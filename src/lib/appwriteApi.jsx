@@ -246,10 +246,10 @@ export const appwriteApi = {
        ]);
        if (caseErr) throw caseErr;
 
-        const clientIds = [...new Set(cases.map((c) => c.client_id))];
-        const { data: clients, error: clientErr } = await db.list(COLLECTIONS.USERS, [
-          Query.or(clientIds.map(id => Query.equal('$id', id))),
-        ]);
+         const clientIds = [...new Set(cases.map((c) => c.client_id))];
+         const { data: clients, error: clientErr } = await db.list(COLLECTIONS.USERS, [
+           Query.or(clientIds.map(id => Query.equal('id', id))),
+         ]);
         if (clientErr) throw clientErr;
 
        return success({
@@ -675,10 +675,10 @@ export const appwriteApi = {
       // Collect unique organization IDs
       const orgIds = [...new Set(firms.map(f => f.organization_id).filter(id => id))];
 
-      // Fetch organizations
+      // Fetch organizations by their 'id' attribute
       let orgMap = {};
       if (orgIds.length > 0) {
-        const orgQueries = Query.or(orgIds.map(id => Query.equal('$id', id)));
+        const orgQueries = Query.or(orgIds.map(id => Query.equal('id', id)));
         const { data: rawOrgs } = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.ORGANIZATIONS,
@@ -816,7 +816,7 @@ export const appwriteApi = {
       let userData = null;
       try {
         const { data: existingUser, error: userErr } = await db.get(COLLECTIONS.USERS, data.userId);
-        if (!userErr) {
+        if (!userErr && existingUser) {
           userData = existingUser;
         }
       } catch (e) {
@@ -827,23 +827,39 @@ export const appwriteApi = {
       if (!userData) {
         try {
           const accountUser = await account.get();
-          const { data: newUser, error: createErr } = await db.create(COLLECTIONS.USERS, {
-            id: data.userId,
-            email: payload.email,
-            username: accountUser?.name || payload.email.split('@')[0],
-            role: 'individual',
-            organization_id: null,
-            status: 'Active',
-            messaging_enabled: true,
-            deadline_notifications: true,
-            email_verified: false,
-          }, data.userId);
+          const userId = data.userId;
 
-          if (!createErr) {
-            userData = newUser;
+          // Try to fetch first (handles race condition)
+          try {
+            const existing = await db.get(COLLECTIONS.USERS, userId);
+            if (existing && !existing.error && existing.data) {
+              userData = existing.data;
+            } else {
+              throw new Error('Not found');
+            }
+          } catch (e) {
+            // Document doesn't exist, create it
+            const { data: newUser, error: createErr } = await db.create(
+              COLLECTIONS.USERS,
+              {
+                id: userId,
+                email: payload.email,
+                username: accountUser?.name || payload.email.split('@')[0],
+                role: 'individual',
+                organization_id: null,
+                status: 'Active',
+                messaging_enabled: true,
+                deadline_notifications: true,
+                email_verified: false,
+              },
+              userId
+            );
+            if (!createErr) {
+              userData = newUser;
+            }
           }
         } catch (createError) {
-          console.warn('Failed to create user document:', createError);
+          console.warn('Failed to get/create user document:', createError);
         }
       }
 
@@ -997,7 +1013,7 @@ export const appwriteApi = {
             username: payload.username.trim(),
             email: payload.email.trim(),
             role: requestedRole,
-            phone: payload.phone_number || '',
+            phone: payload.phone || payload.phone_number || '',
             timezone: 'EAT',
             status: 'Active',
             messaging_enabled: true,
@@ -1006,7 +1022,11 @@ export const appwriteApi = {
             verification_token: verificationToken,
             email_verified: false,
             bio: payload.bio || '',
-            practice_areas: Array.isArray(payload.practice_areas) ? payload.practice_areas : (payload.practice_areas ? payload.practice_areas.split(',').map(s => s.trim()).filter(Boolean) : []),
+            practice_areas: Array.isArray(payload.practice_areas)
+              ? payload.practice_areas
+              : payload.practice_areas
+              ? String(payload.practice_areas).split(',').map(s => s.trim()).filter(Boolean)
+              : [],
           };
          console.log('[register] userProfile created:', { ...userProfile, verification_token: userProfile.verification_token ? `${userProfile.verification_token.substring(0, 10)}...` : 'MISSING' });
 
@@ -1168,45 +1188,46 @@ export const appwriteApi = {
     }
 
      // VERIFY TOKEN
-     if (path === 'auth/verify-token') {
-       try {
-         const currentAccount = await account.get();
-         const userId = currentAccount?.$id || currentAccount?.userId;
-         if (!currentAccount || !userId) {
-           return failure('Invalid token', 401);
-         }
-         const { data: userProfile, error: userErr } = await db.get(
-           COLLECTIONS.USERS,
-           userId
-         );
-         if (userErr) {
-           // User document not found; fall back to session info
-           console.warn('User document not found during verify-token, using session data:', userErr);
-           return success({
-             user: {
-               id: userId,
-               email: currentAccount.email,
-               username: currentAccount.name || currentAccount.email,
-               role: 'individual',
-               organization_id: null,
-             },
-           });
-         }
-         return success({
-           user: {
-             id: userProfile.id,
-             email: currentAccount.email,
-             username: userProfile.username,
-             role: userProfile.role,
-             organization_id: userProfile.organization_id,
-           },
-         });
-       } catch (error) {
-         return failure('Invalid token', 401);
-       }
-     }
+      if (path === 'auth/verify-token') {
+        try {
+          const currentAccount = await auth.get();
+          const userId = currentAccount?.$id || currentAccount?.userId;
+          if (!currentAccount || !userId) {
+            return failure('Invalid token', 401);
+          }
+          // Direct DB get (skip axios)
+          const { data: userProfile, error: userErr } = await db.get(
+            COLLECTIONS.USERS,
+            userId
+          );
+          if (userErr) {
+            console.warn('User document not found during verify-token, using session data:', userErr);
+            return success({
+              user: {
+                id: userId,
+                email: currentAccount.email,
+                username: currentAccount.name || currentAccount.email,
+                role: 'individual',
+                organization_id: null,
+              },
+            });
+          }
+          return success({
+            user: {
+              id: userProfile.id,
+              email: currentAccount.email,
+              username: userProfile.username || currentAccount.name || currentAccount.email,
+              role: userProfile.role,
+              organization_id: userProfile.organization_id,
+            },
+          });
+        } catch (error) {
+          console.error('verify-token error:', error);
+          return failure('Invalid token', 401);
+        }
+      }
 
-    // LOGOUT
+     // LOGOUT
     if (path === 'auth/logout') {
       try {
         await auth.deleteSession();

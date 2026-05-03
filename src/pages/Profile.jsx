@@ -53,8 +53,8 @@ const ProfilePage = () => {
           axiosInstance.get('/auth/profile/'),
           axiosInstance.get('/users/stats/'),
         ]);
-        setProfileData(profileResponse.data);
-        setStats(statsResponse.data);
+        setProfileData(profileResponse.data || {});
+        setStats(statsResponse.data || { cases: 0, clients: 0, documents: 0, tasks: 0 });
       } catch (error) {
         console.error('Error fetching profile:', error);
         message.error('Failed to load profile.');
@@ -63,6 +63,7 @@ const ProfilePage = () => {
             username: user.username,
             email: user.email,
             role: user.role,
+            practice_areas: [],
           });
         }
       }
@@ -287,7 +288,7 @@ const ProfilePage = () => {
               </p>
             )}
 
-                {profileData.practice_areas && (
+                {profileData?.practice_areas && (
                   <div
                     style={{
                       marginTop: '12px',
@@ -299,7 +300,7 @@ const ProfilePage = () => {
                   >
                     {(Array.isArray(profileData.practice_areas)
                       ? profileData.practice_areas
-                      : profileData.practice_areas.split(',')
+                      : String(profileData.practice_areas).split(',')
                     )
                       .map((area, idx) => (
                         <Tag key={idx} style={{ borderRadius: '12px' }}>

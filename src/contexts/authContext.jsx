@@ -2,7 +2,7 @@ import { createContext, useEffect, useMemo, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { notification } from 'antd';
 import axiosInstance from '../axiosConfig';
-import { auth } from '../lib/appwrite';
+import appwrite, { auth } from '../lib/appwrite';
 
 const AuthContext = createContext(null);
 const SESSION_STORAGE_KEY = 'appwrite_session_secret';
@@ -370,22 +370,54 @@ const AuthProvider = ({ children }) => {
 
   const verifyToken = async () => {
     try {
-      const { data } = await axiosInstance.post('/auth/verify-token');
-      const verifiedUser = data?.user;
-      if (!verifiedUser?.id) {
+      // Verify the current session directly via Appwrite
+      const { data: account } = await auth.get();
+      if (!account) {
+        await logout();
         return false;
       }
 
-      localStorage.setItem('userInfo', JSON.stringify(verifiedUser));
-      if (verifiedUser.organization_id) {
-        localStorage.setItem('organization_id', verifiedUser.organization_id);
+      const userId = account.$id || account.id;
+
+      // Fetch user profile from users collection
+      const { data: userProfile, error: profileErr } = await appwrite.db.get(
+        appwrite.COLLECTIONS.USERS,
+        userId
+      );
+
+      if (profileErr) {
+        // Profile not found – create minimal user info from account
+        const userInfo = {
+          id: userId,
+          email: account.email,
+          username: account.name || account.email,
+          role: 'individual',
+          organization_id: null,
+        };
+        localStorage.setItem('userInfo', JSON.stringify(userInfo));
+        flushSync(() => setUser(userInfo));
+        return true;
+      }
+
+      const userInfo = {
+        id: userProfile.id,
+        email: account.email,
+        username: userProfile.username || account.name || account.email,
+        role: userProfile.role || 'individual',
+        organization_id: userProfile.organization_id || null,
+      };
+
+      localStorage.setItem('userInfo', JSON.stringify(userInfo));
+      if (userInfo.organization_id) {
+        localStorage.setItem('organization_id', userInfo.organization_id);
       }
 
       flushSync(() => {
-        setUser(verifiedUser);
+        setUser(userInfo);
       });
       return true;
     } catch (error) {
+      console.error('Token verification failed:', error);
       await logout();
       return false;
     }

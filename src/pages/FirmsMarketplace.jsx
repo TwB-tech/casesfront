@@ -39,7 +39,9 @@ const FirmsMarketplace = () => {
       setLoading(true);
       // Fetch law firms from backend (enriched)
       const response = await api.get('/firm/');
-      const firmsData = (response.data.results || response.data).map((firm) => ({
+      const responseData = response.data || {};
+      const firmsList = Array.isArray(responseData.results) ? responseData.results : [];
+      const firmsData = firmsList.map((firm) => ({
         id: firm.id,
         name: firm.name || firm.username || 'Unknown Firm',
         email: firm.email,

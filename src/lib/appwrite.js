@@ -277,54 +277,49 @@ const COLLECTION_ORG_ATTRIBUTES = {
 // ============================================
 export const db = {
   // Normalize Appwrite document to Supabase-like shape
-  normalize(doc) {
-    if (!doc) return doc;
-    const { $id, $createdAt, $updatedAt, ...rest } = doc;
-    return {
-      id: $id,
-      created_at: $createdAt,
-      updated_at: $updatedAt,
-      ...rest,
-    };
-  },
+   normalize(doc) {
+     if (!doc) return doc;
+     const { $id, $createdAt, $updatedAt, ...rest } = doc;
+     return {
+       id: $id,
+       created_at: $createdAt,
+       updated_at: $updatedAt,
+       ...rest,
+     };
+   },
 
    // LIST documents with optional filters
-    // Auto-applies organization isolation for org-scoped collections
-    async list(collection, queries = []) {
-      try {
-        const userId = getCurrentUser()?.id;
-        if (ORG_SCOPED.has(collection)) {
-          queries = withOrganization(queries, userId, collection);
-        }
+   // Auto-applies organization isolation for org-scoped collections
+   async list(collection, queries = []) {
+     try {
+       const userId = getCurrentUser()?.id;
+       if (ORG_SCOPED.has(collection)) {
+         queries = withOrganization(queries, userId, collection);
+       }
 
-        const result = await databases.listDocuments(DATABASE_ID, collection, queries);
-        const documents = (result.documents || []).map((doc) => this.normalize(doc));
-        return { data: documents };
-      } catch (error) {
-        console.error(`Appwrite list ${collection}:`, error);
-        return { error, data: [] };
-      }
-    },
+       const result = await databases.listDocuments(DATABASE_ID, collection, queries);
+       const documents = (result.documents || []).map((doc) => this.normalize(doc));
+       return { data: documents };
+     } catch (error) {
+       console.error(`Appwrite list ${collection}:`, error);
+       // Return empty array on error to prevent crashes
+       return { error, data: [] };
+     }
+   },
 
-  // GET single document
-  async get(collection, docId) {
-    try {
-      const doc = await databases.getDocument(DATABASE_ID, collection, docId);
-      return { data: this.normalize(doc) };
-    } catch (error) {
-      return { error };
-    }
-  },
+   // GET single document
+   async get(collection, docId) {
+     try {
+       const doc = await databases.getDocument(DATABASE_ID, collection, docId);
+       return { data: this.normalize(doc) };
+     } catch (error) {
+       return { error };
+     }
+   },
 
     // CREATE document
     async create(collection, data, docId = ID.unique()) {
       try {
-        console.log(`[db.create] Called for collection=${collection}, docId=${docId}`);
-        console.log(`[db.create] Received data keys:`, Object.keys(data || {}));
-        if (data && 'verification_token' in data) {
-          const v = data.verification_token;
-          console.log(`[db.create] incoming verification_token: ${v ? v.substring(0,20)+'...' : 'null/undefined'}`);
-        }
         const orgId = getCurrentOrganizationId();
         const enriched = {
           ...data,
@@ -335,19 +330,19 @@ export const db = {
         if (ORG_SCOPED.has(collection)) {
           enriched.organization_id = orgId;
         }
-        console.log(`[db.create] Enriched data keys:`, Object.keys(enriched));
-        console.log(`[db.create] verification_token in enriched:`, 'verification_token' in enriched);
-        if ('verification_token' in enriched) {
-          const token = enriched.verification_token;
-          console.log(`[db.create] enriched verification_token: ${token ? token.substring(0,20)+'...' : 'EMPTY'}`);
-        }
         const doc = await databases.createDocument(DATABASE_ID, collection, docId, enriched);
-        console.log(`[db.create] Appwrite returned document with $id: ${doc?.$id}`);
-        console.log(`[db.create] Returned document verification_token:`, doc?.verification_token);
         return { data: this.normalize(doc) };
       } catch (error) {
-        console.error(`❌ Appwrite create ${collection} failed:`, error.message || error);
-        console.error('Stack:', error.stack);
+        // Handle duplicate ID conflict (409) - document already exists
+        if (error.code === 'document_already_exists' || error.message?.includes('already exists')) {
+          try {
+            const existing = await databases.getDocument(DATABASE_ID, collection, docId);
+            return { data: this.normalize(existing) };
+          } catch (fetchErr) {
+            return { error: fetchErr };
+          }
+        }
+        console.error(`Appwrite create ${collection} failed:`, error.message || error);
         return { error };
       }
     },
