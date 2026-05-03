@@ -90,6 +90,14 @@ export const BUCKETS = {
 export const auth = {
   async createEmailSession(email, password) {
     try {
+      // Delete any existing session first to avoid "session already active" conflict
+      try {
+        await account.deleteSession('current');
+      } catch (e) {
+        // No existing session — ignore
+      }
+      // Clear client-side session to avoid sending stale credentials
+      client.setSession('');
       const session = await account.createEmailPasswordSession(email, password);
       if (session?.secret) {
         client.setSession(session.secret);

@@ -417,6 +417,7 @@ async function ensureCollection(def) {
     name: def.name.charAt(0).toUpperCase() + def.name.slice(1),
     read: def.permissions.read,
     write: def.permissions.write,
+    documentSecurity: false, // use collection-level permissions
   };
   await api('POST', `/databases/${databaseId}/collections`, payload);
   log.success(`  ✓ Created collection ${def.name}`);
@@ -492,47 +493,49 @@ async function ensureIndexes() {
 
 async function main() {
   console.log('\n=== Appwrite Database Setup ===\n');
+  console.log('Config:', { endpoint, projectId: projectId?.slice(0,10)+'...', databaseId });
 
   await ensureDatabase();
 
+  // Delete all existing collections to ensure fresh permissions and schema
+  console.log('Cleaning up existing collections...');
+  for (const coll of collections) {
+    try {
+      await api('GET', `/databases/${databaseId}/collections/${coll.name}`);
+      // Collection exists, delete it
+      await api('DELETE', `/databases/${databaseId}/collections/${coll.name}`);
+      log.warn(`  Deleted existing collection "${coll.name}"`);
+    } catch (e) {
+      if (e.status !== 404) {
+        log.error(`  Failed to delete ${coll.name}: ${e.message}`);
+      } else {
+        // Doesn't exist, that's fine
+      }
+    }
+  }
+
   // Schema fix: chat_messages sender changed from integer to string
-  try {
-    await api('GET', `/databases/${databaseId}/collections/chat_messages`);
-    log.warn('  chat_messages exists - deleting to apply schema update...');
-    await api('DELETE', `/databases/${databaseId}/collections/chat_messages`);
-    log.success('  ✓ Deleted old chat_messages');
-  } catch (e) {
-    // ignore if not exists
+  // (No longer need special deletion since we delete all above)
+  // This placeholder kept for backward compatibility but not needed
+
+  // Create all collections with correct attributes and permissions
+  for (const coll of collections) {
+    log.info(`Collection: ${coll.name}`);
+    try {
+      await ensureCollection(coll);
+      await ensureAttributes(coll.name, coll.attributes);
+    } catch (err) {
+      log.error(`  Failed: ${err.message}`);
+    }
   }
 
-  // Fix organizations collection: delete and recreate with public write permission
-  try {
-    await api('GET', `/databases/${databaseId}/collections/organizations`);
-    log.warn('  organizations exists - deleting to apply permission update...');
-    await api('DELETE', `/databases/${databaseId}/collections/organizations`);
-    log.success('  ✓ Deleted old organizations collection');
-  } catch (e) {
-    // ignore if not exists
-  }
-
-   for (const coll of collections) {
-     log.info(`Collection: ${coll.name}`);
-     try {
-       await ensureCollection(coll);
-       await ensureAttributes(coll.name, coll.attributes);
-     } catch (err) {
-       log.error(`  Failed: ${err.message}`);
-     }
-   }
-
-   log.info('\nCreating indexes...');
+  log.info('\nCreating indexes...');
   await ensureIndexes();
 
   console.log('\n\x1b[1m✅ Setup Complete!\x1b[0m');
   console.log('Next steps:');
-  console.log('  1. node scripts/test-appwrite-connection.js');
-  console.log('  2. Set DATABASE_MODE=appwrite in .env');
-  console.log('  3. npm run dev\n');
+  console.log('  1. node scripts/create-user-docs.mjs  # create test user profiles');
+  console.log('  2. npm run dev');
 }
 
 main().catch((err) => {
