@@ -538,12 +538,62 @@ async function main() {
   log.info('\nCreating indexes...');
   await ensureIndexes();
 
+  log.info('\nCreating storage bucket...');
+  await ensureStorageBucket('documents', 'Documents', {
+    permissions: ['read("users")', 'write("users")'],
+    maximumFileSize: 10485760, // 10MB
+    allowedFileExtensions: ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif'],
+  });
+
   console.log('\n\x1b[1m✅ Setup Complete!\x1b[0m');
   console.log('Next steps:');
   console.log('  1. node scripts/create-user-docs.mjs  # create test user profiles');
   console.log('  2. npm run dev');
 }
 
+// Ensure storage bucket exists and has correct permissions
+async function ensureStorageBucket(bucketId, name, options = {}) {
+  try {
+    const bucket = await api('GET', `/storage/buckets/${bucketId}`);
+    log.success(`Storage bucket '${bucketId}' ready`);
+    // Update permissions to ensure they are correct
+    try {
+      await api('PATCH', `/storage/buckets/${bucketId}`, {
+        permissions: options.permissions || ['read("users")', 'write("users")'],
+        maximumFileSize: options.maximumFileSize || 10485760,
+        allowedFileExtensions: options.allowedFileExtensions || [],
+      });
+      log.success(`✓ Storage bucket permissions updated`);
+    } catch (updateErr) {
+      log.warn(`Could not update bucket permissions: ${updateErr.message}`);
+    }
+    return bucket;
+  } catch (e) {
+    if (e.status === 404) {
+      log.warn(`Storage bucket '${bucketId}' not found — creating...`);
+      try {
+        const created = await api('POST', '/storage/buckets', {
+          bucketId,
+          name: name || bucketId,
+          permissions: options.permissions || ['read("users")', 'write("users")'],
+          maximumFileSize: options.maximumFileSize || 10485760,
+          allowedFileExtensions: options.allowedFileExtensions || [],
+          encryption: false,
+          antivirus: false,
+        });
+        log.success(`✓ Storage bucket created`);
+        return created;
+      } catch (err) {
+        log.error(`Failed to create storage bucket: ${err.message}`);
+        // Don't fail setup - storage can be created later
+      }
+    } else {
+      log.error(`Failed to check storage bucket: ${e.message}`);
+    }
+  }
+}
+
+// Invoke main
 main().catch((err) => {
   console.error('\nFatal error:', err);
   process.exit(1);

@@ -15,9 +15,7 @@ import {
   CloseOutlined,
   DollarOutlined,
   TeamOutlined,
-  FileSearchOutlined,
   ProfileOutlined,
-  SolutionOutlined,
   ShopOutlined,
   SafetyOutlined,
 } from '@ant-design/icons';
@@ -94,6 +92,7 @@ const BASE_ROUTES = [
     key: 'notes',
     path: '/notes',
     label: 'Notes',
+    icon: FileOutlined,
     routes: ['/notes'],
   },
   {
@@ -124,7 +123,7 @@ const BASE_ROUTES = [
     key: 'reports',
     path: '/reports',
     label: 'Reports',
-    icon: SolutionOutlined,
+    icon: BarChartOutlined,
     routes: ['/reports', '/report-details', '/new-report'],
     roles: ['admin', 'advocate', 'firm'],
   },
@@ -165,25 +164,23 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const isMobile = useMediaQuery({ query: '(max-width: 780px)' });
 
-  // Combine base routes with admin routes if user is admin
-  const ROUTE_CONFIG = useMemo(() => {
-    let routes = user?.role === 'client' || user?.role === 'individual' 
-      ? BASE_ROUTES.filter(r => ['dashboard', 'cases', 'documents', 'chat', 'profile', 'settings'].includes(r.key))
-      : [...BASE_ROUTES];
-    
-    // Add admin routes if user is admin/administrator
-    if (user && (user.role === 'admin' || user.role === 'administrator')) {
-      routes = [...routes, ...ADMIN_ROUTES];
-    }
-    
-    // Filter routes by role if specified
-    routes = routes.filter(route => {
-      if (!route.roles) return true; // No role restriction
-      return route.roles.includes(user?.role || '');
-    });
-    
-    return routes;
-  }, [user]);
+   // Combine base routes with admin routes if user is admin
+   const ROUTE_CONFIG = useMemo(() => {
+     let routes = [...BASE_ROUTES];
+     
+     // Add admin routes if user is admin/administrator
+     if (user && (user.role === 'admin' || user.role === 'administrator')) {
+       routes = [...routes, ...ADMIN_ROUTES];
+     }
+     
+     // Filter routes by role if specified
+     routes = routes.filter(route => {
+       if (!route.roles) return true; // No role restriction
+       return route.roles.includes(user?.role || '');
+     });
+     
+     return routes;
+   }, [user]);
 
   useEffect(() => {
     let timer;
@@ -240,7 +237,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         }}
       >
         {ROUTE_CONFIG.map((item) => {
-          const Icon = item.icon;
+          const Icon = item.icon || FileOutlined;
           return (
             <React.Fragment key={item.key}>
               <Menu.Item

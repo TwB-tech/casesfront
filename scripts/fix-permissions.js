@@ -1,8 +1,11 @@
 /**
  * Fix Appwrite Collection Permissions
  *
- * This script ensures all collections have proper collection-level permissions
- * (documentSecurity: false) and correct read/write roles.
+ * Updates all collection-level permissions to:
+ *   read: ['role:all'], write: ['role:users']
+ *   except: invites, audit_logs, payroll_runs, admin_settings -> read/write: ['role:users']
+ *
+ * Uses the proven api() helper pattern from integration tests.
  *
  * Run: node scripts/fix-permissions.js
  */
@@ -10,10 +13,10 @@
 import fs from 'fs';
 import path from 'path';
 
-function loadEnv(filePath) {
+function loadEnv() {
   const env = {};
   try {
-    const content = fs.readFileSync(filePath, 'utf-8');
+    const content = fs.readFileSync(path.resolve(process.cwd(), '.env'), 'utf-8');
     const lines = content.split('\n');
     for (const line of lines) {
       const trimmed = line.trim();
@@ -31,24 +34,21 @@ function loadEnv(filePath) {
       env[key] = value;
     }
   } catch (err) {
-    console.warn('Could not read .env:', err.message);
+    console.error('❌ Could not read .env:', err.message);
+    process.exit(1);
   }
   return env;
 }
 
-const env = loadEnv(path.resolve(process.cwd(), '.env'));
+const env = loadEnv();
 
 const endpoint = (env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1').replace(/\/$/, '');
 const projectId = env.APPWRITE_PROJECT_ID;
 const apiKey = env.APPWRITE_API_KEY;
 const databaseId = env.APPWRITE_DATABASE_ID || 'default';
 
-if (!projectId) {
-  console.error('❌ Missing APPWRITE_PROJECT_ID in .env');
-  process.exit(1);
-}
-if (!apiKey) {
-  console.error('❌ Missing APPWRITE_API_KEY in .env (needed for setup)');
+if (!projectId || !apiKey) {
+  console.error('❌ Missing APPWRITE_PROJECT_ID or APPWRITE_API_KEY in .env');
   process.exit(1);
 }
 
@@ -58,26 +58,26 @@ const apiHeaders = {
   'Content-Type': 'application/json',
 };
 
-const log = {
-  info: (msg) => console.log(`\x1b[36mℹ\x1b[0m ${msg}`),
-  success: (msg) => console.log(`\x1b[32m✓\x1b[0m ${msg}`),
-  error: (msg) => console.log(`\x1b[31m✗\x1b[0m ${msg}`),
-  warn: (msg) => console.log(`\x1b[33m⚠\x1b[0m ${msg}`),
-};
-
 async function api(method, path, body) {
   const url = `${endpoint}${path}`;
   const options = { method, headers: apiHeaders };
-  if (body) options.body = JSON.stringify(body);
+  if (body && typeof body === 'object' && !(body instanceof FormData)) {
+    options.body = JSON.stringify(body);
+  }
   const res = await fetch(url, options);
   let data;
+  const ct = res.headers.get('content-type') || '';
   try {
-    data = await res.json();
+    if (ct && ct.includes('application/json')) {
+      data = await res.json();
+    } else {
+      data = { message: await res.text() };
+    }
   } catch (e) {
-    data = {};
+    data = { error: e.message };
   }
   if (!res.ok) {
-    const err = new Error(data.message || `HTTP ${res.status}`);
+    const err = new Error(data.message || data.error || `HTTP ${res.status}`);
     err.status = res.status;
     err.data = data;
     throw err;
@@ -85,86 +85,70 @@ async function api(method, path, body) {
   return data;
 }
 
-// Define proper permissions for each collection
-// Using Appwrite standard roles: 'role:all' (everyone, including guests), 'role:member' (authenticated users), 'role:admin' (admins)
-const collectionPermissions = {
-  organizations: { read: ['role:all'], write: ['role:member'] }, // Public read, authenticated write
-  users: { read: ['role:all'], write: ['role:member'] }, // Public read, authenticated write (profile updates)
-  courts: { read: ['role:all'], write: ['role:member'] },
-  cases: { read: ['role:all'], write: ['role:member'] },
-  tasks: { read: ['role:all'], write: ['role:member'] },
-  documents: { read: ['role:all'], write: ['role:member'] },
-  communications: { read: ['role:all'], write: ['role:member'] },
-  invites: { read: ['role:member'], write: ['role:member'] }, // Authenticated only
-  invoices: { read: ['role:all'], write: ['role:member'] },
-  invoice_items: { read: ['role:all'], write: ['role:member'] },
-  chat_rooms: { read: ['role:all'], write: ['role:member'] },
-  chat_messages: { read: ['role:all'], write: ['role:member'] },
-  audit_logs: { read: ['role:admin'], write: ['role:admin'] },
-  expenses: { read: ['role:all'], write: ['role:member'] },
-  payroll_runs: { read: ['role:member'], write: ['role:member'] },
-  admin_settings: { read: ['role:admin'], write: ['role:admin'] },
-  subscriptions: { read: ['role:all'], write: ['role:member'] },
-  onboarding: { read: ['role:all'], write: ['role:member'] },
-  notes: { read: ['role:all'], write: ['role:member'] },
-};
+const collections = [
+  { name: 'organizations', read: ['role:all'], write: ['role:users'] },
+  { name: 'users', read: ['role:all'], write: ['role:users'] },
+  { name: 'courts', read: ['role:all'], write: ['role:users'] },
+  { name: 'cases', read: ['role:all'], write: ['role:users'] },
+  { name: 'tasks', read: ['role:all'], write: ['role:users'] },
+  { name: 'documents', read: ['role:all'], write: ['role:users'] },
+  { name: 'communications', read: ['role:all'], write: ['role:users'] },
+  { name: 'invoices', read: ['role:all'], write: ['role:users'] },
+  { name: 'invoice_items', read: ['role:all'], write: ['role:users'] },
+  { name: 'chat_rooms', read: ['role:all'], write: ['role:users'] },
+  { name: 'chat_messages', read: ['role:all'], write: ['role:users'] },
+  { name: 'audit_logs', read: ['role:users'], write: ['role:users'] },
+  { name: 'expenses', read: ['role:all'], write: ['role:users'] },
+  { name: 'payroll_runs', read: ['role:users'], write: ['role:users'] },
+  { name: 'admin_settings', read: ['role:users'], write: ['role:users'] },
+  { name: 'subscriptions', read: ['role:all'], write: ['role:users'] },
+  { name: 'onboarding', read: ['role:all'], write: ['role:users'] },
+  { name: 'invites', read: ['role:users'], write: ['role:users'] },
+  { name: 'notes', read: ['role:all'], write: ['role:users'] },
+];
 
-async function fixCollection(collectionName) {
-  const perms = collectionPermissions[collectionName];
-  if (!perms) {
-    log.warn(`  No permission rules defined for ${collectionName}, skipping`);
-    return;
-  }
+async function fixPermissions() {
+  console.log('\n=== Fixing Appwrite Collection Permissions ===\n');
+  let updated = 0;
+  let skipped = 0;
 
-  try {
-    // First, get current collection to see if documentSecurity is enabled
-    const current = await api('GET', `/databases/${databaseId}/collections/${collectionName}`);
+  for (const coll of collections) {
+    try {
+      const path = `/databases/${databaseId}/collections/${coll.name}`;
+      const current = await api('GET', path);
 
-    // Update collection with correct permissions and disable document-level security
-    const payload = {
-      read: perms.read,
-      write: perms.write,
-      // Important: disable document-level security to use collection-level permissions
-      documentSecurity: false,
-    };
+      const currentRead = current.read || [];
+      const currentWrite = current.write || [];
 
-    await api('PATCH', `/databases/${databaseId}/collections/${collectionName}`, payload);
-    log.success(`  ✓ Fixed permissions for ${collectionName}: read=${perms.read.join(',')}, write=${perms.write.join(',')}, documentSecurity=false`);
-  } catch (error) {
-    if (error.status === 404) {
-      log.warn(`  Collection ${collectionName} doesn't exist yet, will be created with correct permissions`);
-    } else {
-      log.error(`  Failed to update ${collectionName}: ${error.message}`);
+      const same =
+        JSON.stringify(currentRead.sort()) === JSON.stringify(coll.read.sort()) &&
+        JSON.stringify(currentWrite.sort()) === JSON.stringify(coll.write.sort());
+
+      if (same) {
+        console.log(`  ✓ ${coll.name} permissions already correct (read: ${JSON.stringify(currentRead)}, write: ${JSON.stringify(currentWrite)})`);
+        skipped++;
+        continue;
+      }
+
+      console.log(`  Updating ${coll.name} from read:${JSON.stringify(currentRead)} write:${JSON.stringify(currentWrite)} -> read:${JSON.stringify(coll.read)} write:${JSON.stringify(coll.write)}`);
+
+      const patchRes = await api('PATCH', path, {
+        read: coll.read,
+        write: coll.write,
+      });
+
+      console.log(`  ✓ Updated ${coll.name} permissions`);
+      updated++;
+    } catch (err) {
+      console.log(`  ✗ ${coll.name}: ${err.message}`);
+      skipped++;
     }
   }
+
+  console.log(`\n✅ Complete — ${updated} updated, ${skipped} skipped\n`);
 }
 
-async function main() {
-  console.log('\n=== Fixing Appwrite Permissions ===\n');
-
-  // First, ensure database exists
-  try {
-    await api('GET', `/databases/${databaseId}`);
-    log.success(`Database '${databaseId}' ready`);
-  } catch (e) {
-    log.error(`Database not found: ${e.message}`);
-    process.exit(1);
-  }
-
-  // Update permissions for all collections
-  const collectionNames = Object.keys(collectionPermissions);
-  log.info(`Updating permissions for ${collectionNames.length} collections...\n`);
-
-  for (const name of collectionNames) {
-    await fixCollection(name);
-  }
-
-  console.log('\n\x1b[1m✅ Permissions Fix Complete!\x1b[0m');
-  console.log('All collections now use collection-level permissions (documentSecurity: false).');
-  console.log('Authenticated users can read/write according to their role.\n');
-}
-
-main().catch((err) => {
-  console.error('\nFatal error:', err);
+fixPermissions().catch((err) => {
+  console.error('Fatal error:', err);
   process.exit(1);
 });

@@ -253,29 +253,32 @@ export const withOrganization = (queries = [], userId = null, collection = null)
    if (orgId && orgId !== 'null' && orgId !== 'undefined') {
      queries.push(Query.equal('organization_id', orgId));
    }
-    // Also allow user's own records - but only query attributes that exist
-    if (userId && collection && COLLECTION_ORG_ATTRIBUTES[collection]) {
-      const validAttrs = COLLECTION_ORG_ATTRIBUTES[collection];
-      const orConditions = [];
-      // Only add org condition if we have a valid orgId
-      if (orgId && orgId !== 'null' && orgId !== 'undefined') {
-        orConditions.push(Query.equal('organization_id', orgId));
-      }
-      if (validAttrs.includes('client_id')) orConditions.push(Query.equal('client_id', userId));
-      if (validAttrs.includes('advocate_id')) orConditions.push(Query.equal('advocate_id', userId));
-      if (validAttrs.includes('assigned_to')) orConditions.push(Query.equal('assigned_to', userId));
-      if (validAttrs.includes('created_by')) orConditions.push(Query.equal('created_by', userId));
-      if (validAttrs.includes('owner')) orConditions.push(Query.equal('owner', userId));
-      if (validAttrs.includes('submitted_by')) orConditions.push(Query.equal('submitted_by', userId));
-      if (validAttrs.includes('user_id')) orConditions.push(Query.equal('user_id', userId));
-      if (validAttrs.includes('invited_by')) orConditions.push(Query.equal('invited_by', userId));
-      if (validAttrs.includes('shared_with')) orConditions.push(Query.contains('shared_with', userId));
-      if (orConditions.length > 0) {
-        queries.push(Query.or(orConditions));
-      }
-    }
-    return queries;
-  };
+   // Also allow user's own records - but only query attributes that exist
+   if (userId && collection && COLLECTION_ORG_ATTRIBUTES[collection]) {
+     const validAttrs = COLLECTION_ORG_ATTRIBUTES[collection];
+     const orConditions = [];
+     // Only add org condition if we have a valid orgId
+     if (orgId && orgId !== 'null' && orgId !== 'undefined') {
+       orConditions.push(Query.equal('organization_id', orgId));
+     }
+     if (validAttrs.includes('client_id')) orConditions.push(Query.equal('client_id', userId));
+     if (validAttrs.includes('advocate_id')) orConditions.push(Query.equal('advocate_id', userId));
+     if (validAttrs.includes('assigned_to')) orConditions.push(Query.equal('assigned_to', userId));
+     if (validAttrs.includes('created_by')) orConditions.push(Query.equal('created_by', userId));
+     if (validAttrs.includes('owner')) orConditions.push(Query.equal('owner', userId));
+     if (validAttrs.includes('submitted_by')) orConditions.push(Query.equal('submitted_by', userId));
+     if (validAttrs.includes('user_id')) orConditions.push(Query.equal('user_id', userId));
+     if (validAttrs.includes('invited_by')) orConditions.push(Query.equal('invited_by', userId));
+     if (validAttrs.includes('shared_with')) orConditions.push(Query.contains('shared_with', userId));
+     // Use Query.or only if we have at least 2 conditions (Appwrite requirement)
+     if (orConditions.length === 1) {
+       queries.push(orConditions[0]);
+     } else if (orConditions.length > 1) {
+       queries.push(Query.or(orConditions));
+     }
+   }
+   return queries;
+ };
 
 // Collections that have organization_id field and need org isolation
 // Note: 'organizations', 'courts', 'chat_messages', 'admin_settings' are excluded — they don't have organization_id

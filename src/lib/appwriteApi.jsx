@@ -246,10 +246,13 @@ export const appwriteApi = {
        ]);
        if (caseErr) throw caseErr;
 
-         const clientIds = [...new Set(cases.map((c) => c.client_id))];
-         const { data: clients, error: clientErr } = await db.list(COLLECTIONS.USERS, [
-           Query.or(clientIds.map(id => Query.equal('id', id))),
-         ]);
+        const clientIds = [...new Set(cases.map((c) => c.client_id))];
+        const idQuery = clientIds.length === 1
+          ? Query.equal('id', clientIds[0])
+          : Query.or(clientIds.map(id => Query.equal('id', id)));
+        const { data: clients, error: clientErr } = await db.list(COLLECTIONS.USERS, [
+          idQuery
+        ]);
         if (clientErr) throw clientErr;
 
        return success({
@@ -678,28 +681,33 @@ export const appwriteApi = {
       // Fetch organizations by their 'id' attribute
       let orgMap = {};
       if (orgIds.length > 0) {
-        const orgQueries = Query.or(orgIds.map(id => Query.equal('id', id)));
-         const orgResult = await databases.listDocuments(
-           DATABASE_ID,
-           COLLECTIONS.ORGANIZATIONS,
-           [orgQueries]
-         );
-         const orgs = orgResult.documents.map(doc => db.normalize(doc));
+        const orgQuery = orgIds.length === 1
+          ? Query.equal('id', orgIds[0])
+          : Query.or(orgIds.map(id => Query.equal('id', id)));
+        const orgResult = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.ORGANIZATIONS,
+          [orgQuery]
+        );
+        const orgs = orgResult.documents.map(doc => db.normalize(doc));
         orgMap = orgs.reduce((acc, org) => { acc[org.id] = org; return acc; }, {});
       }
 
       // Count advocates per organization
       let advocatesCountMap = {};
       if (orgIds.length > 0) {
-         const advocatesResult = await databases.listDocuments(
-           DATABASE_ID,
-           COLLECTIONS.USERS,
-           [
-             Query.equal('role', 'advocate'),
-             Query.or(orgIds.map(id => Query.equal('organization_id', id)))
-           ]
-         );
-         const advocates = advocatesResult.documents.map(doc => db.normalize(doc));
+        const advocateQuery = orgIds.length === 1
+          ? Query.equal('organization_id', orgIds[0])
+          : Query.or(orgIds.map(id => Query.equal('organization_id', id)));
+        const advocatesResult = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.USERS,
+          [
+            Query.equal('role', 'advocate'),
+            advocateQuery
+          ]
+        );
+        const advocates = advocatesResult.documents.map(doc => db.normalize(doc));
         advocates.forEach(emp => {
           advocatesCountMap[emp.organization_id] = (advocatesCountMap[emp.organization_id] || 0) + 1;
         });
@@ -708,12 +716,15 @@ export const appwriteApi = {
       // Count cases per organization
       let casesCountMap = {};
       if (orgIds.length > 0) {
-         const casesResult = await databases.listDocuments(
-           DATABASE_ID,
-           COLLECTIONS.CASES,
-           [Query.or(orgIds.map(id => Query.equal('organization_id', id)))]
-         );
-         const cases = casesResult.documents.map(doc => db.normalize(doc));
+        const caseQuery = orgIds.length === 1
+          ? Query.equal('organization_id', orgIds[0])
+          : Query.or(orgIds.map(id => Query.equal('organization_id', id)));
+        const casesResult = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.CASES,
+          [caseQuery]
+        );
+        const cases = casesResult.documents.map(doc => db.normalize(doc));
         cases.forEach(c => {
           casesCountMap[c.organization_id] = (casesCountMap[c.organization_id] || 0) + 1;
         });
@@ -1277,23 +1288,20 @@ export const appwriteApi = {
         ? payload.getAll('shared_with')
         : payload.shared_with || [];
 
-      // Upload file to Appwrite Storage if present
-      let fileId = null;
-      let fileSize = 0;
-      let mimeType = 'application/octet-stream';
-      const file = payload.get ? payload.get('file') : payload.file;
-       if (file) {
-         try {
-           const upload = await storage.createFile({
-             bucketId: 'documents',
-             fileId: ID.unique(),
-             file,
-             // New Appwrite permission format (v0.16+)
-             permissions: {
-               read: ['users'],   // All authenticated users can read
-               write: ['users'],  // All authenticated users can write (adjust per doc ownership if needed)
-             },
-           });
+       // Upload file to Appwrite Storage if present
+       let fileId = null;
+       let fileSize = 0;
+       let mimeType = 'application/octet-stream';
+       const file = payload.get ? payload.get('file') : payload.file;
+        if (file) {
+          try {
+             const upload = await storage.createFile({
+               bucketId: 'documents',
+               fileId: ID.unique(),
+               file,
+               // Permissions: authenticated users can read/write
+               permissions: ['read("users")', 'write("users")'],
+             });
            fileId = upload.$id;
            fileSize = upload.sizeOriginal || 0;
            mimeType = upload.mimeType || 'application/octet-stream';
