@@ -144,6 +144,13 @@ const collections = [
       { key: 'deadline_notifications', type: 'boolean', default: true },
       { key: 'verification_token', type: 'string', size: 255 },
       { key: 'email_verified', type: 'boolean', default: false },
+      // Additional fields used by the application
+      { key: 'id_passport_number', type: 'string', size: 50 },
+      { key: 'marital_status', type: 'string', size: 50 },
+      { key: 'nationality', type: 'string', size: 100 },
+      { key: 'occupation', type: 'string', size: 100 },
+      { key: 'date_of_birth', type: 'string', size: 20 },
+      { key: 'registration_number', type: 'string', size: 100 },
       { key: 'created_at', type: 'datetime' },
       { key: 'updated_at', type: 'datetime' },
     ],
