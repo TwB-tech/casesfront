@@ -84,121 +84,123 @@ const normalizeRegisterPayload = (formData, userType) => {
   // Validate password confirmation
   const password = lowered.password;
   const confirmPassword = lowered['confirm password'];
-
   if (!password || password.length < 6) {
     throw new Error('Password must be at least 6 characters long');
   }
-
   if (password !== confirmPassword) {
     throw new Error('Passwords do not match');
   }
 
-  // Validate email is present
+  // Validate email
   const email = lowered.email;
   if (!email || email === '') {
     throw new Error('Email is required for registration');
   }
-
-  // Basic email format validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     throw new Error('Please enter a valid email address');
   }
 
-   if (userType === 'organization') {
-     const orgName = lowered['organization name'];
-     if (!orgName || orgName === '') {
-       throw new Error('Organization name is required');
-     }
-     return {
-       email,
-       username: orgName,
-       password,
-       role: 'organization',
-       phone_number: lowered['phone number'] || '',
-       alternative_phone_number: lowered['alternative phone number'] || '',
-       address: lowered.address || '',
-       occupation: 'Organization',
-     };
-   }
+  // Role is directly provided as userType
+  const role = userType.toLowerCase();
 
-    if (userType === 'firm') {
+  // Common fields
+  const base = {
+    email: email.trim(),
+    username: '',
+    password,
+    role,
+    phone: lowered['phone number'] || '',
+    address: lowered.address || '',
+    bio: lowered.bio || '',
+  };
+
+  // Role-specific handling
+  switch (role) {
+    case 'organization':
+      const orgName = lowered['organization name'];
+      if (!orgName || orgName.trim() === '') {
+        throw new Error('Organization name is required');
+      }
+      return {
+        ...base,
+        username: orgName.trim(),
+        organization_id: null,
+        registration_number: lowered['registration number'] || '',
+      };
+
+    case 'firm':
       const firmName = lowered['law firm name'];
-      if (!firmName || firmName === '') {
+      if (!firmName || firmName.trim() === '') {
         throw new Error('Law firm name is required');
       }
-      // Parse practice areas into array
       const practiceAreas = lowered['practice areas']
         ? lowered['practice areas'].split(',').map(a => a.trim()).filter(Boolean)
         : [];
       return {
-        email,
-        username: firmName,
-        password,
-        role: 'firm',
-        phone_number: lowered['phone number'] || '',
-        alternative_phone_number: lowered['alternative phone number'] || '',
-        address: lowered.address || '',
-        bio: lowered.bio || '',
+        ...base,
+        username: firmName.trim(),
+        organization_id: null,
         practice_areas: practiceAreas,
         registration_number: lowered['registration number'] || '',
       };
-    }
 
-   if (userType === 'law_school') {
-     const instName = lowered['institution name'];
-     if (!instName || instName === '') {
-       throw new Error('Institution name is required');
-     }
-     return {
-       email,
-       username: instName,
-       password,
-       role: 'law_school',
-       phone_number: lowered['phone number'] || '',
-       address: lowered.address || '',
-     };
-   }
+    case 'law_school':
+      const instName = lowered['institution name'];
+      if (!instName || instName.trim() === '') {
+        throw new Error('Institution name is required');
+      }
+      return {
+        ...base,
+        username: instName.trim(),
+        organization_id: null,
+      };
 
-   if (userType === 'legal_clinic') {
-     const clinicName = lowered['clinic name'];
-     if (!clinicName || clinicName === '') {
-       throw new Error('Clinic name is required');
-     }
-     return {
-       email,
-       username: clinicName,
-       password,
-       role: 'legal_clinic',
-       phone_number: lowered['phone number'] || '',
-       address: lowered.address || '',
-     };
-   }
+    case 'legal_clinic':
+      const clinicName = lowered['clinic name'];
+      if (!clinicName || clinicName.trim() === '') {
+        throw new Error('Clinic name is required');
+      }
+      return {
+        ...base,
+        username: clinicName.trim(),
+        organization_id: null,
+      };
 
-    // Default case: Advocate or Individual
-    const fullName = lowered['full name'];
-    if (!fullName || fullName === '') {
-      throw new Error('Full name is required');
-    }
-    // Parse practice areas if provided
-    const practiceAreas = lowered['practice areas']
-      ? lowered['practice areas'].split(',').map(a => a.trim()).filter(Boolean)
-      : [];
-    return {
-      email,
-      username: fullName,
-      password,
-      role: userType === 'advocate' ? 'advocate' : 'individual',
-      phone_number: lowered['phone number'] || '',
-      alternative_phone_number: lowered['alternative phone number'] || '',
-      id_passport_number: lowered['id number or passport number'] || '',
-      marital_status: lowered['marital status'] || '',
-      occupation: lowered.occupation || '',
-      address: lowered.address || '',
-      date_of_birth: lowered['date of birth'] || '',
-      bio: lowered.bio || '',
-      practice_areas: practiceAreas,
-    };
+    case 'advocate':
+      const fullName = lowered['full name'];
+      if (!fullName || fullName.trim() === '') {
+        throw new Error('Full name is required');
+      }
+      const advocatePracticeAreas = lowered['practice areas']
+        ? lowered['practice areas'].split(',').map(a => a.trim()).filter(Boolean)
+        : [];
+      return {
+        ...base,
+        username: fullName.trim(),
+        organization_id: null,
+        practice_areas: advocatePracticeAreas,
+        id_passport_number: lowered['id number or passport number'] || '',
+        marital_status: lowered['marital status'] || '',
+        occupation: lowered.occupation || '',
+        date_of_birth: lowered['date of birth'] || '',
+      };
+
+    case 'individual':
+    default:
+      const indName = lowered['full name'];
+      if (!indName || indName.trim() === '') {
+        throw new Error('Full name is required');
+      }
+      return {
+        ...base,
+        username: indName.trim(),
+        organization_id: null,
+        nationality: lowered.nationality || '',
+        occupation: lowered.occupation || '',
+        date_of_birth: lowered['date of birth'] || '',
+      };
+  }
 };
 
 const AuthProvider = ({ children }) => {

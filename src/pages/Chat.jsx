@@ -3,24 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import axiosInstance from '../axiosConfig';
 import { useTheme } from '../contexts/ThemeContext';
-import { Bot, Send, Search, Paperclip, Users, Bookmark } from 'lucide-react';
+import { Bot, Send, Search, Paperclip, Users, Bookmark, UserPlus, MoreVertical } from 'lucide-react';
+import { Modal, Form, Input, Select, Button, message } from 'antd';
 import eventBus from '../utils/eventBus';
 
 export default function Chat() {
   const { user } = useAuth();
   const { isFuturistic } = useTheme();
+  const { Option } = Select;
   const navigate = useNavigate();
-  
+  const isAdminOrFirm = user && ['admin', 'administrator', 'firm'].includes(user.role?.toLowerCase());
+
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('connected');
   const [fileList, setFileList] = useState([]);
-  const chatContainerRef = useRef(null);
-  
   const [roomName, setRoomName] = useState(null);
-  
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [showTeamPanel, setShowTeamPanel] = useState(false);
+  const [inviteVisible, setInviteVisible] = useState(false);
+  const [inviteForm] = Form.useForm();
+  const [sendingInvite, setSendingInvite] = useState(false);
+
   // Get or create team room on mount
   useEffect(() => {
     const getRoom = async () => {
@@ -29,10 +35,27 @@ export default function Chat() {
         setRoomName(response.data.room_name || 'team_chat');
       } catch (error) {
         console.error('Error getting team room:', error);
-        setRoomName('team_chat'); // fallback
+        setRoomName('team_chat');
       }
     };
     if (user) getRoom();
+  }, [user]);
+
+  // Fetch team members if admin or firm
+  useEffect(() => {
+    const fetchTeam = async () => {
+      if (!user) return;
+      const isAdminOrFirm = ['admin', 'administrator', 'firm'].includes(user.role?.toLowerCase());
+      if (!isAdminOrFirm) return;
+
+      try {
+        const response = await axiosInstance.get('/users');
+        setTeamMembers(response.data.results || []);
+      } catch (error) {
+        console.error('Error fetching team members:', error);
+      }
+    };
+    fetchTeam();
   }, [user]);
 
   // Fetch messages
@@ -61,6 +84,23 @@ export default function Chat() {
       fetchMessages();
     }
   }, [user, fetchMessages]);
+
+  // Invite handler
+  const handleInvite = async () => {
+    try {
+      const values = await inviteForm.validateFields();
+      setSendingInvite(true);
+      await axiosInstance.post('/hr/invites/', values);
+      message.success('Invitation sent successfully');
+      setInviteVisible(false);
+      inviteForm.resetFields();
+    } catch (error) {
+      console.error('Error sending invite:', error);
+      message.error('Failed to send invite. Please try again.');
+    } finally {
+      setSendingInvite(false);
+    }
+  };
 
   // Listen for new messages from other tabs
   useEffect(() => {
@@ -146,6 +186,15 @@ export default function Chat() {
                   style={{ border: '1px solid', width: '200px' }}
                 />
               </div>
+              {isAdminOrFirm && (
+                <button
+                  onClick={() => setShowTeamPanel(true)}
+                  className={`p-2 rounded-full ${isFuturistic ? 'bg-cyber-surface text-aurora-text hover:bg-cyber-hover' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  title="Team Members"
+                >
+                  <Users className="w-5 h-5" />
+                </button>
+              )}
             </div>
           </div>
         </header>
@@ -271,6 +320,106 @@ export default function Chat() {
           )}
         </footer>
       </div>
+
+      {/* Team Members Panel */}
+      {showTeamPanel && isAdminOrFirm && (
+        <div className={`fixed inset-y-0 right-0 w-80 shadow-xl z-50 flex flex-col ${isFuturistic ? 'bg-[#1a1a2f] border-l border-purple-800' : 'bg-white border-l border-gray-200'}`}>
+          <div className={`p-4 border-b flex justify-between items-center ${isFuturistic ? 'border-purple-800' : 'border-gray-200'}`}>
+            <h3 className={`font-bold ${isFuturistic ? 'text-white' : 'text-gray-900'}`}>Team Members</h3>
+            <button
+              onClick={() => setShowTeamPanel(false)}
+              className={`p-1 rounded ${isFuturistic ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <MoreVertical className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {teamMembers.map(member => (
+              <div key={member.id} className={`p-3 rounded-lg ${isFuturistic ? 'bg-[#0a0a0f]' : 'bg-gray-50'}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isFuturistic ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-blue-500 text-white'}`}>
+                    {member.username?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <div className={`font-medium ${isFuturistic ? 'text-white' : 'text-gray-900'}`}>{member.username}</div>
+                    <div className={`text-xs ${isFuturistic ? 'text-gray-400' : 'text-gray-500'}`}>{member.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {isAdminOrFirm && (
+            <div className={`p-4 border-t ${isFuturistic ? 'border-purple-800' : 'border-gray-200'}`}>
+              <Button
+                type="primary"
+                icon={<UserPlus className="w-4 h-4" />}
+                className={isFuturistic ? 'futuristic-btn' : ''}
+                block
+                onClick={() => setInviteVisible(true)}
+              >
+                Invite Member
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Invite Modal */}
+      <Modal
+        title="Invite Team Member"
+        open={inviteVisible}
+        onCancel={() => setInviteVisible(false)}
+        footer={null}
+        destroyOnClose
+      >
+        <Form form={inviteForm} layout="vertical" onFinish={handleInvite}>
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { required: true, message: 'Please enter email' },
+              { type: 'email', message: 'Please enter valid email' },
+            ]}
+          >
+            <Input placeholder="employee@company.com" />
+          </Form.Item>
+          <Form.Item
+            name="role"
+            label="Role"
+            rules={[{ required: true, message: 'Please select role' }]}
+          >
+            <Select placeholder="Select role">
+              <Option value="partner">Partner</Option>
+              <Option value="associate">Associate</Option>
+              <Option value="paralegal">Paralegal</Option>
+              <Option value="legal_researcher">Legal Researcher</Option>
+              <Option value="office_manager">Office Manager</Option>
+              <Option value="administrator">Administrator</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="department"
+            label="Department"
+            rules={[{ required: true, message: 'Please select department' }]}
+          >
+            <Select placeholder="Select department">
+              <Option value="litigation">Litigation</Option>
+              <Option value="corporate">Corporate</Option>
+              <Option value="research">Research</Option>
+              <Option value="administration">Administration</Option>
+              <Option value="marketing">Marketing</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item>
+            <div className="flex justify-end gap-3">
+              <Button onClick={() => setInviteVisible(false)}>Cancel</Button>
+              <Button type="primary" htmlType="submit" loading={sendingInvite}>
+                Send Invite
+              </Button>
+            </div>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

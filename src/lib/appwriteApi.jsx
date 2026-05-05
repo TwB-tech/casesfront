@@ -607,26 +607,49 @@ export const appwriteApi = {
       return success(data);
     }
 
-    // ADMIN: LIST USERS
-    if (path === 'admin/users') {
-      const user = getCurrentUser();
-      if (!user || !['admin', 'administrator'].includes(user.role.toLowerCase())) {
-        throw Object.assign(new Error('Forbidden'), {
-          response: { status: 403, data: { message: 'Admin access required' } },
-        });
-      }
-      const { data, error } = await db.list(COLLECTIONS.USERS);
-      if (error) throw error;
-      const results = data.map((u) => ({
-        id: u.id,
-        username: u.username || u.name || u.email,
-        email: u.email,
-        role: u.role || 'individual',
-        status: u.status || 'Active',
-        created_at: u.created_at,
-      }));
-      return success({ results });
-    }
+     // USERS LIST (org-filtered for non-admins)
+     if (path === 'users') {
+       const user = getCurrentUser();
+       const { data, error } = await db.list(COLLECTIONS.USERS);
+       if (error) throw error;
+       
+       // Filter: admins see all; others only their org
+       const filtered = user && (user.role === 'admin' || user.role === 'administrator')
+         ? data
+         : data.filter(u => u.organization_id === user?.organization_id);
+       
+       return success({
+         results: filtered.map(u => ({
+           id: u.id,
+           username: u.username || u.name || u.email,
+           email: u.email,
+           role: u.role || 'individual',
+           organization_id: u.organization_id,
+           status: u.status || 'Active',
+         })),
+       });
+     }
+
+     // ADMIN: LIST USERS (all)
+     if (path === 'admin/users') {
+       const user = getCurrentUser();
+       if (!user || !['admin', 'administrator'].includes(user.role.toLowerCase())) {
+         throw Object.assign(new Error('Forbidden'), {
+           response: { status: 403, data: { message: 'Admin access required' } },
+         });
+       }
+       const { data, error } = await db.list(COLLECTIONS.USERS);
+       if (error) throw error;
+       const results = data.map((u) => ({
+         id: u.id,
+         username: u.username || u.name || u.email,
+         email: u.email,
+         role: u.role || 'individual',
+         status: u.status || 'Active',
+         created_at: u.created_at,
+       }));
+       return success({ results });
+     }
 
      // ADMIN: GET SETTINGS (auto-creates default if missing)
      if (path === 'admin') {
