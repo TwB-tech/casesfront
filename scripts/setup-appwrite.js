@@ -467,17 +467,15 @@ async function ensureAttributes(collectionName, attributes) {
   }
 }
 
-async function ensureIndexes() {
-  const indexes = [
-    { collection: 'invites', key: 'token', type: 'unique' },
-    { collection: 'invites', key: 'email', type: 'key' },
-    { collection: 'users', key: 'email', type: 'unique' },
-    { collection: 'cases', key: 'organization_id', type: 'key' },
-    { collection: 'cases', key: 'client_id', type: 'key' },
-    { collection: 'cases', key: 'advocate_id', type: 'key' },
-    { collection: 'documents', key: 'owner', type: 'key' },
-    { collection: 'tasks', key: 'organization_id', type: 'key' },
-  ];
+ async function ensureIndexes() {
+   const indexes = [
+     { collection: 'invites', key: 'token', type: 'unique' },
+     { collection: 'invites', key: 'email', type: 'key' },
+     { collection: 'users', key: 'email', type: 'unique' },
+     { collection: 'users', key: 'verification_token', type: 'key' },
+     { collection: 'cases', key: 'organization_id', type: 'key' },
+     { collection: 'tasks', key: 'organization_id', type: 'key' },
+   ];
 
   for (const idx of indexes) {
     try {
