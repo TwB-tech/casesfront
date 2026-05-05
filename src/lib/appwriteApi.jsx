@@ -900,13 +900,24 @@ export const appwriteApi = {
      // Determine role
      const role = userData?.role || 'individual';
 
-     // Check email verification
-     const emailVerified = userData?.email_verified || false;
-     if (!emailVerified) {
-       return failure('Please verify your email before logging in. Check your inbox for the verification link.', 403, {
-         code: 'EMAIL_NOT_VERIFIED',
-         email_verified: false,
-       });
+      // Check email verification
+      const emailVerified = userData?.email_verified || false;
+      if (!emailVerified) {
+        return failure('Please verify your email before logging in. Check your inbox for the verification link.', 403, {
+          code: 'EMAIL_NOT_VERIFIED',
+          email_verified: false,
+        });
+      }
+
+      // Include session secret so client can authenticate subsequent requests
+      return success({
+        id: data.userId,
+        email: payload.email,
+        username: userData?.username || payload.email,
+        role: userData?.role || 'individual',
+        organization_id: userData?.organization_id || null,
+        tokens: JSON.stringify({ access: data.secret }),
+      });
      }
 
      return success({
