@@ -918,19 +918,6 @@ export const appwriteApi = {
         organization_id: userData?.organization_id || null,
         tokens: JSON.stringify({ access: data.secret }),
       });
-     }
-
-     return success({
-        id: data.userId,
-        email: payload.email,
-        username: userData?.username || payload.email,
-        role,
-        organization_id: userData?.organization_id || null,
-        tokens: JSON.stringify({
-          access: data.secret || `token-${data.userId}`,
-          refresh: `refresh-${data.userId}-${Date.now()}`,
-        }).replace(/"/g, "'"),
-      });
     }
 
     // REGISTER
