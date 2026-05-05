@@ -393,9 +393,15 @@ export const db = {
          const doc = await doCreate(docId);
          return { data: this.normalize(doc) };
        } catch (error) {
+         // Normalize error to string for robust detection (handles AppwriteException, axios errors, etc.)
+         const errString = String(error?.message || error);
+         const msg = errString.toLowerCase();
          const isConflict = error?.code === 'document_already_exists' ||
                            error?.status === 409 ||
-                           (error?.message && error.message.toLowerCase().includes('already exists'));
+                           error?.response?.status === 409 ||
+                           msg.includes('already exists') ||
+                           msg.includes('document with the requested id') ||
+                           msg.includes('document_already_exists');
 
          if (!isConflict) {
            console.error(`Appwrite create ${collection} failed:`, error.message || error);
@@ -411,7 +417,8 @@ export const db = {
            console.log(`🧹 Deleted conflicting document ${collection}/${docId}`);
          } catch (deleteErr) {
            // If doc not found, it's already gone — that's fine
-           if (!deleteErr?.message?.toLowerCase().includes('not found')) {
+           const deleteMsg = String(deleteErr?.message || deleteErr).toLowerCase();
+           if (!deleteMsg.includes('not found')) {
              console.warn('⚠️ Delete during conflict resolution failed:', deleteErr.message);
            }
          }
