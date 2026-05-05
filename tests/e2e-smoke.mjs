@@ -114,18 +114,15 @@ async function run() {
     await page.fill('input[name="password"]', PASSWORD);
     await page.fill('input[name="confirm password"]', PASSWORD);
     await page.getByRole('button', { name:/review/i }).click(); await page.waitForTimeout(2000);
-    await page.getByRole('button', { name:/submit/i }).click();
-    // Wait for navigation to either success or verify-email
-    try {
-      await page.waitForURL(`${BASE}/register-success`, { timeout:20000 });
-    } catch (e) {
-      if (!page.url().includes('verify-email')) throw e;
-    }
-    await idle();
-    screenshot('signup_result');
-    console.log('  ✓ Registered');
-    await forceVerify(email);
-    await page.waitForTimeout(2000);
+     await page.getByRole('button', { name:/submit/i }).click();
+     // Wait for navigation to login page after registration
+     await page.waitForURL(`${BASE}/login`, { timeout:20000 });
+     await idle();
+     screenshot('signup_result');
+     console.log('  ✓ Registered, redirected to login');
+     // Verify email via API
+     await forceVerify(email);
+     await page.waitForTimeout(2000);
 
     // 2. Login
     console.log('\n=== 2. Login ===');

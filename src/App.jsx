@@ -26,11 +26,10 @@ import ScrollManager from './components/ui/ScrollManager';
 
 const { Content } = Layout;
 
-const Home = lazy(() => import('./pages/Home'));
-const LandingPage = lazy(() => import('./pages/LandingPage2.jsx'));
-const EmailVerification = lazy(() => import('./pages/EmailVerification'));
-const RegisterSuccess = lazy(() => import('./components/Auth/RegisterSuccess'));
-const AcceptInvite = lazy(() => import('./pages/AcceptInvite'));
+ const Home = lazy(() => import('./pages/Home'));
+ const LandingPage = lazy(() => import('./pages/LandingPage2.jsx'));
+ const EmailVerification = lazy(() => import('./pages/EmailVerification'));
+ const AcceptInvite = lazy(() => import('./pages/AcceptInvite'));
 const CaseForm = lazy(() => import('./components/CaseManagement/CaseForm'));
 const CaseList = lazy(() => import('./components/CaseManagement/CaseList'));
 const Chat = lazy(() => import('./pages/Chat'));
@@ -113,7 +112,6 @@ function AppContent() {
     '/login',
     '/signup',
     '/',
-    '/register-success',
     '/hero',
     '/about',
     '/contact',
@@ -413,10 +411,9 @@ function AppContent() {
                          </AdminRoute>
                        }
                      />
-                     <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
-                     <Route path="/signup" element={<ErrorBoundary><SignUp /></ErrorBoundary>} />
-                     <Route path="/register-success" element={<ErrorBoundary><RegisterSuccess /></ErrorBoundary>} />
-                     <Route path="/verify-email" element={<ErrorBoundary><EmailVerification /></ErrorBoundary>} />
+                      <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
+                      <Route path="/signup" element={<ErrorBoundary><SignUp /></ErrorBoundary>} />
+                      <Route path="/verify-email" element={<ErrorBoundary><EmailVerification /></ErrorBoundary>} />
                      <Route path="/auth/accept-invite" element={<ErrorBoundary><AcceptInvite /></ErrorBoundary>} />
                      <Route path="/forgot-password" element={<ErrorBoundary><ForgotPassword /></ErrorBoundary>} />
                      <Route path="/reset-password/:token" element={<ErrorBoundary><ResetPassword /></ErrorBoundary>} />

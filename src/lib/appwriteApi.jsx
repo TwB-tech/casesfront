@@ -897,10 +897,19 @@ export const appwriteApi = {
         }
       }
 
-      // Determine role
-      const role = userData?.role || 'individual';
+     // Determine role
+     const role = userData?.role || 'individual';
 
-      return success({
+     // Check email verification
+     const emailVerified = userData?.email_verified || false;
+     if (!emailVerified) {
+       return failure('Please verify your email before logging in. Check your inbox for the verification link.', 403, {
+         code: 'EMAIL_NOT_VERIFIED',
+         email_verified: false,
+       });
+     }
+
+     return success({
         id: data.userId,
         email: payload.email,
         username: userData?.username || payload.email,
@@ -1062,9 +1071,21 @@ export const appwriteApi = {
               ? String(payload.practice_areas).split(',').map(s => s.trim()).filter(Boolean)
               : [],
           };
-         console.log('[register] userProfile created:', { ...userProfile, verification_token: userProfile.verification_token ? `${userProfile.verification_token.substring(0, 10)}...` : 'MISSING' });
+          console.log('[register] userProfile created:', { ...userProfile, verification_token: userProfile.verification_token ? `${userProfile.verification_token.substring(0, 10)}...` : 'MISSING' });
 
-         const { data: createdUser, error: createUserErr } = await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
+          // Clear any stale user document with the same ID (leftover from previous incomplete registration)
+          try {
+            const delRes = await db.delete(COLLECTIONS.USERS, newUser.user.$id);
+            if (delRes.error && !delRes.error.message?.toLowerCase().includes('not found')) {
+              console.warn('⚠️ Pre-delete stale user doc warning:', delRes.error.message);
+            } else {
+              console.log(`🧹 Cleared stale user document ${newUser.user.$id}`);
+            }
+          } catch (e) {
+            console.warn('⚠️ Pre-delete failed (non-fatal):', e.message);
+          }
+
+          const { data: createdUser, error: createUserErr } = await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
          if (createUserErr) {
            console.error('❌ Failed to create user profile:', createUserErr);
            return failure('Failed to create user profile', 500, { detail: createUserErr.message });

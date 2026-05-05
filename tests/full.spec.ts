@@ -7,7 +7,6 @@ test.describe('Comprehensive App Tests', () => {
     '/',
     '/login',
     '/signup',
-    '/register-success',
     '/forgot-password',
     '/pricing',
     '/features',

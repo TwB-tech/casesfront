@@ -46,7 +46,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const html = buildVerificationEmail(user.username || user.email, token);
+    // Compute a friendly display name: prefer username, fallback to email prefix, else 'there'
+    const rawName = user.username?.trim();
+    const displayName = rawName && rawName.length > 0 ? rawName : (user.email ? user.email.split('@')[0] : 'there');
+    console.log('📧 Verification email displayName:', displayName, 'rawUsername:', user.username);
+
+    const html = buildVerificationEmail(displayName, token);
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -70,7 +75,7 @@ export default async function handler(req, res) {
       return res.status(response.status).json({ error: data?.error?.message || 'Failed to send email' });
     }
 
-    console.log('Verification email sent:', data.id);
+    console.log('✅ Verification email sent:', data.id, 'to:', user.email, 'displayName:', displayName);
     return res.status(200).json({ success: true, id: data.id });
   } catch (error) {
     console.error('Email send error:', error);

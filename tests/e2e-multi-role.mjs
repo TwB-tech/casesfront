@@ -116,7 +116,7 @@ async function testRole(roleKey, cfg) {
       return false;
     }
 
-    const ok = body.toLowerCase().includes('success') || url.includes('register-success');
+     const ok = url.includes('/login') || body.toLowerCase().includes('successfully registered') || body.toLowerCase().includes('registration successful');
     console.log(`  => ${ok ? '✅ PASS' : '❌ FAIL'}`);
     await browser.close();
     return ok;

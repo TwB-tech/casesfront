@@ -34,16 +34,27 @@ function SignIn() {
       await login(formData.email, formData.password);
       message.success('Login successful!');
       setLoading(false);
-      // Check for redirect state or go to home
-      const redirect = window.history.state?.usr?.from;
-      if (redirect === '/register-success') {
-        navigate('/home', { replace: true });
-      } else {
-        navigate('/home');
-      }
+      navigate('/home');
     } catch (error) {
-      message.error('Login failed!');
       setLoading(false);
+      const responseData = error?.response?.data;
+      const isUnverified = error?.response?.status === 403 ||
+                          responseData?.code === 'EMAIL_NOT_VERIFIED' ||
+                          responseData?.message?.includes('verify');
+
+      if (isUnverified) {
+        message.error({
+          content: 'Email Not Verified',
+          duration: 5,
+        });
+        message.info({
+          content: 'Please check your email inbox for the verification link. If you did not receive it, contact support.',
+          duration: 5,
+        });
+      } else {
+        const errorMsg = error?.response?.data?.message || error?.message || 'Invalid email or password';
+        message.error(errorMsg);
+      }
     }
   };
 

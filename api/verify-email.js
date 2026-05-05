@@ -1,27 +1,32 @@
 // Verify email using Appwrite SDK
+// Vercel serverless function — never call process.exit()
 import { Client, Databases, Query } from 'appwrite';
 
 const endpoint = (process.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1').replace(/\/$/, '');
 const projectId = process.env.APPWRITE_PROJECT_ID;
 const databaseId = process.env.APPWRITE_DATABASE_ID || 'default';
+const apiKey = process.env.APPWRITE_API_KEY;
 
-if (!projectId) {
-  console.error('❌ Missing APPWRITE_PROJECT_ID');
-  process.exit(1);
+// Helper to check required env vars
+function missingEnv() {
+  const missing = [];
+  if (!projectId) missing.push('APPWRITE_PROJECT_ID');
+  if (!apiKey) missing.push('APPWRITE_API_KEY');
+  return missing;
 }
-
-const client = new Client()
-  .setEndpoint(endpoint)
-  .setProject(projectId)
-  .setKey(process.env.APPWRITE_API_KEY); // server-side key
-
-const db = new Databases(client);
-const COLLECTION_USERS = 'users';
 
 export default async function handler(req, res) {
   console.log('🔔 verify-email called', { method: req.method, token: req.body?.token?.substring(0, 10) });
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Check env early
+  const missing = missingEnv();
+  if (missing.length > 0) {
+    console.error('❌ Missing env vars:', missing);
+    return res.status(503).json({ error: 'Server configuration error', missing });
   }
 
   const { token } = req.body;
@@ -30,6 +35,15 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Initialize Appwrite client per-request (cheap, avoids reuse issues)
+    const client = new Client()
+      .setEndpoint(endpoint)
+      .setProject(projectId)
+      .setKey(apiKey);
+
+    const db = new Databases(client);
+    const COLLECTION_USERS = 'users';
+
     // Find user by verification token
     const result = await db.list(COLLECTION_USERS, [Query.equal('verification_token', token)]);
 
@@ -39,6 +53,7 @@ export default async function handler(req, res) {
 
     const user = result.documents[0];
 
+    // Check if already verified
     if (user.email_verified) {
       return res.status(200).json({ message: 'Email already verified', email_verified: true });
     }
@@ -47,6 +62,7 @@ export default async function handler(req, res) {
     const updated = await db.update(COLLECTION_USERS, user.$id, {
       email_verified: true,
       verification_token: null,
+      status: 'Active',
     });
 
     return res.status(200).json({
@@ -56,6 +72,8 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Verification error:', error);
-    res.status(500).json({ error: error.message || 'Verification failed' });
+    const message = error?.message || 'Verification failed';
+    const status = error?.response?.status || (error.message?.includes('Missing') ? 503 : 500);
+    return res.status(status).json({ error: message });
   }
 }

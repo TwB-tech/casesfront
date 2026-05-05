@@ -192,27 +192,18 @@ async function run() {
     await page.waitForTimeout(2000);
     screenshot('signup_review');
 
-    // Submit
-    await page.getByRole('button', { name: /submit/i }).click();
-    // Wait for either success URL or verification page
-    try {
-      await page.waitForURL(`${BASE}/register-success`, { timeout: 30000 });
-    } catch (e) {
-      // Might go to verify-email instead
-      const current = page.url();
-      if (!current.includes('verify-email')) {
-        console.log('  Unexpected URL after submit:', current);
-        throw e;
-      }
-    }
-    await waitIdle();
-    screenshot('signup_result');
-    console.log('  ✓ Registration succeeded');
+     // Submit
+     await page.getByRole('button', { name: /submit/i }).click();
+     // Wait for redirect to login page after registration
+     await page.waitForURL(`${BASE}/login`, { timeout: 30000 });
+     await waitIdle();
+     screenshot('signup_result');
+     console.log('  ✓ Registration succeeded, redirected to login');
 
-    // Verify email directly
-    console.log('  🔧 Verifying email...');
-    await forceVerifyUser(advEmail);
-    await page.waitForTimeout(2000);
+     // Verify email via API
+     console.log('  🔧 Verifying email...');
+     await forceVerifyUser(advEmail);
+     await page.waitForTimeout(2000);
 
     // 2. Login
     console.log('\n--- 2. Login ---');

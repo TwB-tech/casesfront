@@ -291,7 +291,7 @@ const AuthProvider = ({ children }) => {
 
       notification.success({
         message: 'Registration Successful',
-        description: `Welcome, ${data.username || registrationData.username}! Your standalone workspace is ready.`,
+        description: `Welcome, ${data.username || registrationData.username}! Please check your email and click the verification link to activate your account.`,
       });
 
       return data;

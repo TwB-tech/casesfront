@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { AuthContext } from '../../contexts/authContext';
 import { notification } from 'antd';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import LogoNoBg from '../../assets/LogoNoBg.png';
 
@@ -17,6 +17,7 @@ function SignUpMultiStep() {
   const { register } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const { isFuturistic } = useTheme();
+  const navigate = useNavigate();
 
   const bgColor = isFuturistic ? '#0a0a0f' : '#F2E0D6';
   const cardBg = isFuturistic ? '#1a1a24' : '#ebe9d8';
@@ -109,8 +110,8 @@ function SignUpMultiStep() {
       await register(formData, lower_userType);
 
       setLoading(false);
-      // Navigate to success page instead of showing step 5
-      window.location.href = '/register-success';
+      // Redirect to login page after successful registration
+      navigate('/login');
     } catch (error) {
       console.error('Signup error:', error);
       notification.error({

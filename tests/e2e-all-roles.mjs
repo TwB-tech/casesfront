@@ -143,7 +143,7 @@ async function testRole(roleKey, config) {
       return false;
     }
 
-    const success = body.toLowerCase().includes('success') || url.includes('register-success');
+     const success = url.includes('/login') || body.toLowerCase().includes('successfully registered') || body.toLowerCase().includes('registration successful');
     if (success) {
       console.log(`  ✅ ${roleKey} signup succeeded`);
       return true;

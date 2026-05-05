@@ -147,15 +147,15 @@ async function testRole(roleConfig) {
     await page.waitForTimeout(5000);
     await page.screenshot({ path: `${outDir}/06-result.png`, fullPage: true });
 
-    // Accept either redirect to verify-email page or success message
-    const body = await page.textContent('body');
-    const url = page.url();
-    console.log(`  Final URL: ${url}`);
-    if (errors.length > 0) {
-      console.log(`  Console warnings/errors (may be unrelated): ${errors.length}`);
-    }
+     // After signup, expect redirect to login page
+     const body = await page.textContent('body');
+     const url = page.url();
+     console.log(`  Final URL: ${url}`);
+     if (errors.length > 0) {
+       console.log(`  Console warnings/errors (may be unrelated): ${errors.length}`);
+     }
 
-    const success = url.includes('verify-email') || url.includes('register-success') || body.toLowerCase().includes('success');
+     const success = url.includes('/login') || body.toLowerCase().includes('registration successful');
     if (success) {
       console.log(`  ✅ ${label} registration succeeded`);
       await browser.close();
