@@ -1,17 +1,5 @@
-// Verify email using direct Appwrite API calls via proxy
-// Vercel serverless function — no SDK needed
-const endpoint = (process.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1').replace(/\/$/, '');
-const projectId = process.env.APPWRITE_PROJECT_ID;
-const databaseId = process.env.APPWRITE_DATABASE_ID || 'default';
-const apiKey = process.env.APPWRITE_API_KEY;
-
-function missingEnv() {
-  const missing = [];
-  if (!projectId) missing.push('APPWRITE_PROJECT_ID');
-  if (!apiKey) missing.push('APPWRITE_API_KEY');
-  return missing;
-}
-
+// Verify email using direct Appwrite API calls via Vercel proxy
+// No SDK import — avoids bundler issues
 export default async function handler(req, res) {
   console.log('🔔 verify-email called', { method: req.method, token: req.body?.token?.substring(0, 10) });
 
@@ -19,8 +7,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const missing = missingEnv();
-  if (missing.length > 0) {
+  const projectId = process.env.APPWRITE_PROJECT_ID;
+  const databaseId = process.env.APPWRITE_DATABASE_ID || 'default';
+  const apiKey = process.env.APPWRITE_API_KEY;
+
+  if (!projectId || !apiKey) {
+    const missing = [];
+    if (!projectId) missing.push('APPWRITE_PROJECT_ID');
+    if (!apiKey) missing.push('APPWRITE_API_KEY');
     console.error('❌ Missing env vars:', missing);
     return res.status(503).json({ error: 'Server configuration error', missing });
   }
@@ -31,29 +25,26 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Build Appwrite API URL
-    const url = `${endpoint}/databases/${databaseId}/collections/users/documents`;
-    
-    // Query: find by verification_token
-    const queryUrl = `${url}?queries[0]=${encodeURIComponent('verification_token=' + token)}`;
-    
-    const response = await fetch(queryUrl, {
+    // Build proxy URL (same-origin to avoid CORS)
+    const proxyBase = `${req.headers.host}`;
+    const proxyUrl = `https://${proxyBase}/api/appwrite-proxy/databases/${databaseId}/collections/users/documents`;
+
+    // Find user by verification_token using simple equality filter
+    const listRes = await fetch(`${proxyUrl}?verification_token=${encodeURIComponent(token)}`, {
       method: 'GET',
       headers: {
         'X-Appwrite-Project': projectId,
         'X-Appwrite-Key': apiKey,
-        'Content-Type': 'application/json',
       },
     });
 
-    if (!response.ok) {
-      const errBody = await response.json().catch(() => ({}));
-      console.error('Appwrite list error:', response.status, errBody);
-      return res.status(response.status).json({ error: errBody.message || 'Failed to lookup token' });
+    if (!listRes.ok) {
+      const err = await listRes.json().catch(() => ({}));
+      console.error('Appwrite list error:', listRes.status, err);
+      return res.status(listRes.status).json({ error: err.message || 'Failed to lookup token' });
     }
 
-    const { documents } = await response.json();
-
+    const { documents } = await listRes.json();
     if (!documents || documents.length === 0) {
       return res.status(404).json({ error: 'Invalid verification token' });
     }
@@ -64,31 +55,28 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: 'Email already verified', email_verified: true });
     }
 
-    // Update: set email_verified=true, clear token
-    const updateUrl = `${url}/${user.$id}`;
-    const updatePayload = {
-      email_verified: true,
-      verification_token: null,
-      status: 'Active',
-    };
-
-    const updateResponse = await fetch(updateUrl, {
+    // Update: set email_verified=true, clear token, set status Active
+    const updateRes = await fetch(`${proxyUrl}/${user.$id}`, {
       method: 'PATCH',
       headers: {
         'X-Appwrite-Project': projectId,
         'X-Appwrite-Key': apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(updatePayload),
+      body: JSON.stringify({
+        email_verified: true,
+        verification_token: null,
+        status: 'Active',
+      }),
     });
 
-    if (!updateResponse.ok) {
-      const errBody = await updateResponse.json().catch(() => ({}));
-      console.error('Appwrite update error:', updateResponse.status, errBody);
-      return res.status(updateResponse.status).json({ error: errBody.message || 'Failed to update verification' });
+    if (!updateRes.ok) {
+      const err = await updateRes.json().catch(() => ({}));
+      console.error('Appwrite update error:', updateRes.status, err);
+      return res.status(updateRes.status).json({ error: err.message || 'Failed to update verification' });
     }
 
-    const updated = await updateResponse.json();
+    const updated = await updateRes.json();
 
     return res.status(200).json({
       message: 'Email verified successfully',
@@ -98,71 +86,6 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Verification error:', error);
     const message = error?.message || 'Verification failed';
-    const status = error?.response?.status || 500;
-    return res.status(status).json({ error: message });
-  }
-}
-
-export default async function handler(req, res) {
-  console.log('🔔 verify-email called', { method: req.method, token: req.body?.token?.substring(0, 10) });
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  // Check env early
-  const missing = missingEnv();
-  if (missing.length > 0) {
-    console.error('❌ Missing env vars:', missing);
-    return res.status(503).json({ error: 'Server configuration error', missing });
-  }
-
-  const { token } = req.body;
-  if (!token) {
-    return res.status(400).json({ error: 'Verification token is required' });
-  }
-
-   try {
-     // Initialize Appwrite client per-request (avoid reuse issues)
-     // Use non-chained setters to avoid bundler issues with SDK method returns
-     const client = new Client();
-     client.setEndpoint(endpoint);
-     client.setProject(projectId);
-     client.setKey(apiKey);
-
-     const db = new Databases(client);
-     const COLLECTION_USERS = 'users';
-
-    // Find user by verification token
-    const result = await db.list(COLLECTION_USERS, [Query.equal('verification_token', token)]);
-
-    if (result.documents.length === 0) {
-      return res.status(404).json({ error: 'Invalid verification token' });
-    }
-
-    const user = result.documents[0];
-
-    // Check if already verified
-    if (user.email_verified) {
-      return res.status(200).json({ message: 'Email already verified', email_verified: true });
-    }
-
-    // Mark as verified and clear token
-    const updated = await db.update(COLLECTION_USERS, user.$id, {
-      email_verified: true,
-      verification_token: null,
-      status: 'Active',
-    });
-
-    return res.status(200).json({
-      message: 'Email verified successfully',
-      email_verified: true,
-      user_id: updated.$id,
-    });
-  } catch (error) {
-    console.error('Verification error:', error);
-    const message = error?.message || 'Verification failed';
-    const status = error?.response?.status || (error.message?.includes('Missing') ? 503 : 500);
-    return res.status(status).json({ error: message });
+    return res.status(500).json({ error: message });
   }
 }
