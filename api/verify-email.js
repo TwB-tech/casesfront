@@ -34,15 +34,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Verification token is required' });
   }
 
-  try {
-    // Initialize Appwrite client per-request (cheap, avoids reuse issues)
-    const client = new Client()
-      .setEndpoint(endpoint)
-      .setProject(projectId)
-      .setKey(apiKey);
+   try {
+     // Initialize Appwrite client per-request (avoid reuse issues)
+     // Use non-chained setters to avoid bundler issues with SDK method returns
+     const client = new Client();
+     client.setEndpoint(endpoint);
+     client.setProject(projectId);
+     client.setKey(apiKey);
 
-    const db = new Databases(client);
-    const COLLECTION_USERS = 'users';
+     const db = new Databases(client);
+     const COLLECTION_USERS = 'users';
 
     // Find user by verification token
     const result = await db.list(COLLECTION_USERS, [Query.equal('verification_token', token)]);
