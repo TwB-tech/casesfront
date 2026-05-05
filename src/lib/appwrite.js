@@ -385,13 +385,16 @@ export const db = {
         const doc = await databases.createDocument(DATABASE_ID, collection, docId, enriched);
         return { data: this.normalize(doc) };
       } catch (error) {
-        // Handle duplicate ID conflict (409) - document already exists
-        if (error.code === 'document_already_exists' || error.message?.includes('already exists')) {
+        // Handle duplicate ID conflict (409) — document with same ID already exists.
+        // Only fallback to GET if the error code indicates ID conflict.
+        // Other errors (e.g., unique attribute violation) should propagate to surface the real problem.
+        if (error.code === 'document_already_exists') {
           try {
             const existing = await databases.getDocument(DATABASE_ID, collection, docId);
             return { data: this.normalize(existing) };
-          } catch (fetchErr) {
-            return { error: fetchErr };
+          } catch {
+            // GET failed — inconsistent state; return original error
+            return { error };
           }
         }
         console.error(`Appwrite create ${collection} failed:`, error.message || error);
