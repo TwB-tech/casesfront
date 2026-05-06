@@ -113,7 +113,7 @@ const AccountingDashboard = () => {
 
   return (
     <div className="min-h-screen">
-      <Breadcrumbs />
+
 
       {/* Header Section */}
       <div

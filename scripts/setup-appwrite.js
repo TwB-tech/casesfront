@@ -544,11 +544,20 @@ async function main() {
   await ensureIndexes();
 
   log.info('\nCreating storage bucket...');
-  await ensureStorageBucket('documents', 'Documents', {
-    permissions: ['read("users")', 'write("users")'],
-    maximumFileSize: 10485760, // 10MB
-    allowedFileExtensions: ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif'],
-  });
+   await ensureStorageBucket('documents', 'Documents', {
+     permissions: ['read("users")', 'write("users")'],
+     maximumFileSize: 52428800, // 50MB
+     allowedFileExtensions: [
+       '.pdf', '.doc', '.docx', '.txt', '.rtf', '.odt',
+       '.xls', '.xlsx', '.csv',
+       '.ppt', '.pptx',
+       '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.svg',
+       '.mp3', '.mp4', '.wav', '.avi', '.mov', '.mkv',
+       '.zip', '.rar', '.7z',
+       '.json', '.xml', '.html', '.htm',
+       '.py', '.js', '.ts', '.java', '.c', '.cpp', '.cs',
+     ],
+   });
 
   console.log('\n\x1b[1m✅ Setup Complete!\x1b[0m');
   console.log('Next steps:');

@@ -37,7 +37,7 @@ export const AccountingRoute = ({ children }) => (
 );
 
 export const HRRoute = ({ children }) => (
-  <ProtectedRoute roles={['admin', 'partner', 'hr', 'manager', 'firm']}>{children}</ProtectedRoute>
+  <ProtectedRoute roles={['admin', 'partner', 'hr', 'manager', 'firm', 'advocate', 'employee', 'associate', 'paralegal', 'administrator']}>{children}</ProtectedRoute>
 );
 
 export const AdvocateRoute = ({ children }) => (

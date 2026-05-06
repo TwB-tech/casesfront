@@ -32,6 +32,7 @@ import Breadcrumbs from '../components/ui/Breadcrumbs';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { formatCurrency, CURRENCIES } from '../utils/currency';
 import axiosInstance from '../axiosConfig';
+import useAuth from '../hooks/useAuth';
 /* eslint-disable no-console */
 
 const { Option } = Select;
@@ -39,10 +40,12 @@ const { Option } = Select;
 const HRManagement = () => {
   const { isFuturistic } = useTheme();
   const { currency } = useCurrency();
+  const { user } = useAuth();
+  const isAdmin = user && ['admin', 'administrator'].includes(user.role);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState('employees');
+  const [activeTab, setActiveTab] = useState(() => isAdmin ? 'employees' : 'leave');
   const [form] = Form.useForm();
   const [inviteForm] = Form.useForm();
   const [filterDept, setFilterDept] = useState('');
@@ -170,28 +173,16 @@ const HRManagement = () => {
     },
   ];
 
-  const tabItems = [
-    {
-      key: 'employees',
-      label: 'Employees',
-    },
-    {
-      key: 'invitations',
-      label: 'Invitations',
-    },
-    {
-      key: 'leave',
-      label: 'Leave Requests',
-    },
-    {
-      key: 'payroll',
-      label: 'Payroll',
-    },
-    {
-      key: 'documents',
-      label: 'Documents',
-    },
+  const baseTabItems = [
+    { key: 'leave', label: 'Leave Requests' },
+    { key: 'payroll', label: 'Payroll' },
+    { key: 'documents', label: 'Documents' },
   ];
+  const adminTabItems = [
+    { key: 'employees', label: 'Employees' },
+    { key: 'invitations', label: 'Invitations' },
+  ];
+  const tabItems = isAdmin ? [...adminTabItems, ...baseTabItems] : baseTabItems;
 
    const handleAddEmployee = async (values) => {
      try {
@@ -245,7 +236,7 @@ const HRManagement = () => {
 
   return (
     <div className="min-h-screen">
-      <Breadcrumbs />
+
 
       {/* Header Section */}
       <div
@@ -297,26 +288,28 @@ const HRManagement = () => {
                 Manage employees, leave, payroll, and team documents
               </p>
             </div>
-             <div className="flex gap-3">
-               <Button
-                 type="primary"
-                 size="large"
-                 icon={<UserPlus className="w-4 h-4" />}
-                 className={isFuturistic ? 'futuristic-btn' : ''}
-                 style={{ background: isFuturistic ? '#6366f1' : undefined }}
-                 onClick={() => setIsModalVisible(true)}
-               >
-                 Add Employee
-               </Button>
-               <Button
-                 size="large"
-                 icon={<Mail className="w-4 h-4" />}
-                 className={isFuturistic ? 'border-cyber-border' : ''}
-                 onClick={() => setIsInviteModalVisible(true)}
-               >
-                 Invite Employee
-               </Button>
-             </div>
+              {isAdmin && (
+                <div className="flex gap-3">
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={<UserPlus className="w-4 h-4" />}
+                    className={isFuturistic ? 'futuristic-btn' : ''}
+                    style={{ background: isFuturistic ? '#6366f1' : undefined }}
+                    onClick={() => setIsModalVisible(true)}
+                  >
+                    Add Employee
+                  </Button>
+                  <Button
+                    size="large"
+                    icon={<Mail className="w-4 h-4" />}
+                    className={isFuturistic ? 'border-cyber-border' : ''}
+                    onClick={() => setIsInviteModalVisible(true)}
+                  >
+                    Invite Employee
+                  </Button>
+                </div>
+              )}
           </div>
         </div>
       </div>

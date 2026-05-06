@@ -246,10 +246,13 @@ export const appwriteApi = {
        ]);
        if (caseErr) throw caseErr;
 
-        const clientIds = [...new Set(cases.map((c) => c.client_id))];
-        const idQuery = clientIds.length === 1
-          ? Query.equal('id', clientIds[0])
-          : Query.or(clientIds.map(id => Query.equal('id', id)));
+         const clientIds = [...new Set(cases.map((c) => c.client_id).filter(Boolean))];
+         if (clientIds.length === 0) {
+           return success({ clients_count: 0, results: [] });
+         }
+         const idQuery = clientIds.length === 1
+           ? Query.equal('id', clientIds[0])
+           : Query.or(clientIds.map(id => Query.equal('id', id)));
         const { data: clients, error: clientErr } = await db.list(COLLECTIONS.USERS, [
           idQuery
         ]);
@@ -508,28 +511,45 @@ export const appwriteApi = {
         });
       });
 
-      const recentTransactions = transactions
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 5);
+       const recentTransactions = transactions
+         .sort((a, b) => new Date(b.date) - new Date(a.date))
+         .slice(0, 5);
 
-      const pendingCount = invoices?.filter((i) => i.status === 'pending').length || 0;
-      const overdueCount = invoices?.filter((i) => i.status === 'overdue').length || 0;
-      const paidCount = invoices?.filter((i) => i.status === 'paid').length || 0;
+       const pendingCount = invoices?.filter((i) => i.status === 'pending').length || 0;
+       const overdueCount = invoices?.filter((i) => i.status === 'overdue').length || 0;
+       const paidCount = invoices?.filter((i) => i.status === 'paid').length || 0;
 
-      return success({
-        totalRevenue,
-        totalExpenses,
-        netProfit: totalRevenue - totalExpenses,
-        pendingInvoices: pendingCount,
-        overdueInvoices: overdueCount,
-        paidInvoices: paidCount,
-        revenueGrowth: 0,
-        expenseGrowth: 0,
-        profitMargin: totalRevenue > 0 ? ((totalRevenue - totalExpenses) / totalRevenue) * 100 : 0,
-        monthlyRevenue: Object.values(monthlyMap),
-        expenseCategories,
-        recentTransactions,
-      });
+       // Compute growth percentages by comparing latest two months in monthlyMap
+       const sortedMonthKeys = Object.keys(monthlyMap).sort();
+       let revenueGrowth = 0;
+       let expenseGrowth = 0;
+       if (sortedMonthKeys.length >= 2) {
+         const latestKey = sortedMonthKeys[sortedMonthKeys.length - 1];
+         const prevKey = sortedMonthKeys[sortedMonthKeys.length - 2];
+         const latest = monthlyMap[latestKey];
+         const prev = monthlyMap[prevKey];
+         if (prev.revenue !== 0) {
+           revenueGrowth = ((latest.revenue - prev.revenue) / prev.revenue) * 100;
+         }
+         if (prev.expenses !== 0) {
+           expenseGrowth = ((latest.expenses - prev.expenses) / prev.expenses) * 100;
+         }
+       }
+
+       return success({
+         totalRevenue,
+         totalExpenses,
+         netProfit: totalRevenue - totalExpenses,
+         pendingInvoices: pendingCount,
+         overdueInvoices: overdueCount,
+         paidInvoices: paidCount,
+         revenueGrowth,
+         expenseGrowth,
+         profitMargin: totalRevenue > 0 ? ((totalRevenue - totalExpenses) / totalRevenue) * 100 : 0,
+         monthlyRevenue: Object.values(monthlyMap),
+         expenseCategories,
+         recentTransactions,
+       });
     }
 
      // EXPENSES

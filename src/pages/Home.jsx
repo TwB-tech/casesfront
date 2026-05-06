@@ -119,6 +119,46 @@ function Home() {
   const [loadingModalRevenue, setLoadingModalRevenue] = useState(false);
   const [loadingModalInvoices, setLoadingModalInvoices] = useState(false);
 
+  // Compute case month-over-month growth
+  const caseGrowth = useMemo(() => {
+    const caseList = cases.results || [];
+    if (caseList.length === 0) return null;
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const getCount = (month, year) => caseList.filter(c => {
+      const d = new Date(c.created_at || c.start_date || Date.now());
+      return d.getMonth() === month && d.getFullYear() === year;
+    }).length;
+    const currentCount = getCount(currentMonth, currentYear);
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastCount = getCount(lastMonthDate.getMonth(), lastMonthDate.getFullYear());
+    if (lastCount === 0) {
+      return currentCount > 0 ? 100 : null;
+    }
+    return ((currentCount - lastCount) / lastCount) * 100;
+  }, [cases]);
+
+  // Compute client month-over-month growth
+  const clientGrowth = useMemo(() => {
+    const clientList = clients.results || [];
+    if (clientList.length === 0) return null;
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const getCount = (month, year) => clientList.filter(c => {
+      const d = new Date(c.created_at || Date.now());
+      return d.getMonth() === month && d.getFullYear() === year;
+    }).length;
+    const currentCount = getCount(currentMonth, currentYear);
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastCount = getCount(lastMonthDate.getMonth(), lastMonthDate.getFullYear());
+    if (lastCount === 0) {
+      return currentCount > 0 ? 100 : null;
+    }
+    return ((currentCount - lastCount) / lastCount) * 100;
+  }, [clients]);
+
   const fetchCases = async () => {
     try {
       const response = await axiosInstance.get('/case/');
@@ -673,7 +713,13 @@ function Home() {
                   }
                 />
                 <div style={{ marginTop: '8px' }}>
-                  <span style={{ color: '#38c172', fontWeight: 500 }}>8.2% </span>
+                  {caseGrowth !== null ? (
+                    <span style={{ color: caseGrowth >= 0 ? '#38c172' : '#f5222d', fontWeight: 500 }}>
+                      {caseGrowth >= 0 ? '+' : ''}{caseGrowth.toFixed(1)}% 
+                    </span>
+                  ) : (
+                    <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontWeight: 500 }}>0.0% </span>
+                  )}
                   <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontSize: '12px' }}>
                     since last month
                   </span>
@@ -719,7 +765,13 @@ function Home() {
                   }
                 />
                 <div style={{ marginTop: '8px' }}>
-                  <span style={{ color: '#38c172', fontWeight: 500 }}>3.4% </span>
+                  {clientGrowth !== null ? (
+                    <span style={{ color: clientGrowth >= 0 ? '#38c172' : '#f5222d', fontWeight: 500 }}>
+                      {clientGrowth >= 0 ? '+' : ''}{clientGrowth.toFixed(1)}% 
+                    </span>
+                  ) : (
+                    <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontWeight: 500 }}>0.0% </span>
+                  )}
                   <span style={{ color: isFuturistic ? '#6b7280' : '#627d98', fontSize: '12px' }}>
                     since last month
                   </span>

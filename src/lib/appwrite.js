@@ -248,37 +248,37 @@ export const getCurrentOrganizationId = () => {
 // Organization isolation filter (replaces RLS)
 // Only queries attributes that exist in the collection schema
 export const withOrganization = (queries = [], userId = null, collection = null) => {
-   const orgId = getCurrentOrganizationId();
-   // Skip organization_id query if orgId is null/undefined/empty
-   if (orgId && orgId !== 'null' && orgId !== 'undefined') {
-     queries.push(Query.equal('organization_id', orgId));
-   }
-   // Also allow user's own records - but only query attributes that exist
-   if (userId && collection && COLLECTION_ORG_ATTRIBUTES[collection]) {
-     const validAttrs = COLLECTION_ORG_ATTRIBUTES[collection];
-     const orConditions = [];
-     // Only add org condition if we have a valid orgId
-     if (orgId && orgId !== 'null' && orgId !== 'undefined') {
-       orConditions.push(Query.equal('organization_id', orgId));
-     }
-     if (validAttrs.includes('client_id')) orConditions.push(Query.equal('client_id', userId));
-     if (validAttrs.includes('advocate_id')) orConditions.push(Query.equal('advocate_id', userId));
-     if (validAttrs.includes('assigned_to')) orConditions.push(Query.equal('assigned_to', userId));
-     if (validAttrs.includes('created_by')) orConditions.push(Query.equal('created_by', userId));
-     if (validAttrs.includes('owner')) orConditions.push(Query.equal('owner', userId));
-     if (validAttrs.includes('submitted_by')) orConditions.push(Query.equal('submitted_by', userId));
-     if (validAttrs.includes('user_id')) orConditions.push(Query.equal('user_id', userId));
-     if (validAttrs.includes('invited_by')) orConditions.push(Query.equal('invited_by', userId));
-     if (validAttrs.includes('shared_with')) orConditions.push(Query.contains('shared_with', userId));
-     // Use Query.or only if we have at least 2 conditions (Appwrite requirement)
-     if (orConditions.length === 1) {
-       queries.push(orConditions[0]);
-     } else if (orConditions.length > 1) {
-       queries.push(Query.or(orConditions));
-     }
-   }
-   return queries;
- };
+  const orgId = getCurrentOrganizationId();
+  const conditions = [];
+
+  // Add organization filter if orgId is valid
+  if (orgId && orgId !== 'null' && orgId !== 'undefined') {
+    conditions.push(Query.equal('organization_id', orgId));
+  }
+
+  // Add user-specific access conditions based on collection attributes
+  if (userId && collection && COLLECTION_ORG_ATTRIBUTES[collection]) {
+    const attrs = COLLECTION_ORG_ATTRIBUTES[collection];
+    if (attrs.includes('client_id')) conditions.push(Query.equal('client_id', userId));
+    if (attrs.includes('advocate_id')) conditions.push(Query.equal('advocate_id', userId));
+    if (attrs.includes('assigned_to')) conditions.push(Query.equal('assigned_to', userId));
+    if (attrs.includes('created_by')) conditions.push(Query.equal('created_by', userId));
+    if (attrs.includes('owner')) conditions.push(Query.equal('owner', userId));
+    if (attrs.includes('submitted_by')) conditions.push(Query.equal('submitted_by', userId));
+    if (attrs.includes('user_id')) conditions.push(Query.equal('user_id', userId));
+    if (attrs.includes('invited_by')) conditions.push(Query.equal('invited_by', userId));
+    if (attrs.includes('shared_with')) conditions.push(Query.contains('shared_with', userId));
+  }
+
+  // Merge: use OR if multiple conditions; direct if single
+  if (conditions.length === 1) {
+    queries.push(conditions[0]);
+  } else if (conditions.length > 1) {
+    queries.push(Query.or(conditions));
+  }
+
+  return queries;
+};
 
 // Collections that have organization_id field and need org isolation
 // Note: 'organizations', 'courts', 'chat_messages', 'admin_settings' are excluded — they don't have organization_id
@@ -369,25 +369,25 @@ export const db = {
      }
    },
 
-     // CREATE document
-     // documentId: optional. If not provided, we generate one.
-     // On conflict, automatically resolves stale document collisions by deleting and retrying once.
-     async create(collection, data, documentId) {
-       const explicitId = documentId !== undefined;
-       const docId = documentId || ID.unique();
-       const enrich = (d) => ({
-         ...d,
-         created_at: new Date().toISOString(),
-         updated_at: new Date().toISOString(),
-       });
+      // CREATE document
+      // documentId: optional. If not provided, generates a unique ID.
+      // The 'id' field is required by Appwrite schema and must be in the document body.
+      async create(collection, data, documentId) {
+        const docId = documentId || ID.unique();
+        const enrich = (d, id) => ({
+          ...d,
+          id: id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
 
-       const doCreate = async (id) => {
-         const enriched = enrich(data);
-         if (ORG_SCOPED.has(collection)) {
-           enriched.organization_id = getCurrentOrganizationId();
-         }
-         return await databases.createDocument(DATABASE_ID, collection, id, enriched);
-       };
+        const doCreate = async (id) => {
+          const enriched = enrich(data, id);
+          if (ORG_SCOPED.has(collection)) {
+            enriched.organization_id = getCurrentOrganizationId();
+          }
+          return await databases.createDocument(DATABASE_ID, collection, id, enriched);
+        };
 
        try {
          const doc = await doCreate(docId);
