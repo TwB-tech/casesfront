@@ -76,7 +76,7 @@ export default async function handler(req, res) {
         'X-Appwrite-Key': apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(updatePayload),
+      body: JSON.stringify({ data: updatePayload }),
     });
 
     if (!updateRes.ok) {
