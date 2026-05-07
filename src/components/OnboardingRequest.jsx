@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, message } from 'antd';
+import { Form, Input, Button, Card, message, Typography } from 'antd';
 import {
   UserOutlined,
   MailOutlined,
@@ -10,7 +10,9 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import Breadcrumbs from './ui/Breadcrumbs';
 
-const OnboardingRequest = () => {
+const { Title, Text } = Typography;
+
+function OnboardingRequest() {
   const { isFuturistic, themeConfig } = useTheme();
   const [form] = Form.useForm();
   const [status, setStatus] = useState(null);
@@ -271,6 +273,6 @@ const OnboardingRequest = () => {
       </div>
     </div>
   );
-};
+}
 
 export default OnboardingRequest;

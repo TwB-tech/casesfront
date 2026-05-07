@@ -32,8 +32,10 @@ export default function Notes() {
     }
   };
 
-  useEffect(() => {
-    if (user) fetchNotes();
+   useEffect(() => {
+    if (user) {
+      fetchNotes();
+    }
   }, [user]);
 
   // Expose saveToNotes method for external calls (Reya, Chat)
@@ -76,7 +78,9 @@ export default function Notes() {
 
   // Create/update note
   const saveNote = async () => {
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      return;
+    }
 
     try {
       if (editingNote) {
@@ -115,7 +119,9 @@ export default function Notes() {
 
   // Delete note
   const deleteNote = async (noteId) => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
+    if (!window.confirm('Are you sure you want to delete this note?')) {
+      return;
+    }
 
     try {
       await axiosInstance.delete(`/notes/${noteId}/`);
@@ -127,7 +133,9 @@ export default function Notes() {
 
   // Format date
   const formatDate = (dateStr) => {
-    if (!dateStr) return '';
+    if (!dateStr) {
+      return '';
+    }
     const date = new Date(dateStr);
     return date.toLocaleString([], {
       year: 'numeric',

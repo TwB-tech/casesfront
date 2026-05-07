@@ -248,6 +248,12 @@ export const getCurrentOrganizationId = () => {
 // Organization isolation filter (replaces RLS)
 // Only queries attributes that exist in the collection schema
 export const withOrganization = (queries = [], userId = null, collection = null) => {
+  // Superadmin bypasses organization isolation
+  const currentUser = getCurrentUser();
+  if (currentUser && ['admin', 'administrator'].includes(currentUser.role)) {
+    return queries;
+  }
+
   const orgId = getCurrentOrganizationId();
   const conditions = [];
 

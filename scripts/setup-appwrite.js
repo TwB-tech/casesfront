@@ -544,20 +544,27 @@ async function main() {
   await ensureIndexes();
 
   log.info('\nCreating storage bucket...');
-   await ensureStorageBucket('documents', 'Documents', {
-     permissions: ['read("users")', 'write("users")'],
-     maximumFileSize: 52428800, // 50MB
-     allowedFileExtensions: [
-       '.pdf', '.doc', '.docx', '.txt', '.rtf', '.odt',
-       '.xls', '.xlsx', '.csv',
-       '.ppt', '.pptx',
-       '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.svg',
-       '.mp3', '.mp4', '.wav', '.avi', '.mov', '.mkv',
-       '.zip', '.rar', '.7z',
-       '.json', '.xml', '.html', '.htm',
-       '.py', '.js', '.ts', '.java', '.c', '.cpp', '.cs',
-     ],
-   });
+  await ensureStorageBucket('documents', 'Documents', {
+    permissions: ['read("users")', 'write("users")'],
+    maximumFileSize: 50000000, // 50MB (max allowed by Appwrite)
+    allowedFileExtensions: [
+      // Documents
+      'pdf', 'PDF', 'doc', 'DOC', 'docx', 'DOCX', 'txt', 'TXT', 'rtf', 'RTF', 'odt', 'ODT',
+      // Spreadsheets
+      'xls', 'XLS', 'xlsx', 'XLSX', 'csv', 'CSV',
+      // Presentations
+      'ppt', 'PPT', 'pptx', 'PPTX',
+      // Images
+      'jpg', 'JPG', 'jpeg', 'JPEG', 'png', 'PNG', 'gif', 'GIF', 'bmp', 'BMP', 'tiff', 'TIFF', 'svg', 'SVG',
+      // Audio/Video
+      'mp3', 'MP3', 'mp4', 'MP4', 'wav', 'WAV', 'avi', 'AVI', 'mov', 'MOV', 'mkv', 'MKV',
+      // Archives
+      'zip', 'ZIP', 'rar', 'RAR', '7z', '7Z',
+      // Data & Code
+      'json', 'JSON', 'xml', 'XML', 'html', 'HTML', 'htm', 'HTM',
+      'py', 'PY', 'js', 'JS', 'ts', 'TS', 'java', 'JAVA', 'c', 'C', 'cpp', 'CPP', 'cs', 'CS',
+    ],
+  });
 
   console.log('\n\x1b[1m✅ Setup Complete!\x1b[0m');
   console.log('Next steps:');
@@ -568,42 +575,36 @@ async function main() {
 // Ensure storage bucket exists and has correct permissions
 async function ensureStorageBucket(bucketId, name, options = {}) {
   try {
+    // Check if bucket exists
     const bucket = await api('GET', `/storage/buckets/${bucketId}`);
-    log.success(`Storage bucket '${bucketId}' ready`);
-    // Update permissions to ensure they are correct
+    log.info(`Storage bucket '${bucketId}' exists`);
+    // Delete existing bucket to recreate with fresh settings (dev only)
     try {
-      await api('PATCH', `/storage/buckets/${bucketId}`, {
-        permissions: options.permissions || ['read("users")', 'write("users")'],
-        maximumFileSize: options.maximumFileSize || 10485760,
-        allowedFileExtensions: options.allowedFileExtensions || [],
-      });
-      log.success(`✓ Storage bucket permissions updated`);
-    } catch (updateErr) {
-      log.warn(`Could not update bucket permissions: ${updateErr.message}`);
+      await api('DELETE', `/storage/buckets/${bucketId}`);
+      log.info(`  Deleted existing bucket '${bucketId}'`);
+    } catch (delErr) {
+      log.warn(`Could not delete existing bucket: ${delErr.message}`);
     }
-    return bucket;
   } catch (e) {
-    if (e.status === 404) {
-      log.warn(`Storage bucket '${bucketId}' not found — creating...`);
-      try {
-        const created = await api('POST', '/storage/buckets', {
-          bucketId,
-          name: name || bucketId,
-          permissions: options.permissions || ['read("users")', 'write("users")'],
-          maximumFileSize: options.maximumFileSize || 10485760,
-          allowedFileExtensions: options.allowedFileExtensions || [],
-          encryption: false,
-          antivirus: false,
-        });
-        log.success(`✓ Storage bucket created`);
-        return created;
-      } catch (err) {
-        log.error(`Failed to create storage bucket: ${err.message}`);
-        // Don't fail setup - storage can be created later
-      }
-    } else {
-      log.error(`Failed to check storage bucket: ${e.message}`);
-    }
+    // Bucket does not exist, will create below
+  }
+
+  // Create bucket with correct options
+  try {
+    const created = await api('POST', '/storage/buckets', {
+      bucketId,
+      name: name || bucketId,
+      permissions: options.permissions || ['read("users")', 'write("users")'],
+      maximumFileSize: options.maximumFileSize || 10485760,
+      allowedFileExtensions: options.allowedFileExtensions || [],
+      encryption: false,
+      antivirus: false,
+    });
+    log.success(`✓ Storage bucket created with correct settings`);
+    return created;
+  } catch (err) {
+    log.error(`Failed to create storage bucket: ${err.message}`);
+    // Don't fail setup - storage can be created later
   }
 }
 

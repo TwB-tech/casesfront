@@ -6,6 +6,9 @@
 **Branch:** `main`  
 **Latest Deployments:**
 
+- `9ojibev3n` — Ready (fix: SPA fallback + explicit proxy rewrite) ← current
+- `m6tq1etj8` — Ready (fix: restore SPA fallback catch-all, fix proxy rewrite order)
+- `HWufz4CuFC` — Ready (fix: add explicit /api/appwrite-proxy rewrite)
 - `d9hlu0fbm` — Ready (fix: removed catch-all rewrite breaking assets)
 - `b523b6f` — commit: fix vercel rewrites
 - `7075f03` — commit: feat: Migrate to Appwrite (full API + tests)
@@ -425,6 +428,37 @@ Commit: `b523b6f` — "fix: Remove catch-all rewrite that broke static asset ser
 - `vercel inspect <deployment-id> --logs` shows build output.
 - Test asset accessibility: `vercel curl /assets/<file>.js` should return JavaScript, not HTML.
 
+## 9. Vercel Rewrites — Critical Ordering
+
+SPA applications require two competing rewrite behaviors:
+
+1. **SPA fallback**: any non-file route (e.g., `/verify-email`, `/clients`) must serve `/index.html` so the client router can handle it.
+2. **Static assets**: files under `/assets/*`, `/favicon.ico`, etc. must be served directly, not rewritten to HTML.
+3. **API routes**: `/api/*` must route to serverless functions, not to SPA.
+
+**Vercel `vercel.json` rewrite order matters — first match wins.**
+
+Correct order:
+```json
+"rewrites": [
+  { "source": "/api/appwrite-proxy/(.*)", "destination": "/api/appwrite-proxy.js" },
+  { "source": "/api/reya",                "destination": "/api/reya.js" },
+  { "source": "/api/(.*)",                "destination": "/api/$1.js" },
+  { "source": "/assets/(.*)",             "destination": "/assets/$1" },
+  { "source": "/favicon.ico",             "destination": "/favicon.ico" },
+  { "source": "/manifest.json",           "destination": "/manifest.json" },
+  { "source": "/logo192.png",             "destination": "/logo192.png" },
+  { "source": "/(.*)",                   "destination": "/index.html" }   ← SPA fallback LAST
+]
+```
+
+**What broke:**
+- Removing the catch-all (`/* → /index.html`) caused client-side routes to 404.
+- Placing the catch-all **before** asset rewrites caused assets to be served as HTML → blank page.
+- Omitting explicit `/api/appwrite-proxy/(.*)` caused the generic `/api/(.*)` to route proxy requests to a non-existent `.js` file → 404.
+
+**Fix:** Keep explicit API and asset rules first, SPA fallback last. Commit: `HWufz4CuFC` (SPA fallback restored), `52xgxCpqNG6eX84mWiVnTNaVdggg` (proxy rule added).
+
 ---
 
 ## 10. Vite Configuration — Exposing Appwrite Env Vars
@@ -537,6 +571,8 @@ After this, CORS will include `Access-Control-Allow-Origin: https://www.kwakorti
 
 ---
 
+
+
 ## 13. Quick Reference — Common Commands
 
 ```bash
@@ -574,8 +610,35 @@ npx vercel inspect <deployment-id> --logs
 - `src/config/index.js` — feature flags, env vars, validation
 - `scripts/setup-appwrite.js` — creates collections, attributes, indexes, seed data
 - `tests/rest-integration-test.js` — full integration suite
-- `vercel.json` — Vercel configuration (rewrites for API, security headers, **no catch-all**)
+- `vercel.json` — Vercel configuration (rewrites: explicit /api/appwrite-proxy first, then /api/*, then static assets, finally SPA fallback `/* → /index.html` last)
 - `context.md` — this file; complete project knowledge base
+
+---
+
+## 15. Recent Critical Fixes (2026-05-06)
+
+### Email Verification Status Persistence
+- Added `email_verified` to login response in `src/lib/appwriteApi.jsx` (line 939)
+- Added `email_verified` to `userInfo` in `src/contexts/authContext.jsx` (verifyToken and fallback)
+- UI now correctly reflects verified status after login; Appwrite database updates correctly
+
+### AI-Generated Document Export Formats
+- Modified `saveGeneratedDocument` in `src/components/Documents/DocumentList.jsx` to support TXT, DOC, DOCX via format selector
+- MIME types correctly set per format
+- Storage bucket already allows these extensions; no schema change needed
+
+### Vercel Rewrite Ordering (Critical Prevention)
+- Documented correct rewrite sequence in `vercel.json` (see section 9 above)
+- Misordering leads to 404s or blank pages
+- All deployments must preserve this order
+
+### Storage Permissions Format
+- Appwrite permissions require `read("users")`/`write("users")` not `role:users`
+- Fixed in bucket creation (`scripts/setup-appwrite.js:597`) and file upload (`src/lib/appwriteApi.jsx:1365`)
+
+### Auth Proxying
+- All client SDK calls use `/api/appwrite-proxy`; no direct browser→Appwrite calls
+- Verified via `src/lib/appwrite.js` (line 20 sets endpoint for browser)
 
 ---
 

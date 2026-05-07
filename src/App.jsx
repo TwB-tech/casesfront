@@ -57,6 +57,7 @@ const Features = lazy(() => import('./pages/Features'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 const OnboardingRequest = lazy(() => import('./components/OnboardingRequest'));
+const AddClient = lazy(() => import('./components/AddClient'));
 const ClientRegister = lazy(() => import('./pages/ClientRegister'));
 const ClientDashboard = lazy(() => import('./pages/ClientDashboard'));
 const FirmsMarketplace = lazy(() => import('./pages/FirmsMarketplace'));
@@ -235,38 +236,38 @@ function AppContent() {
                          </ProtectedRoute>
                        }
                      />
-                     <Route
-                       path="/clients"
-                       element={
-                         <ProtectedRoute>
-                           <ErrorBoundary><ClientList /></ErrorBoundary>
-                         </ProtectedRoute>
-                       }
-                     />
-                     <Route
-                       path="/clients-details/:id"
-                       element={
-                         <ProtectedRoute>
-                           <ErrorBoundary><ClientDetails /></ErrorBoundary>
-                         </ProtectedRoute>
-                       }
-                     />
-                     <Route
-                       path="/client-form"
-                       element={
-                         <ProtectedRoute>
-                           <ErrorBoundary><OnboardingRequest /></ErrorBoundary>
-                         </ProtectedRoute>
-                       }
-                     />
-                     <Route
-                       path="/new-client"
-                       element={
-                         <ProtectedRoute>
-                           <ErrorBoundary><OnboardingRequest /></ErrorBoundary>
-                         </ProtectedRoute>
-                       }
-                     />
+                      <Route
+                        path="/clients"
+                        element={
+                          <ProtectedRoute roles={['admin', 'administrator', 'advocate', 'firm']}>
+                            <ErrorBoundary><ClientList /></ErrorBoundary>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/clients-details/:id"
+                        element={
+                          <ProtectedRoute roles={['admin', 'administrator', 'advocate', 'firm']}>
+                            <ErrorBoundary><ClientDetails /></ErrorBoundary>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/client-form"
+                        element={
+                          <ProtectedRoute roles={['admin', 'administrator', 'advocate', 'firm']}>
+                            <ErrorBoundary><AddClient /></ErrorBoundary>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/new-client"
+                        element={
+                          <ProtectedRoute roles={['admin', 'administrator', 'advocate', 'firm']}>
+                            <ErrorBoundary><AddClient /></ErrorBoundary>
+                          </ProtectedRoute>
+                        }
+                      />
                      <Route
                        path="/documents"
                        element={

@@ -12,7 +12,9 @@ const SUMMARY_TRIGGER = 12; // When history exceeds this many messages, summariz
  * Generate or retrieve persistent session ID
  */
 export function getSessionId() {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
   let sessionId = sessionStorage.getItem(SESSION_KEY);
   if (!sessionId) {
     sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -22,12 +24,16 @@ export function getSessionId() {
 }
 
 export function getCurrentThreadId() {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
   return sessionStorage.getItem('reya_current_thread');
 }
 
 export function setCurrentThreadId(threadId) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   sessionStorage.setItem('reya_current_thread', threadId);
 }
 
@@ -35,7 +41,9 @@ export function setCurrentThreadId(threadId) {
  * Get full conversation memory from storage
  */
 export function getMemory() {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
   try {
     const raw = localStorage.getItem(MEMORY_KEY);
     return raw ? JSON.parse(raw) : null;
@@ -48,7 +56,9 @@ export function getMemory() {
  * Save conversation memory to storage
  */
 export function saveMemory(memory) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   try {
     localStorage.setItem(MEMORY_KEY, JSON.stringify(memory));
   } catch (e) {
@@ -95,10 +105,14 @@ export function initThread(userContext = {}) {
  */
 export function appendMessage(threadId, userMessage, assistantResponse, metadata = {}) {
   const memory = getMemory();
-  if (!memory) return null;
+  if (!memory) {
+    return null;
+  }
 
   const session = memory.sessions.find((s) => s.threadId === threadId);
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
 
   // Append user message
   session.messages.push({
@@ -138,10 +152,14 @@ export function appendMessage(threadId, userMessage, assistantResponse, metadata
  */
 export function getConversationContext(threadId) {
   const memory = getMemory();
-  if (!memory) return { history: [], summary: null, userProfile: {} };
+  if (!memory) {
+    return { history: [], summary: null, userProfile: {} };
+  }
 
   const session = memory.sessions.find((s) => s.threadId === threadId);
-  if (!session) return { history: [], summary: null, userProfile: memory.userProfile || {} };
+  if (!session) {
+    return { history: [], summary: null, userProfile: memory.userProfile || {} };
+  }
 
   const summaryKey = `${threadId}_summary`;
   return {
@@ -155,7 +173,9 @@ export function getConversationContext(threadId) {
  * Summarize a list of messages into a concise paragraph
  */
 function summarizeMessages(messages) {
-  if (!messages.length) return '';
+  if (!messages.length) {
+    return '';
+  }
 
   const userMsgs = messages.filter((m) => m.role === 'user').map((m) => m.content);
   const assistantMsgs = messages.filter((m) => m.role === 'assistant').map((m) => m.content);
@@ -168,7 +188,9 @@ function summarizeMessages(messages) {
  * Clear all conversation memory (for testing or user request)
  */
 export function clearMemory() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   localStorage.removeItem(MEMORY_KEY);
   sessionStorage.removeItem(SESSION_KEY);
 }

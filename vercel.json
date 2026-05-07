@@ -5,12 +5,12 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/api/reya",
-      "destination": "/api/reya.js"
-    },
-    {
       "source": "/api/appwrite-proxy/(.*)",
       "destination": "/api/appwrite-proxy.js"
+    },
+    {
+      "source": "/api/reya",
+      "destination": "/api/reya.js"
     },
     {
       "source": "/api/(.*)",

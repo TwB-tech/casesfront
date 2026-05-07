@@ -221,13 +221,14 @@ const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const { data } = await axiosInstance.post('/auth/login/', { email, password });
 
-    const userInfo = {
-      id: data?.id || data?.user?.id || null,
-      email: data?.email || data?.user?.email || email,
-      username: data?.username || data?.user?.username || email,
-      role: data?.role || data?.user?.role || 'individual',
-      organization_id: data?.organization_id || data?.user?.organization_id || null,
-    };
+     const userInfo = {
+       id: data?.id || data?.user?.id || null,
+       email: data?.email || data?.user?.email || email,
+       username: data?.username || data?.user?.username || email,
+       role: data?.role || data?.user?.role || 'individual',
+       organization_id: data?.organization_id || data?.user?.organization_id || null,
+       email_verified: data?.email_verified || false,
+     };
 
     const sessionSecret = parseSessionSecret(data?.tokens);
     if (sessionSecret) {
@@ -389,25 +390,27 @@ const AuthProvider = ({ children }) => {
 
       if (profileErr) {
         // Profile not found – create minimal user info from account
-        const userInfo = {
-          id: userId,
-          email: account.email,
-          username: account.name || account.email,
-          role: 'individual',
-          organization_id: null,
-        };
+         const userInfo = {
+           id: userId,
+           email: account.email,
+           username: account.name || account.email,
+           role: 'individual',
+           organization_id: null,
+           email_verified: false,
+         };
         localStorage.setItem('userInfo', JSON.stringify(userInfo));
         flushSync(() => setUser(userInfo));
         return true;
       }
 
-      const userInfo = {
-        id: userProfile.id,
-        email: account.email,
-        username: userProfile.username || account.name || account.email,
-        role: userProfile.role || 'individual',
-        organization_id: userProfile.organization_id || null,
-      };
+       const userInfo = {
+         id: userProfile.id,
+         email: account.email,
+         username: userProfile.username || account.name || account.email,
+         role: userProfile.role || 'individual',
+         organization_id: userProfile.organization_id || null,
+         email_verified: userProfile.email_verified || false,
+       };
 
       localStorage.setItem('userInfo', JSON.stringify(userInfo));
       if (userInfo.organization_id) {

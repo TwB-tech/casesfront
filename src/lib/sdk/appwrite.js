@@ -1,6 +1,11 @@
 import { Client, Account, Databases } from 'appwrite';
 
-const endpoint = import.meta.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+// Determine endpoint: in browser use same-origin proxy to avoid CORS
+let endpoint = import.meta.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+if (typeof window !== 'undefined') {
+  endpoint = `${window.location.origin}/api/appwrite-proxy`;
+}
+
 const projectId = import.meta.env.APPWRITE_PROJECT_ID;
 
 const client = new Client()

@@ -929,15 +929,16 @@ export const appwriteApi = {
         });
       }
 
-      // Include session secret so client can authenticate subsequent requests
-      return success({
-        id: data.userId,
-        email: payload.email,
-        username: userData?.username || payload.email,
-        role: userData?.role || 'individual',
-        organization_id: userData?.organization_id || null,
-        tokens: JSON.stringify({ access: data.secret }),
-      });
+       // Include session secret so client can authenticate subsequent requests
+       return success({
+         id: data.userId,
+         email: payload.email,
+         username: userData?.username || payload.email,
+         role: userData?.role || 'individual',
+         organization_id: userData?.organization_id || null,
+         email_verified: userData?.email_verified || false,
+         tokens: JSON.stringify({ access: data.secret }),
+       });
     }
 
     // REGISTER
@@ -1357,13 +1358,13 @@ export const appwriteApi = {
        const file = payload.get ? payload.get('file') : payload.file;
         if (file) {
           try {
-             const upload = await storage.createFile({
-               bucketId: 'documents',
-               fileId: ID.unique(),
-               file,
-               // Permissions: authenticated users can read/write
-               permissions: ['read("users")', 'write("users")'],
-             });
+            const upload = await storage.createFile({
+              bucketId: 'documents',
+              fileId: ID.unique(),
+              file,
+              // Permissions: authenticated users can read/write
+              permissions: ['read("users")', 'write("users")'],
+            });
            fileId = upload.$id;
            fileSize = upload.sizeOriginal || 0;
            mimeType = upload.mimeType || 'application/octet-stream';
@@ -1529,6 +1530,105 @@ export const appwriteApi = {
         },
         201
       );
+     }
+
+    // CLIENTS: SEND INVITATION (CRM add client)
+    if (path === 'clients/invite') {
+      const currentUser = getCurrentUser();
+      if (!currentUser?.id) {
+        return failure('Unauthorized - login required', 401);
+      }
+      // Only advocates, firms, and admins can invite clients
+      if (!['advocate', 'firm', 'admin', 'administrator'].includes(currentUser.role)) {
+        return failure('You do not have permission to invite clients', 403);
+      }
+
+      const { email, name } = payload;
+      if (!email) {
+        return failure('Client email is required', 400);
+      }
+
+      const orgId = getCurrentOrganizationId();
+      if (!orgId) {
+        return failure('Organization context required to invite clients', 400);
+      }
+
+      const normalizedEmail = email.toLowerCase();
+
+       // Check if user already exists globally (bypass org filter)
+       try {
+         const result = await databases.listDocuments(
+           DATABASE_ID,
+           COLLECTIONS.USERS,
+           [Query.equal('email', normalizedEmail)]
+         );
+         const existing = (result.documents || []).map(doc => db.normalize(doc));
+         if (existing.length > 0) {
+           return failure('A user with this email already exists', 400);
+         }
+       } catch (e) {
+         console.warn('Error checking existing user:', e);
+       }
+
+       // Check for pending invite globally
+       try {
+         const result = await databases.listDocuments(
+           DATABASE_ID,
+           COLLECTIONS.INVITES,
+           [
+             Query.equal('email', normalizedEmail),
+             Query.equal('status', 'pending'),
+           ]
+         );
+         const pending = (result.documents || []).map(doc => db.normalize(doc));
+         if (pending.length > 0) {
+           // Already invited; proceed anyway
+         }
+       } catch (e) {
+         console.warn('Error checking pending invites:', e);
+       }
+
+      const inviteToken = generateToken();
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      const inviteData = {
+        email: normalizedEmail,
+        name: name || normalizedEmail.split('@')[0],
+        role: 'client',
+        organization_id: orgId,
+        status: 'pending',
+        invited_by: currentUser.id,
+        inviter_name: currentUser.username || '',
+        token: inviteToken,
+        expires_at: expiresAt,
+      };
+
+      const { data: createdInvite, error: createErr } = await db.create(COLLECTIONS.INVITES, inviteData);
+      if (createErr) {
+        console.error('Failed to create invite:', createErr);
+        return failure('Failed to create invitation', 500);
+      }
+
+      // Send invitation email via serverless function (best effort)
+      try {
+        await fetch('/api/send-client-invite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            inviterName: currentUser.username || 'A WakiliWorld user',
+            clientName: inviteData.name,
+            clientEmail: normalizedEmail,
+            inviteToken,
+          }),
+        }).catch(() => {});
+      } catch (emailErr) {
+        console.warn('Failed to send invite email:', emailErr);
+      }
+
+      return success({
+        message: `Invitation sent to ${normalizedEmail}`,
+        invite: createdInvite,
+      }, 201);
     }
 
     // CHATS: CREATE TEAM ROOM (for organization-wide chat)

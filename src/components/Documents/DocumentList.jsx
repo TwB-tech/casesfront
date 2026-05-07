@@ -55,6 +55,7 @@ function DocumentList() {
   const [docCountry, setDocCountry] = useState('kenya');
   const [generatingDoc, setGeneratingDoc] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
+  const [docFormat, setDocFormat] = useState('docx'); // 'txt', 'doc', 'docx'
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -150,9 +151,16 @@ function DocumentList() {
          ? titleMatch[0].slice(0, 50)
          : `Generated Document ${new Date().toISOString().slice(0, 10)}`;
 
-       // Create a text file with the generated content
-       const blob = new Blob([generatedContent], { type: 'text/plain' });
-       const file = new File([blob], `${title}.txt`, { type: 'text/plain' });
+    // Create a file with the generated content in selected format
+    const extension = docFormat; // 'txt', 'doc', or 'docx'
+    const mimeTypes = {
+      txt: 'text/plain',
+      doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    };
+    const mimeType = mimeTypes[docFormat] || 'text/plain';
+    const blob = new Blob([generatedContent], { type: mimeType });
+    const file = new File([blob], `${title}.${extension}`, { type: mimeType });
 
        const formData = new FormData();
        formData.append('title', title);
@@ -185,12 +193,12 @@ function DocumentList() {
       return documents;
     }
 
-    return documents.filter(
-      (doc) =>
-        doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doc.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doc.owner?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+     return documents.filter(
+       (doc) =>
+         doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         doc.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         (doc.owner?.username || doc.owner?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+     );
   }, [documents, searchQuery]);
 
   // Paginated documents
@@ -236,7 +244,7 @@ function DocumentList() {
       title: 'Owner',
       dataIndex: 'owner',
       key: 'owner',
-      render: (owner) => <Tag color="blue">{owner}</Tag>,
+      render: (owner) => <Tag color="blue">{owner?.username || owner?.name || 'Unknown'}</Tag>,
     },
     {
       title: 'Uploaded',
@@ -344,7 +352,7 @@ function DocumentList() {
                 >
                   {doc.title}
                 </h4>
-                <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>{doc.owner}</p>
+                 <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>{doc.owner?.username || doc.owner?.name || 'Unknown'}</p>
               </div>
             </div>
 
@@ -546,7 +554,16 @@ function DocumentList() {
                 }}
                 data-testid="generated-document-content"
               />
-              <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+              <div style={{ marginTop: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <Select
+                  value={docFormat}
+                  onChange={setDocFormat}
+                  style={{ width: 100 }}
+                >
+                  <Option value="txt">TXT</Option>
+                  <Option value="doc">DOC</Option>
+                  <Option value="docx">DOCX</Option>
+                </Select>
                 <Button
                   type="primary"
                   icon={<SaveOutlined />}
