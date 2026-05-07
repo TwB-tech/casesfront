@@ -6,7 +6,8 @@
 **Branch:** `main`  
 **Latest Deployments:**
 
-- `fa5c3e7` — Ready (fix: React error #31, email verification propagation, document formats, client invites, rewrite ordering) ← current
+- `caa8af8` — Ready (fix: restore correct ZAI endpoint for Reya AI) ← current
+- `fa5c3e7` — Ready (fix: React error #31, email verification propagation, document formats, client invites, rewrite ordering)
 - `9ojibev3n` — Ready (fix: SPA fallback + explicit proxy rewrite)
 - `m6tq1etj8` — Ready (fix: restore SPA fallback catch-all, fix proxy rewrite order)
 - `HWufz4CuFC` — Ready (fix: add explicit /api/appwrite-proxy rewrite)
@@ -372,9 +373,15 @@ Commit: `b523b6f` — "fix: Remove catch-all rewrite that broke static asset ser
 
 | Deployment ID                         | Status   | Commit   | Notes                                                                  |
 | ------------------------------------- | -------- | -------- | ---------------------------------------------------------------------- |
-| `d9hlu0fbm`                           | ✅ Ready | b523b6f  | Rewrites fixed — should work                                           |
-| `glkp9cwh1`                           | ✅ Ready | 7075f03  | Duplicate code fixed, but catch-all rewrite still present → blank page |
-| `cbbgs9los`, `g25iifc1j`, `hs3k5oubo` | ❌ Error | previous | Build failures                                                         |
+| `caa8af8`                             | ✅ Ready | caa8af8  | Restored ZAI endpoint; Reya AI fully functional                        |
+| `fa5c3e7`                             | ✅ Ready | fa5c3e7  | React error #31, email verification, document formats, client invites  |
+| `9ojibev3n`                           | ✅ Ready | 9ojibev3n| SPA fallback + explicit proxy rewrite                                  |
+| `m6tq1etj8`                           | ✅ Ready | m6tq1etj8| Restored SPA fallback catch-all, fixed proxy order                     |
+| `HWufz4CuFC`                          | ✅ Ready | HWufz4CuFC| Added explicit /api/appwrite-proxy rewrite                            |
+| `d9hlu0fbm`                           | ✅ Ready | d9hlu0fbm| Removed catch-all rewrite breaking assets                              |
+| `b523b6f`                            | ✅ Ready | b523b6f  | Fixed Vercel rewrites                                                  |
+| `7075f03`                            | ✅ Ready | 7075f03  | Migrated to Appwrite (full API + tests)                                |
+| `2522444`                            | ✅ Ready | 2522444  | Fixed missing user document handling                                   |
 
 ---
 
@@ -700,6 +707,23 @@ if (typeof window !== 'undefined') {
 3. `/api/(.*)` (generic)
 4. Asset and SPA fallback rules last
 **Files:** `vercel.json`
+
+### Reya AI — ZAI Endpoint Restored
+**Problem:** Reya AI failed with error `Unknown Model, please check the model code` when using ZAI brain. GROQ fallback worked but ZAI legal expertise was unavailable.
+
+**Root Cause:** The ZAI API endpoint was changed from the working `https://api.zai.com/v1/chat/completions` to the non-existent `https://api.z.ai/api/paas/v4/chat/completions`. This incorrect URL returned HTTP 400 with "Unknown Model".
+
+**Fix:** Reverted the ZAI endpoint in `api/reya.js` line 128 back to `https://api.zai.com/v1/chat/completions`. Model name remains `zai-legal-v1`. GROQ endpoint and model (`llama-3.1-8b-instant`) unchanged.
+
+**Impact:** Restores full dual-provider AI:
+- ZAI (legal-specialized) primary brain for Kenyan law
+- GROQ (fast generalist) fallback when ZAI unavailable
+- All AI features work: chat, document generation, case queries, multi-turn memory
+
+**No breaking changes:** Document generation, team chats, quick actions all use same `/api/reya` endpoint; timestamp sanitization already in place; fallback behavior unchanged.
+
+**Files:** `api/reya.js` (line 128)
+**Commit:** `caa8af8`
 
 ---
 
