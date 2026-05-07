@@ -152,11 +152,12 @@ function DocumentList() {
          : `Generated Document ${new Date().toISOString().slice(0, 10)}`;
 
     // Create a file with the generated content in selected format
-    const extension = docFormat; // 'txt', 'doc', or 'docx'
+    const extension = docFormat; // 'txt', 'doc', 'docx', or 'pdf'
     const mimeTypes = {
       txt: 'text/plain',
       doc: 'application/msword',
       docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      pdf: 'application/pdf',
     };
     const mimeType = mimeTypes[docFormat] || 'text/plain';
     const blob = new Blob([generatedContent], { type: mimeType });
@@ -555,15 +556,16 @@ function DocumentList() {
                 data-testid="generated-document-content"
               />
               <div style={{ marginTop: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <Select
-                  value={docFormat}
-                  onChange={setDocFormat}
-                  style={{ width: 100 }}
-                >
-                  <Option value="txt">TXT</Option>
-                  <Option value="doc">DOC</Option>
-                  <Option value="docx">DOCX</Option>
-                </Select>
+                 <Select
+                   value={docFormat}
+                   onChange={setDocFormat}
+                   style={{ width: 100 }}
+                 >
+                   <Option value="txt">TXT</Option>
+                   <Option value="doc">DOC</Option>
+                   <Option value="docx">DOCX</Option>
+                   <Option value="pdf">PDF</Option>
+                 </Select>
                 <Button
                   type="primary"
                   icon={<SaveOutlined />}

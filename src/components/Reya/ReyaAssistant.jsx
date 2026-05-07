@@ -611,13 +611,13 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
               </span>
             )}
           </button>
-        ) : (
-          // Open state - show chat interface
-          <div
-            className={`w-full h-[70vh] md:h-[600px] max-h-[600px] rounded-2xl shadow-2xl border flex flex-col ${
-              isFuturistic ? 'bg-cyber-card border-cyber-border' : 'bg-white border-gray-200'
-            }`}
-          >
+         ) : (
+           // Open state - show chat interface
+           <div
+             className={`w-full rounded-2xl shadow-2xl border flex flex-col ${
+               isFuturistic ? 'bg-cyber-card border-cyber-border' : 'bg-white border-gray-200'
+             } ${isMinimized ? 'h-16' : 'h-[70vh] md:h-[600px] max-h-[600px]'}`}
+           >
             {/* Header */}
             <div
               className={`flex items-center justify-between p-4 border-b ${
@@ -771,6 +771,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
 
                   <div ref={messagesEndRef} />
                 </div>
+
 
                 {/* Input */}
                 <div

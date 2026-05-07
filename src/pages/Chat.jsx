@@ -23,11 +23,13 @@ export default function Chat() {
   const [roomName, setRoomName] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
   const [showTeamPanel, setShowTeamPanel] = useState(false);
-  const [inviteVisible, setInviteVisible] = useState(false);
-  const [inviteForm] = Form.useForm();
-  const [sendingInvite, setSendingInvite] = useState(false);
+   const [inviteVisible, setInviteVisible] = useState(false);
+   const [inviteForm] = Form.useForm();
+   const [sendingInvite, setSendingInvite] = useState(false);
+   const chatContainerRef = useRef(null);
+   const messagesEndRef = useRef(null);
 
-  // Get or create team room on mount
+   // Get or create team room on mount
   useEffect(() => {
     const getRoom = async () => {
       try {

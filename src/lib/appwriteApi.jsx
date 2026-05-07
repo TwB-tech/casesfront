@@ -1591,9 +1591,9 @@ export const appwriteApi = {
       const inviteToken = generateToken();
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
+      const clientName = name || normalizedEmail.split('@')[0];
       const inviteData = {
         email: normalizedEmail,
-        name: name || normalizedEmail.split('@')[0],
         role: 'client',
         organization_id: orgId,
         status: 'pending',
@@ -1616,7 +1616,7 @@ export const appwriteApi = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             inviterName: currentUser.username || 'A WakiliWorld user',
-            clientName: inviteData.name,
+            clientName: clientName,
             clientEmail: normalizedEmail,
             inviteToken,
           }),

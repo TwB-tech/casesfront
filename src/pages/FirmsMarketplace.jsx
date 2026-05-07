@@ -148,7 +148,8 @@ const FirmsMarketplace = () => {
   });
 
   const handleContact = (firm) => {
-    navigate(`/chat-users?hire=${firm.id}&type=firm`);
+    // Redirect to chat page with hire parameters; ProtectedRoute ensures only authenticated users can access
+    navigate(`/chat?hire=${firm.id}&type=firm`);
   };
 
   const tabItems = [
