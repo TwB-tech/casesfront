@@ -1,12 +1,13 @@
 # WakiliWorld Appwrite Migration — Complete Context
 
-**Last Updated:** 2026-05-01  
+**Last Updated:** 2026-05-07  
 **Project:** WakiliWorld (casesfront) — AI-Powered Legal Practice Management Platform  
 **Migration:** Supabase → Appwrite (drop-in replacement, zero frontend changes)  
 **Branch:** `main`  
 **Latest Deployments:**
 
-- `9ojibev3n` — Ready (fix: SPA fallback + explicit proxy rewrite) ← current
+- `fa5c3e7` — Ready (fix: React error #31, email verification propagation, document formats, client invites, rewrite ordering) ← current
+- `9ojibev3n` — Ready (fix: SPA fallback + explicit proxy rewrite)
 - `m6tq1etj8` — Ready (fix: restore SPA fallback catch-all, fix proxy rewrite order)
 - `HWufz4CuFC` — Ready (fix: add explicit /api/appwrite-proxy rewrite)
 - `d9hlu0fbm` — Ready (fix: removed catch-all rewrite breaking assets)
@@ -639,6 +640,66 @@ npx vercel inspect <deployment-id> --logs
 ### Auth Proxying
 - All client SDK calls use `/api/appwrite-proxy`; no direct browser→Appwrite calls
 - Verified via `src/lib/appwrite.js` (line 20 sets endpoint for browser)
+
+---
+
+## 16. Recent Critical Fixes (2026-05-07)
+
+### React Error #31 — Object Rendered as React Child
+**Problem:** Application crashed with "Objects are not valid as a React child" when viewing documents or navigating after login.
+
+**Root Cause:** The `enrichDocument()` helper converts `owner` from a string ID into an object `{id, username, name}`. Three places in `DocumentList.jsx` directly rendered this object as a React child:
+- Table column: `render: (owner) => <Tag>{owner}</Tag>`
+- Card view: `{doc.owner}`
+- Search filter: `doc.owner?.toLowerCase()`
+
+**Fix:** Accessed object properties safely with fallbacks:
+```jsx
+owner?.username || owner?.name || 'Unknown'
+```
+Applied to all three locations (lines 200, 247, 355). Also updated search filter to use same safe access.
+
+**Files:** `src/components/Documents/DocumentList.jsx`
+
+### Email Verification Frontend Propagation
+**Problem:** After clicking verification link, database updated correctly but UI still displayed "unverified" after next login.
+
+**Fix:** Added `email_verified` flag to frontend user state in all code paths:
+- `authContext.jsx` `login()` — includes `email_verified: data?.email_verified || false`
+- `authContext.jsx` `verifyToken()` — includes `email_verified: userProfile.email_verified || false` in both success and fallback branches
+**Files:** `src/contexts/authContext.jsx` (lines 230, 398, 411)
+
+### Browser SDK Endpoint Uses Proxy
+**Fix:** Ensured browser-side Appwrite SDK calls route through `/api/appwrite-proxy` to avoid CORS:
+```js
+// src/lib/sdk/appwrite.js
+if (typeof window !== 'undefined') {
+  endpoint = `${window.location.origin}/api/appwrite-proxy`;
+}
+```
+**Files:** `src/lib/sdk/appwrite.js`
+
+### Admin Bypass for Organization Isolation
+**Fix:** Admins and administrators now bypass `withOrganization` filtering to see all data across organizations.
+**Files:** `src/lib/appwrite.js` (lines 251-254)
+
+### Client Invitation API & UI
+**Added:** Full client invitation flow for advocates and firms:
+- New `POST /clients/invite` API endpoint (`appwriteApi.jsx`)
+- New serverless function `/api/send-client-invite` (email via Resend)
+- New `AddClient.jsx` component (replaces `OnboardingRequest` for client invites)
+- Routes protected by `roles={['admin','administrator','advocate','firm']}`
+**Files:** `src/components/AddClient.jsx`, `api/send-client-invite.js`, `src/lib/appwriteApi.jsx`, `src/App.jsx`, `api-server.js`
+
+### Vercel Rewrite Order Fixed
+**Problem:** `/api/appwrite-proxy/(.*)` placed after `/api/reya` caused proxy requests to be caught by generic `/api/(.*)` → 404.
+
+**Fix:** Reordered `vercel.json` rewrites to ensure explicit proxy rule comes first:
+1. `/api/appwrite-proxy/(.*)` (explicit)
+2. `/api/reya`
+3. `/api/(.*)` (generic)
+4. Asset and SPA fallback rules last
+**Files:** `vercel.json`
 
 ---
 
