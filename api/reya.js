@@ -25,8 +25,11 @@ const handler = async (req, res) => {
     });
   }
 
-  // Build conversation history block (last 6 message pairs)
-  const recentHistory = history.slice(-6).map(m => `${m.role === 'user' ? 'User' : 'Reya'}: ${m.content}`).join('\n');
+   // Build conversation history block (last 6 message pairs)
+   const recentHistory = history.slice(-6).map(m => `${m.role === 'user' ? 'User' : 'Reya'}: ${m.content}`).join('\n');
+
+   // Sanitize history for API: only keep role and content (GROQ/ZAI don't accept timestamp or other fields)
+   const sanitizedHistory = history.slice(-6).map(({ role, content }) => ({ role, content }));
 
   // Build summary block if available
   const summaryBlock = summary ? `\nEarlier conversation summary:\n${summary}\n` : '';
@@ -107,12 +110,12 @@ Generate a complete, ready-to-use legal document now.`
   const maxTokens = isDocGen ? 3000 : 500;
   const temperature = isDocGen ? 0.3 : 0.7;
 
-  // Build conversation messages: system + history + current user message
-  const messages = [
-    { role: 'system', content: systemPromptToUse },
-    ...(history.length > 0 ? history.slice(-6) : []),
-    { role: 'user', content: userMessage },
-  ];
+   // Build conversation messages: system + sanitized history + current user message
+   const messages = [
+     { role: 'system', content: systemPromptToUse },
+     ...(sanitizedHistory.length > 0 ? sanitizedHistory : []),
+     { role: 'user', content: userMessage },
+   ];
 
   try {
     let responseContent;
@@ -122,7 +125,7 @@ Generate a complete, ready-to-use legal document now.`
     if (useZai) {
       try {
         const zaiResult = await callExternalAPI(
-          'https://api.z.ai/api/paas/v4/chat/completions',
+          'https://api.zai.com/v1/chat/completions',
           ZAI_API_KEY,
           {
             model: 'zai-legal-v1',
