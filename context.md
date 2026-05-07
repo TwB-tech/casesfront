@@ -6,7 +6,8 @@
 **Branch:** `main`  
 **Latest Deployments:**
 
-- `caa8af8` — Ready (fix: restore correct ZAI endpoint for Reya AI) ← current
+- `3bfafaf` — Ready (fix: Reya minimize, chat crash, invites, document formats, firm contact) ← current
+- `caa8af8` — Ready (fix: restore correct ZAI endpoint for Reya AI)
 - `fa5c3e7` — Ready (fix: React error #31, email verification propagation, document formats, client invites, rewrite ordering)
 - `9ojibev3n` — Ready (fix: SPA fallback + explicit proxy rewrite)
 - `m6tq1etj8` — Ready (fix: restore SPA fallback catch-all, fix proxy rewrite order)
@@ -373,6 +374,7 @@ Commit: `b523b6f` — "fix: Remove catch-all rewrite that broke static asset ser
 
 | Deployment ID                         | Status   | Commit   | Notes                                                                  |
 | ------------------------------------- | -------- | -------- | ---------------------------------------------------------------------- |
+| `3bfafaf`                             | ✅ Ready | 3bfafaf  | Reya minimize fix, chat crash fix, invites schema, doc formats (PDF), firm contact route |
 | `caa8af8`                             | ✅ Ready | caa8af8  | Restored ZAI endpoint; Reya AI fully functional                        |
 | `fa5c3e7`                             | ✅ Ready | fa5c3e7  | React error #31, email verification, document formats, client invites  |
 | `9ojibev3n`                           | ✅ Ready | 9ojibev3n| SPA fallback + explicit proxy rewrite                                  |
@@ -724,6 +726,37 @@ if (typeof window !== 'undefined') {
 
 **Files:** `api/reya.js` (line 128)
 **Commit:** `caa8af8`
+
+### Multiple UI Regressions (2026-05-07)
+**Issues found post-deployment:**
+
+1. **Reya minimize toggle broken** — clicking minimize only collapsed text, window stayed full size
+2. **Team chat page crash** — `chatContainerRef` undefined caused `ReferenceError` that propagated globally, making entire app inaccessible after visiting `/chat`
+3. **Document format selector limited** — only TXT worked; DOC/DOCX selection had no effect; PDF not available
+4. **Client invite creation failed** — POST to `/clients/invite` returned 400: "Unknown attribute: 'name'"
+5. **Firm contact button misrouted** — "Contact" button on Firms page navigated to `/chat-users` (non-existent route) instead of `/chat`
+
+**Fixes applied:**
+
+1. **ReyaAssistant.jsx** — Made widget container height conditional: `isMinimized ? 'h-16' : 'h-[70vh] md:h-[600px]'`. Messages and input are already wrapped in `!isMinimized` condition. Now minimize correctly collapses entire window to header-only.
+2. **Chat.jsx** — Added `const chatContainerRef = useRef(null);` among component refs (file already imported `useRef`). This satisfies the DOM reference used in scroll-on-message effect without throwing.
+3. **DocumentList.jsx** — Extended `mimeTypes` map to include `pdf: 'application/pdf'`. Updated `<Select>` options to include `<Option value="pdf">PDF</Option>`. Engine already used `docFormat` state correctly; format now persists to saved file.
+4. **appwriteApi.jsx** — Removed `name` field from `inviteData` object in `clients/invite` handler (line 1596). Collection schema defines `email, role, organization_id, status, invited_by, token, expires_at` — no `name` attribute. Payload now sends only valid fields. `clientName` variable defined separately for email Notification.
+5. **FirmsMarketplace.jsx** — Changed `handleContact` navigation from `navigate('/chat-users?hire=...')` to `navigate('/chat?hire=...')` to use the existing `/chat` route which already has ProtectedRoute and team-chat logic.
+
+**Verification:**
+- All modified files compile without errors
+- No new console errors introduced
+- Vercel deployment triggered (commit 3bfafaf)
+- Existing feature flags, auth flows, and API compatibility preserved
+
+**Files:**
+- src/components/Reya/ReyaAssistant.jsx
+- src/pages/Chat.jsx
+- src/components/Documents/DocumentList.jsx
+- src/lib/appwriteApi.jsx
+- src/pages/FirmsMarketplace.jsx
+**Commit:** `3bfafaf`
 
 ---
 
