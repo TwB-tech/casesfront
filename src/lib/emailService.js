@@ -3,6 +3,8 @@
  * Handles transactional emails: verification, password reset, notifications, contact form
  */
 
+import { USE_STANDALONE } from '../config';
+
 const RESEND_API_KEY = import.meta.env.RESEND_API_KEY;
 const ADMIN_EMAIL = import.meta.env.ADMIN_EMAIL || 'admin@techwithbrands.com';
 const NOREPLY_EMAIL = import.meta.env.NOREPLY_EMAIL || 'noreply@techwithbrands.com';
@@ -242,8 +244,8 @@ export const sendVerificationEmail = async (user, providedToken = null) => {
   const token = providedToken || generateVerificationToken();
   const html = buildVerificationEmail(user.username || user.email, token);
 
-  // In standalone mode, store token for verification flow
-  if (!import.meta.env.SUPABASE_URL) {
+   // In standalone mode, store token for verification flow
+   if (USE_STANDALONE) {
     const db = JSON.parse(
       localStorage.getItem('wakiliworld.frontend.db.v1') || '{"emailVerifications":[]}'
     );
@@ -277,9 +279,9 @@ export const sendVerificationEmail = async (user, providedToken = null) => {
  * Send password reset email
  */
 export const sendPasswordResetEmail = async (email, token) => {
-  // Get user to get username - need to access DB
-  let username = 'User';
-  if (!import.meta.env.SUPABASE_URL) {
+   // Get user to get username - need to access DB
+   let username = 'User';
+   if (USE_STANDALONE) {
     const db = JSON.parse(localStorage.getItem('wakiliworld.frontend.db.v1') || '{}');
     const user = db.users?.find((u) => u.email === email);
     if (user) {
