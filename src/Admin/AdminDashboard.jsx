@@ -27,7 +27,7 @@ import {
 } from '@ant-design/icons';
 import axiosInstance from '../axiosConfig';
 import { useTheme } from '../contexts/ThemeContext';
-import { USE_STANDALONE } from '../config';
+import { USE_APPWRITE, USE_STANDALONE } from '../config';
 // LicenseForm and LicenseList imports temporarily removed
 // import LicenseForm from '../components/LicenseManager/LicenseForm';
 // import LicenseList from '../components/LicenseManager/LicenseList';
@@ -64,7 +64,7 @@ const AdminDashboard = () => {
 
   // System Monitoring State
   const [systemInfo] = useState({
-    databaseMode: USE_STANDALONE ? 'Standalone (localStorage)' : 'Supabase (PostgreSQL)',
+    databaseMode: USE_APPWRITE ? 'Appwrite Database' : USE_STANDALONE ? 'Standalone (localStorage)' : 'Unknown',
     totalUsers: 0,
     totalCases: 0,
     storageUsed: '0 KB',
@@ -95,8 +95,8 @@ const AdminDashboard = () => {
   };
 
   const handleBackup = async () => {
-    if (!USE_STANDALONE) {
-      message.info('Backups are handled automatically by Supabase. No manual action required.');
+    if (USE_APPWRITE) {
+      message.info('Backups are handled automatically by Appwrite. No manual action required.');
       return;
     }
     try {
@@ -400,7 +400,7 @@ const AdminDashboard = () => {
                 <p style={{ marginBottom: 16 }}>
                   {USE_STANDALONE
                     ? 'Download a JSON backup of your local database. This file contains all your data including cases, clients, tasks, and documents.'
-                    : 'In Supabase mode, database backups are handled automatically by Supabase infrastructure. You can configure point-in-time recovery in the Supabase dashboard.'}
+                    : 'In Appwrite mode, database backups are handled automatically by Appwrite infrastructure. You can configure backups in the Appwrite console.'}
                 </p>
                 <Button
                   type="primary"
@@ -409,7 +409,7 @@ const AdminDashboard = () => {
                   loading={loading}
                   size="large"
                 >
-                  {USE_STANDALONE ? 'Download Backup Now' : 'View Supabase Backups'}
+                  {USE_STANDALONE ? 'Download Backup Now' : 'Appwrite Backups (Automatic)'}
                 </Button>
                 {backupStatus && (
                   <Text type="secondary" style={{ display: 'block', marginTop: 12 }}>

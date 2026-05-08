@@ -1,10 +1,9 @@
 /* eslint-disable no-console */
 /**
- * Database Configuration Validation Script
+ * Appwrite Configuration Validation Script
  * Run with: node src/config/validate-config.js
  *
- * Validates that all required environment variables are set
- * for Supabase or standalone mode.
+ * Validates that all required Appwrite environment variables are set.
  */
 
 const fs = require('fs');
@@ -16,7 +15,7 @@ function validateConfig() {
   const warnings = [];
   const success = [];
 
-  console.log('🔍 Validating Database Configuration\n');
+  console.log('🔍 Validating Appwrite Configuration\n');
 
   // Load environment variables from .env if exists
   const envFromFile = {};
@@ -39,41 +38,29 @@ function validateConfig() {
   // Merge with process.env (captures Vercel runtime env)
   const allEnv = { ...envFromFile, ...process.env };
 
-  // Determine database mode (check both prefixed and non-prefixed)
+  // Determine database mode
   const dbMode = allEnv.REACT_APP_DATABASE_MODE || allEnv.DATABASE_MODE || 'standalone';
 
-  console.log(
-    'Database Mode:',
-    dbMode === 'supabase' ? 'Supabase (PostgreSQL)' : 'Standalone (localStorage mock)\n'
-  );
+  console.log('Database Mode:', dbMode === 'appwrite' ? 'Appwrite' : 'Standalone (localStorage mock)\n');
 
-  if (dbMode === 'supabase') {
-    const requiredSupabase = ['SUPABASE_URL', 'SUPABASE_ANON_KEY'];
-    const altKeys = ['REACT_APP_SUPABASE_URL', 'REACT_APP_SUPABASE_ANON_KEY'];
-
-    console.log('Supabase Required Variables:\n');
-    requiredSupabase.forEach((key, idx) => {
-      const alt = altKeys[idx];
-      const value = allEnv[key] || allEnv[alt];
+  if (dbMode === 'appwrite') {
+    const requiredAppwrite = ['APPWRITE_PROJECT_ID', 'APPWRITE_ENDPOINT', 'APPWRITE_DATABASE_ID'];
+    console.log('Appwrite Required Variables:\n');
+    requiredAppwrite.forEach((key) => {
+      const value = allEnv[key];
       if (!value) {
         errors.push(key);
-        console.log(`  ✗ ${key} (or ${alt}): Missing`);
+        console.log(`  ✗ ${key}: Missing`);
       } else {
         success.push(key);
         console.log(`  ✓ ${key}: Set`);
       }
     });
-
-    const url = allEnv.SUPABASE_URL || allEnv.REACT_APP_SUPABASE_URL;
-    if (url && !url.includes('supabase.co')) {
-      warnings.push('SUPABASE_URL should be a valid Supabase URL');
-      console.log(`  ⚠ SUPABASE_URL: Does not look like a Supabase URL`);
-    }
   } else {
     console.log('  ℹ Standalone mode - no external database required');
   }
 
-  // Security settings (check both prefixed and non-prefixed if needed)
+  // Security settings
   console.log('\nSecurity Settings:\n');
   const securityVars = ['REACT_APP_SESSION_COOKIE_SECURE', 'REACT_APP_SESSION_COOKIE_SAMESITE'];
   securityVars.forEach((key) => {
@@ -104,20 +91,19 @@ function validateConfig() {
     console.log();
   }
 
-  if (dbMode === 'supabase') {
-    console.log('✅ Configuration is valid for Supabase production mode');
+  if (dbMode === 'appwrite') {
+    console.log('✅ Configuration is valid for Appwrite production mode');
     console.log('\nNext steps:');
-    console.log('  1. Create database tables in Supabase (run supabase-schema.sql)');
-    console.log('  2. Set proper Row Level Security (RLS) policies if required');
-    console.log('  3. Configure Supabase Auth for user management');
-    console.log('  4. Set environment variables in Vercel:');
-    console.log('     - DATABASE_MODE=supabase');
-    console.log('     - SUPABASE_URL=...');
-    console.log('     - SUPABASE_ANON_KEY=...');
+    console.log('  1. Ensure Appwrite collections are set up (run npm run db:setup)');
+    console.log('  2. Set environment variables in Vercel:');
+    console.log('     - DATABASE_MODE=appwrite');
+    console.log('     - APPWRITE_PROJECT_ID=...');
+    console.log('     - APPWRITE_ENDPOINT=...');
+    console.log('     - APPWRITE_DATABASE_ID=...');
   } else {
     console.log('✅ Configuration is valid for Standalone mode');
     console.log('\nApp will use localStorage for data storage.');
-    console.log('Set DATABASE_MODE=supabase to enable Supabase.');
+    console.log('Set DATABASE_MODE=appwrite to enable Appwrite.');
   }
 
   console.log('\n' + '='.repeat(50) + '\n');

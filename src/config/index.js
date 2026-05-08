@@ -1,20 +1,19 @@
 /**
  * Application Configuration
- * Centralized config for feature flags and environment settings
+ * Centralized config for Appwrite-only production
  */
 
-// Database mode flag: 'supabase' | 'appwrite' | 'standalone' (localStorage mock)
+// Database mode: only 'appwrite' is supported in production
 const dbMode =
   import.meta.env.DATABASE_MODE ||
   import.meta.env.VITE_DATABASE_MODE ||
   import.meta.env.REACT_APP_DATABASE_MODE ||
   'standalone';
 
-export const USE_SUPABASE = dbMode === 'supabase';
 export const USE_APPWRITE = dbMode === 'appwrite';
 export const USE_STANDALONE = dbMode === 'standalone';
 
-// Appwrite Configuration
+// Appwrite Configuration (required in production)
 export const APPWRITE_CONFIG = {
   ENDPOINT:
     import.meta.env.APPWRITE_ENDPOINT ||
@@ -32,19 +31,7 @@ export const APPWRITE_CONFIG = {
     'default',
 };
 
-// Supabase Configuration - kept for backward compatibility/dual-write
-export const SUPABASE_CONFIG = {
-  URL:
-    import.meta.env.SUPABASE_URL ||
-    import.meta.env.VITE_SUPABASE_URL ||
-    import.meta.env.REACT_APP_SUPABASE_URL,
-  ANON_KEY:
-    import.meta.env.SUPABASE_ANON_KEY ||
-    import.meta.env.VITE_SUPABASE_ANON_KEY ||
-    import.meta.env.REACT_APP_SUPABASE_ANON_KEY,
-};
-
-// Security Configuration (kept for compatibility)
+// Security Configuration
 export const SECURITY_CONFIG = {
   SESSION_COOKIE_SECURE: import.meta.env.REACT_APP_SESSION_COOKIE_SECURE === 'true',
   SESSION_COOKIE_SAMESITE: import.meta.env.REACT_APP_SESSION_COOKIE_SAMESITE || 'Strict',
@@ -59,16 +46,12 @@ export const FEATURES = {
   ENABLE_STORAGE: true,
 };
 
-// Validate required configuration
+// Validate required configuration for production
 export const validateConfig = () => {
   const errors = [];
 
   if (USE_APPWRITE && !APPWRITE_CONFIG.PROJECT_ID) {
     errors.push('APPWRITE_PROJECT_ID is required when DATABASE_MODE=appwrite');
-  }
-
-  if (USE_SUPABASE && (!SUPABASE_CONFIG.URL || !SUPABASE_CONFIG.ANON_KEY)) {
-    errors.push('SUPABASE_URL and SUPABASE_ANON_KEY are required when DATABASE_MODE=supabase');
   }
 
   if (errors.length > 0) {
@@ -87,10 +70,8 @@ if (import.meta.env.DEV) {
 }
 
 export default {
-  USE_SUPABASE,
   USE_APPWRITE,
   USE_STANDALONE,
-  SUPABASE_CONFIG,
   APPWRITE_CONFIG,
   SECURITY_CONFIG,
   FEATURES,
