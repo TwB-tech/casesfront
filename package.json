@@ -1,6 +1,6 @@
 {
-  "name": "wakiliworld-standalone-frontend",
-  "version": "1.0.0",
+  "name": "wakiliworld-service-marketplace",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "engines": {
