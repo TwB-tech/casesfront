@@ -123,13 +123,13 @@ const Navbar = () => {
 
   return (
     <nav style={navStyle}>
-      <div className="flex items-center gap-8">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-          <img src={Logo} alt="WakiliWorld" style={{ height: '36px' }} />
-          <span style={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>
-            Wakili<span style={{ color: '#8b5cf6' }}>World</span>
-          </span>
-        </div>
+       <div className="flex items-center gap-4 sm:gap-8">
+         <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+           <img src={Logo} alt="WakiliWorld" className="h-8 sm:h-10" />
+           <span className="hidden sm:inline text-white text-lg font-semibold">
+             Wakili<span style={{ color: '#8b5cf6' }}>World</span>
+           </span>
+         </div>
 
         {!isMobile && (
           <div className="flex items-center gap-6">
@@ -142,7 +142,7 @@ const Navbar = () => {
         )}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
        {user ? (
          <Dropdown menu={{}} overlay={userMenu} trigger={['click']}>
            <Badge dot color="#8b5cf6">
@@ -173,6 +173,7 @@ const Navbar = () => {
               items: menuItems.map((item) => ({
                 key: item.key,
                 label: item.label,
+                style: { color: '#8b5cf6' },
                 onClick: () => navigate(item.path),
               })),
               style: {

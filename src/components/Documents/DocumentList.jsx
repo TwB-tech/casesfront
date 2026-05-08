@@ -489,8 +489,8 @@ function DocumentList() {
            bodyStyle={{ padding: '20px' }}
            data-testid="ai-prompt-card"
          >
-           <Row gutter={16}>
-             <Col span={18}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={18}>
                 <Input.TextArea
                   placeholder="Describe the legal document you need (e.g., 'A lease agreement for a 2-bedroom apartment in Kenya with monthly rent of KES 50,000')"
                   value={docPrompt}
@@ -499,22 +499,22 @@ function DocumentList() {
                   style={{ marginBottom: isSmallScreen ? '12px' : 0 }}
                   data-testid="doc-prompt-input"
                 />
-             </Col>
-             <Col span={6}>
-               <Select
-                 value={docCountry}
-                 onChange={setDocCountry}
-                 style={{ width: '100%', marginBottom: '12px' }}
-               >
-                 <Option value="kenya">Kenya</Option>
-                 <Option value="nigeria">Nigeria</Option>
-                 <Option value="tanzania">Tanzania</Option>
-                 <Option value="uganda">Uganda</Option>
-                 <Option value="ghana">Ghana</Option>
-                 <Option value="south_africa">South Africa</Option>
-                 <Option value="usa">USA</Option>
-                 <Option value="uk">UK</Option>
-               </Select>
+              </Col>
+              <Col xs={24} sm={6}>
+                <Select
+                  value={docCountry}
+                  onChange={setDocCountry}
+                  style={{ width: '100%', marginBottom: '12px' }}
+                >
+                  <Option value="kenya">Kenya</Option>
+                  <Option value="nigeria">Nigeria</Option>
+                  <Option value="tanzania">Tanzania</Option>
+                  <Option value="uganda">Uganda</Option>
+                  <Option value="ghana">Ghana</Option>
+                  <Option value="south_africa">South Africa</Option>
+                  <Option value="usa">USA</Option>
+                  <Option value="uk">UK</Option>
+                </Select>
                 <Button
                   type="primary"
                   icon={<Bot size={16} />}
@@ -526,8 +526,8 @@ function DocumentList() {
                 >
                   Generate
                 </Button>
-             </Col>
-           </Row>
+              </Col>
+            </Row>
          </Card>
 
          {/* Reya AI Document Generator - Inline Editor */}
@@ -555,7 +555,7 @@ function DocumentList() {
                 }}
                 data-testid="generated-document-content"
               />
-              <div style={{ marginTop: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+               <div style={{ marginTop: '12px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                  <Select
                    value={docFormat}
                    onChange={setDocFormat}

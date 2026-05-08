@@ -267,7 +267,7 @@ const LawFirmDirectory = () => {
           <Button
             type="primary"
             size="large"
-            className={isFuturistic ? 'futuristic-btn' : ''}
+            className={isFuturistic ? 'futuristic-btn w-full sm:w-auto' : 'w-full sm:w-auto'}
             style={{
               background: isFuturistic ? '#6366f1' : undefined,
             }}
@@ -288,7 +288,7 @@ const LawFirmDirectory = () => {
   }
 
   return (
-    <div className={`min-h-screen ${isFuturistic ? 'bg-[#0a0a0f]' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen ${isFuturistic ? 'bg-[#1a1025]' : 'bg-gray-50'}`}>
       <Breadcrumbs />
 
       {/* Hero Section */}
@@ -622,26 +622,26 @@ const LawFirmDirectory = () => {
           Get instant access to verified, subscribed law firms. All firms are automatically listed
           upon WakiliWorld subscription.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button
-            type="primary"
-            size="large"
-            className={isFuturistic ? 'futuristic-btn' : ''}
-            style={{
-              background: isFuturistic ? undefined : 'white',
-              color: isFuturistic ? undefined : '#1890ff',
-            }}
-          >
-            Find a Law Firm
-          </Button>
-          <Button
-            size="large"
-            ghost={!isFuturistic}
-            className={isFuturistic ? 'border-aurora-primary text-aurora-primary' : ''}
-          >
-            List Your Firm
-          </Button>
-        </div>
+         <div className="flex flex-col sm:flex-row gap-4 justify-center">
+           <Button
+             type="primary"
+             size="large"
+             className={isFuturistic ? 'futuristic-btn w-full sm:w-auto' : 'w-full sm:w-auto'}
+             style={{
+               background: isFuturistic ? '#6366f1' : undefined,
+               color: isFuturistic ? undefined : '#1890ff',
+             }}
+           >
+             Find a Law Firm
+           </Button>
+           <Button
+             size="large"
+             ghost={!isFuturistic}
+             className={isFuturistic ? 'border-aurora-primary text-aurora-primary w-full sm:w-auto' : ''}
+           >
+             List Your Firm
+           </Button>
+         </div>
       </div>
     </div>
   );
@@ -795,7 +795,7 @@ const FirmCard = ({ firm, onContact }) => {
               type="primary"
               size="small"
               icon={<MessageSquare size={14} />}
-              className={isFuturistic ? 'futuristic-btn' : ''}
+              className={isFuturistic ? 'futuristic-btn px-2 text-xs sm:px-3 sm:text-sm' : 'px-2 text-xs sm:px-3 sm:text-sm'}
               onClick={onContact}
             >
               Request Consultation

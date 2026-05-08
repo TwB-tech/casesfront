@@ -74,7 +74,8 @@ const ContactUsForm = () => {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className={`min-h-screen w-full ${isFuturistic ? 'bg-[#1a1025]' : 'bg-gray-50'} px-4 py-8`}>
+      <div className="max-w-6xl mx-auto">
       <Breadcrumbs />
 
       {/* Header */}
@@ -414,6 +415,7 @@ const ContactUsForm = () => {
             </Text>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
