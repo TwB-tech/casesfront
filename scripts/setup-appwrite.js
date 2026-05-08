@@ -167,12 +167,12 @@ const collections = [
     ],
     permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
-  {
-    name: 'cases',
-    attributes: [
-      { key: 'id', type: 'string', size: 255, required: true },
-      { key: 'organization_id', type: 'string', size: 255, required: true },
-      { key: 'case_number', type: 'string', size: 100, required: true },
+   {
+     name: 'cases',
+     attributes: [
+       { key: 'id', type: 'string', size: 255, required: true },
+       { key: 'organization_id', type: 'string', size: 255 },
+       { key: 'case_number', type: 'string', size: 100, required: true },
       { key: 'title', type: 'string', size: 255, required: true },
       { key: 'description', type: 'text' },
       { key: 'status', type: 'string', size: 50, default: 'open' },
@@ -187,12 +187,12 @@ const collections = [
     ],
     permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
-  {
-    name: 'tasks',
-    attributes: [
-      { key: 'id', type: 'string', size: 255, required: true },
-      { key: 'organization_id', type: 'string', size: 255, required: true },
-      { key: 'title', type: 'string', size: 255, required: true },
+   {
+     name: 'tasks',
+     attributes: [
+       { key: 'id', type: 'string', size: 255, required: true },
+       { key: 'organization_id', type: 'string', size: 255 },
+       { key: 'title', type: 'string', size: 255, required: true },
       { key: 'description', type: 'text' },
       { key: 'assigned_to', type: 'string', size: 255 },
       { key: 'case_id', type: 'string', size: 255 },
@@ -205,12 +205,12 @@ const collections = [
     ],
     permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
-  {
-    name: 'documents',
-    attributes: [
-      { key: 'id', type: 'string', size: 255, required: true },
-      { key: 'organization_id', type: 'string', size: 255, required: true },
-      { key: 'title', type: 'string', size: 255, required: true },
+   {
+     name: 'documents',
+     attributes: [
+       { key: 'id', type: 'string', size: 255, required: true },
+       { key: 'organization_id', type: 'string', size: 255 },
+       { key: 'title', type: 'string', size: 255, required: true },
       { key: 'description', type: 'text' },
       { key: 'owner', type: 'string', size: 255, required: true },
       { key: 'file_path', type: 'text' },
@@ -222,12 +222,12 @@ const collections = [
     ],
     permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
-  {
-    name: 'communications',
-    attributes: [
-      { key: 'id', type: 'string', size: 255, required: true },
-      { key: 'organization_id', type: 'string', size: 255, required: true },
-      { key: 'email', type: 'string', size: 255, required: true },
+   {
+     name: 'communications',
+     attributes: [
+       { key: 'id', type: 'string', size: 255, required: true },
+       { key: 'organization_id', type: 'string', size: 255 },
+       { key: 'email', type: 'string', size: 255, required: true },
       { key: 'subject', type: 'string', size: 255, required: true },
       { key: 'message', type: 'text', required: true },
       { key: 'google_meet_link', type: 'text' },
@@ -252,12 +252,12 @@ const collections = [
     ],
     permissions: ['read("users")', 'create("users")', 'update("users")', 'delete("users")'],
   },
-  {
-    name: 'invoices',
-    attributes: [
-      { key: 'id', type: 'string', size: 255, required: true },
-      { key: 'organization_id', type: 'string', size: 255, required: true },
-      { key: 'invoice_number', type: 'string', size: 100, required: true },
+   {
+     name: 'invoices',
+     attributes: [
+       { key: 'id', type: 'string', size: 255, required: true },
+       { key: 'organization_id', type: 'string', size: 255 },
+       { key: 'invoice_number', type: 'string', size: 100, required: true },
       { key: 'client_name', type: 'string', size: 255, required: true },
       { key: 'client_address', type: 'text' },
       { key: 'crn', type: 'string', size: 100 },
@@ -329,12 +329,12 @@ const collections = [
     ],
     permissions: ['read("users")', 'create("users")', 'update("users")', 'delete("users")'],
   },
-  {
-    name: 'expenses',
-    attributes: [
-      { key: 'id', type: 'string', size: 255, required: true },
-      { key: 'organization_id', type: 'string', size: 255, required: true },
-      { key: 'title', type: 'string', size: 255, required: true },
+   {
+     name: 'expenses',
+     attributes: [
+       { key: 'id', type: 'string', size: 255, required: true },
+       { key: 'organization_id', type: 'string', size: 255 },
+       { key: 'title', type: 'string', size: 255, required: true },
       { key: 'description', type: 'text' },
       { key: 'amount', type: 'float', required: true },
       { key: 'date', type: 'string', size: 20, required: true },
@@ -345,12 +345,12 @@ const collections = [
     ],
     permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
-  {
-    name: 'payroll_runs',
-    attributes: [
-      { key: 'id', type: 'string', size: 255, required: true },
-      { key: 'organization_id', type: 'string', size: 255, required: true },
-      { key: 'total_amount', type: 'float', required: true },
+   {
+     name: 'payroll_runs',
+     attributes: [
+       { key: 'id', type: 'string', size: 255, required: true },
+       { key: 'organization_id', type: 'string', size: 255 },
+       { key: 'total_amount', type: 'float', required: true },
       { key: 'period_start', type: 'string', size: 20, required: true },
       { key: 'period_end', type: 'string', size: 20, required: true },
       { key: 'status', type: 'string', size: 50 },
@@ -372,24 +372,24 @@ const collections = [
     ],
     permissions: ['read("users")', 'create("users")', 'update("users")', 'delete("users")'],
   },
-  {
-    name: 'subscriptions',
-    attributes: [
-      { key: 'id', type: 'string', size: 255, required: true },
-      { key: 'organization_id', type: 'string', size: 255, required: true },
-      { key: 'payment_method', type: 'string', size: 50 },
+   {
+     name: 'subscriptions',
+     attributes: [
+       { key: 'id', type: 'string', size: 255, required: true },
+       { key: 'organization_id', type: 'string', size: 255 },
+       { key: 'payment_method', type: 'string', size: 50 },
       { key: 'status', type: 'string', size: 50 },
       { key: 'current_period_end', type: 'string', size: 20 },
       { key: 'created_at', type: 'datetime' },
     ],
     permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
-   {
-     name: 'onboarding',
-     attributes: [
-       { key: 'id', type: 'string', size: 255, required: true },
-       { key: 'organization_id', type: 'string', size: 255, required: true },
-       { key: 'step', type: 'string', size: 100, required: true },
+    {
+      name: 'onboarding',
+      attributes: [
+        { key: 'id', type: 'string', size: 255, required: true },
+        { key: 'organization_id', type: 'string', size: 255 },
+        { key: 'step', type: 'string', size: 100, required: true },
        { key: 'completed', type: 'boolean', default: false },
        { key: 'created_at', type: 'datetime' },
      ],

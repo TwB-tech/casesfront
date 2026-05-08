@@ -239,10 +239,14 @@ export const getCurrentUser = () => {
 // Fix: handle string "null" and don't fall back to user.id for organization_id
 export const getCurrentOrganizationId = () => {
   const user = getCurrentUser();
-  const orgId = localStorage.getItem('organization_id') || user?.organization_id || null;
-  // Handle string "null" that might be stored in localStorage
-  if (orgId === 'null' || orgId === 'undefined' || orgId === '') {
-    return null;
+  let orgId = localStorage.getItem('organization_id') || user?.organization_id || null;
+  // Normalize string "null"/"undefined"/empty to actual null
+  if (typeof orgId === 'string' && ['null', 'undefined', ''].includes(orgId)) {
+    orgId = null;
+  }
+  // If no organization set, fall back to user's own ID for personal sandbox
+  if (!orgId) {
+    return user?.id || null;
   }
   return orgId;
 };

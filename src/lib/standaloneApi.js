@@ -1800,16 +1800,15 @@ export const standaloneApi = {
       if (existingUser) {
         return failure('A user with this email already exists', 400);
       }
-      const pendingInvite = {
-        id: nextId(db.invites || []),
-        email: email.toLowerCase(),
-        name: name || email.split('@')[0],
-        invited_by: currentUser.id,
-        inviter_name: currentUser.username,
-        token: inviteToken,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-      };
+       const pendingInvite = {
+         id: nextId(db.invites || []),
+         email: email.toLowerCase(),
+         name: name || email.split('@')[0],
+         invited_by: currentUser.id,
+         token: inviteToken,
+         status: 'pending',
+         created_at: new Date().toISOString(),
+       };
       db.invites = db.invites || [];
       db.invites.push(pendingInvite);
       writeDb(db);
@@ -1942,18 +1941,17 @@ export const standaloneApi = {
       const inviteToken = generateSecureToken();
       // In standalone mode, create a pending invite stored in localStorage
       const invite = {
-        id: nextId(db.invites || []),
-        email: payload.email,
-        name: payload.full_name || payload.email.split('@')[0],
-        role: payload.role || 'employee',
-        department: payload.department || '',
-        position: payload.position || '',
-        invited_by: currentUser.id,
-        inviter_name: currentUser.username,
-        token: inviteToken,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-      };
+         id: nextId(db.invites || []),
+         email: payload.email,
+         name: payload.full_name || payload.email.split('@')[0],
+         role: payload.role || 'employee',
+         department: payload.department || '',
+         position: payload.position || '',
+         invited_by: currentUser.id,
+         token: inviteToken,
+         status: 'pending',
+         created_at: new Date().toISOString(),
+       };
       // Initialize invites array if not present
       if (!db.invites) {
         db.invites = [];

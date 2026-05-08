@@ -1591,17 +1591,16 @@ export const appwriteApi = {
       const inviteToken = generateToken();
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      const clientName = name || normalizedEmail.split('@')[0];
-      const inviteData = {
-        email: normalizedEmail,
-        role: 'client',
-        organization_id: orgId,
-        status: 'pending',
-        invited_by: currentUser.id,
-        inviter_name: currentUser.username || '',
-        token: inviteToken,
-        expires_at: expiresAt,
-      };
+       const clientName = name || normalizedEmail.split('@')[0];
+       const inviteData = {
+         email: normalizedEmail,
+         role: 'client',
+         organization_id: orgId,
+         status: 'pending',
+         invited_by: currentUser.id,
+         token: inviteToken,
+         expires_at: expiresAt,
+       };
 
       const { data: createdInvite, error: createErr } = await db.create(COLLECTIONS.INVITES, inviteData);
       if (createErr) {
