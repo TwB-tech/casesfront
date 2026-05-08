@@ -25,7 +25,7 @@ const { Title, Text } = Typography;
 // LicenseActivationModal import temporarily removed
 // import LicenseActivationModal from '../components/LicenseManager/LicenseActivationModal';
 import { LockOutlined, KeyOutlined, UnlockOutlined, ClockCircleOutlined } from '@ant-design/icons';
-/* eslint-disable no-console, react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/exhaustive-deps */
 
 const { TabPane } = Tabs;
 const { Option } = Select;

@@ -6,7 +6,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { formatCurrency } from '../utils/currency';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import axiosInstance from '../axiosConfig';
-/* eslint-disable no-console */
+ 
 
 const PayrollManagement = () => {
   const { isFuturistic } = useTheme();

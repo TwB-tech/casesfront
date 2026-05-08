@@ -15,11 +15,11 @@ export const USE_STANDALONE = dbMode === 'standalone';
 
 // Appwrite Configuration (required in production)
 export const APPWRITE_CONFIG = {
-  ENDPOINT:
-    import.meta.env.APPWRITE_ENDPOINT ||
-    import.meta.env.VITE_APPWRITE_ENDPOINT ||
-    import.meta.env.REACT_APP_APPWRITE_ENDPOINT ||
-    'https://cloud.appwrite.io/v1',
+   ENDPOINT:
+     import.meta.env.APPWRITE_ENDPOINT ||
+     import.meta.env.VITE_APPWRITE_ENDPOINT ||
+     import.meta.env.REACT_APP_APPWRITE_ENDPOINT ||
+     'https://tor.cloud.appwrite.io/v1',
   PROJECT_ID:
     import.meta.env.APPWRITE_PROJECT_ID ||
     import.meta.env.VITE_APPWRITE_PROJECT_ID ||

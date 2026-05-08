@@ -4,6 +4,8 @@
  * Maintains identical API shape to minimize frontend changes
  */
 
+/* global AbortSignal */
+
 import appwrite from './appwrite';
 
 const {
@@ -47,7 +49,7 @@ const generateToken = () => {
 // (Supabase joins → manual Appwrite lookups)
 // ============================================
 const enrichCase = async (item) => {
-  if (!item) return null;
+  if (!item) {return null;}
 
   const user = getCurrentUser();
   const client = item.client_id ? await db.get(COLLECTIONS.USERS, item.client_id) : { data: null };
@@ -72,7 +74,7 @@ const enrichCase = async (item) => {
 };
 
 const enrichTask = async (task) => {
-  if (!task) return null;
+  if (!task) {return null;}
 
   const assignee = task.assigned_to
     ? await db.get(COLLECTIONS.USERS, task.assigned_to)
@@ -88,7 +90,7 @@ const enrichTask = async (task) => {
 };
 
 const enrichDocument = async (doc) => {
-  if (!doc) return null;
+  if (!doc) {return null;}
 
   const owner = doc.owner ? await db.get(COLLECTIONS.USERS, doc.owner) : { data: null };
   const sharedWith = (doc.shared_with || []).map((uid) => ({ id: uid }));
@@ -103,7 +105,7 @@ const enrichDocument = async (doc) => {
 };
 
 const mapInvoice = (inv) => {
-  if (!inv) return null;
+  if (!inv) {return null;}
   return {
     ...inv,
     id: inv.$id || inv.id,
@@ -131,7 +133,7 @@ const mapInvoice = (inv) => {
 
 // Access control helper for documents
 const canAccessDocument = (doc, user) => {
-  if (!doc || !user?.id) return false;
+  if (!doc || !user?.id) {return false;}
   const orgId = user.organization_id || user.id;
   return (
     doc.organization_id === orgId ||
@@ -166,7 +168,7 @@ export const appwriteApi = {
     // CASE: GET all cases (with org filtering)
     if (path === 'case') {
       const { data, error } = await db.list(COLLECTIONS.CASES);
-      if (error) throw error;
+      if (error) {throw error;}
       const user = getCurrentUser();
       const enriched = await Promise.all(data.map(enrichCase));
       return success({ results: enriched });
@@ -176,7 +178,7 @@ export const appwriteApi = {
     if (/^case\/[^/]+$/.test(path)) {
       const id = path.split('/')[1];
       const { data, error } = await db.get(COLLECTIONS.CASES, id);
-      if (error) throw error;
+      if (error) {throw error;}
       const enriched = await enrichCase(data);
       return success(enriched);
     }
@@ -186,7 +188,7 @@ export const appwriteApi = {
         const { data, error } = await db.list(COLLECTIONS.USERS, [
           Query.or([Query.equal('role', 'individual'), Query.equal('role', 'client')]),
         ]);
-        if (error) throw error;
+        if (error) {throw error;}
        return success({
          results: data.map((doc) => ({
            ...doc,
@@ -200,7 +202,7 @@ export const appwriteApi = {
     if (/^individual\/[^/]+$/.test(path) || /^client\/[^/]+$/.test(path)) {
       const id = path.split('/')[1];
       const { data, error } = await db.get(COLLECTIONS.USERS, id);
-      if (error) throw error;
+      if (error) {throw error;}
       return success({
         ...data,
         id: data.id,
@@ -214,14 +216,14 @@ export const appwriteApi = {
        const { data, error } = await db.list(COLLECTIONS.USERS, [
          Query.or([Query.equal('role', 'advocate'), Query.equal('role', 'firm'), Query.equal('role', 'administrator')]),
        ]);
-       if (error) throw error;
+       if (error) {throw error;}
        return success({ results: data.map((doc) => ({ ...doc, id: doc.id })) });
      }
 
      // COURTS: GET all courts
      if (path === 'court') {
        const { data, error } = await db.list(COLLECTIONS.COURTS);
-       if (error) throw error;
+       if (error) {throw error;}
        return success({ results: data });
      }
 
@@ -231,7 +233,7 @@ export const appwriteApi = {
        const { data, error } = await db.list(COLLECTIONS.CASES, [
          Query.equal('advocate_id', user.id),
        ]);
-       if (error) throw error;
+       if (error) {throw error;}
        return success({
          cases_count: data.length,
          results: data.map((doc) => ({ ...doc, id: doc.id })),
@@ -244,7 +246,7 @@ export const appwriteApi = {
        const { data: cases, error: caseErr } = await db.list(COLLECTIONS.CASES, [
          Query.equal('advocate_id', user.id),
        ]);
-       if (caseErr) throw caseErr;
+       if (caseErr) {throw caseErr;}
 
          const clientIds = [...new Set(cases.map((c) => c.client_id).filter(Boolean))];
          if (clientIds.length === 0) {
@@ -256,7 +258,7 @@ export const appwriteApi = {
         const { data: clients, error: clientErr } = await db.list(COLLECTIONS.USERS, [
           idQuery
         ]);
-        if (clientErr) throw clientErr;
+        if (clientErr) {throw clientErr;}
 
        return success({
          clients_count: clients.length,
@@ -267,7 +269,7 @@ export const appwriteApi = {
     // TASKS: GET all tasks (org-filtered)
     if (path === 'tasks') {
       const { data, error } = await db.list(COLLECTIONS.TASKS);
-      if (error) throw error;
+      if (error) {throw error;}
       const tasksWithCase = data.map((t) => ({ ...t, case: t.case_id }));
       const enriched = await Promise.all(tasksWithCase.map(enrichTask));
       return success({ results: enriched });
@@ -276,7 +278,7 @@ export const appwriteApi = {
     // DOCUMENTS: GET all documents
     if (['document_management/api/documents', 'documents'].includes(path)) {
       const { data, error } = await db.list(COLLECTIONS.DOCUMENTS);
-      if (error) throw error;
+      if (error) {throw error;}
       const enriched = await Promise.all(data.map(enrichDocument));
       return success({ results: enriched });
     }
@@ -286,7 +288,7 @@ export const appwriteApi = {
        const parts = path.split('/').filter(Boolean);
        const id = parts[1]; // documents/:id/file
       const { data: doc, error: docErr } = await db.get(COLLECTIONS.DOCUMENTS, id);
-      if (docErr) throw docErr;
+      if (docErr) {throw docErr;}
       const user = await getCurrentUser();
       const hasAccess =
         doc.organization_id === (user.organization_id || user.id) ||
@@ -318,7 +320,7 @@ export const appwriteApi = {
      if (path.startsWith('documents/') && path !== 'documents') {
       const id = path.split('/').filter(Boolean).pop();
       const { data, error } = await db.get(COLLECTIONS.DOCUMENTS, id);
-      if (error) throw error;
+      if (error) {throw error;}
       // Access control
       const user = await getCurrentUser();
       const hasAccess =
@@ -338,7 +340,7 @@ export const appwriteApi = {
         const { data, error } = await db.list(COLLECTIONS.CASES, [
           Query.or([Query.equal('client_id', user.id), Query.equal('advocate_id', user.id)]),
         ]);
-        if (error) throw error;
+        if (error) {throw error;}
        const enriched = await Promise.all(data.map(enrichCase));
        return success(enriched);
      }
@@ -346,7 +348,7 @@ export const appwriteApi = {
     // INVOICES: GET all invoices
     if (['invoices', 'api/invoices'].includes(path)) {
       const { data, error } = await db.list(COLLECTIONS.INVOICES);
-      if (error) throw error;
+      if (error) {throw error;}
       // Map snake_case → camelCase
       return success(data.map(mapInvoice));
     }
@@ -355,7 +357,7 @@ export const appwriteApi = {
      if (/^invoices\/[^/]+$/.test(path)) {
        const id = path.split('/')[1];
       const { data, error } = await db.get(COLLECTIONS.INVOICES, id);
-      if (error) throw error;
+      if (error) {throw error;}
       return success(mapInvoice(data));
     }
 
@@ -363,7 +365,7 @@ export const appwriteApi = {
     if (path.startsWith('auth/user/')) {
       const id = path.split('/').pop();
       const { data, error } = await db.get(COLLECTIONS.USERS, id);
-      if (error) throw error;
+      if (error) {throw error;}
       const { ...safeUser } = data;
       return success(safeUser);
     }
@@ -372,7 +374,7 @@ export const appwriteApi = {
      if (path === 'auth/profile') {
        const user = getCurrentUser();
        const { data: userData, error: userErr } = await db.get(COLLECTIONS.USERS, user.id);
-       if (userErr) throw userErr;
+       if (userErr) {throw userErr;}
 
        // Prefer role from user metadata (user_metadata field in Appwrite prefs)
        // Appwrite stores custom data in 'prefs' field - flattening here
@@ -404,7 +406,7 @@ export const appwriteApi = {
          Query.equal('owner', user.id),
        ]);
 
-       if (caseErr || taskErr || docErr) throw caseErr || taskErr || docErr;
+       if (caseErr || taskErr || docErr) {throw caseErr || taskErr || docErr;}
 
        return success({
          totalCases: cases.length,
@@ -420,7 +422,7 @@ export const appwriteApi = {
      if (path === 'reports/financial') {
        const user = getCurrentUser();
        const { data: invoices, error } = await db.list(COLLECTIONS.INVOICES);
-      if (error) throw error;
+      if (error) {throw error;}
 
       const summary = {
         totalRevenue: invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0),
@@ -447,7 +449,7 @@ export const appwriteApi = {
       const monthlyMap = {};
       const addToMonthly = (dateStr, amount, type) => {
         const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return;
+        if (isNaN(date.getTime())) {return;}
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         if (!monthlyMap[key]) {
           const monthNames = [
@@ -466,8 +468,8 @@ export const appwriteApi = {
           ];
           monthlyMap[key] = { month: monthNames[date.getMonth()], revenue: 0, expenses: 0 };
         }
-        if (type === 'revenue') monthlyMap[key].revenue += amount;
-        else monthlyMap[key].expenses += amount;
+        if (type === 'revenue') {monthlyMap[key].revenue += amount;}
+        else {monthlyMap[key].expenses += amount;}
       };
 
       invoices?.forEach((inv) =>
@@ -556,7 +558,7 @@ export const appwriteApi = {
      if (path === 'expenses') {
        const user = getCurrentUser();
        const { data, error } = await db.list(COLLECTIONS.EXPENSES);
-       if (error) throw error;
+       if (error) {throw error;}
        return success(data);
      }
 
@@ -564,7 +566,7 @@ export const appwriteApi = {
      if (path === 'payroll') {
        const user = getCurrentUser();
        const { data, error } = await db.list(COLLECTIONS.PAYROLL_RUNS);
-       if (error) throw error;
+       if (error) {throw error;}
        return success(data);
      }
 
@@ -573,13 +575,13 @@ export const appwriteApi = {
        const user = getCurrentUser();
        // Filter: exclude individual/clients, only show org members (unless admin)
        const { data, error } = await db.list(COLLECTIONS.USERS);
-       if (error) throw error;
+       if (error) {throw error;}
 
        const filtered = data.filter((item) => {
          const isValidRole = ['advocate', 'firm', 'employee', 'admin', 'administrator'].includes(
            item.role
          );
-         if (user.role === 'admin') return isValidRole;
+         if (user.role === 'admin') {return isValidRole;}
          return isValidRole && item.organization_id === user?.organization_id;
        });
 
@@ -592,7 +594,7 @@ export const appwriteApi = {
        const { data, error } = await db.list(COLLECTIONS.INVITES, [
          Query.equal('status', 'pending'),
        ]);
-       if (error) throw error;
+       if (error) {throw error;}
 
        // Filter: admin sees all, others only their org
        const filtered = data.filter(
@@ -611,7 +613,7 @@ export const appwriteApi = {
       const { data, error } = await db.list(COLLECTIONS.CHAT_ROOMS, [
         Query.equal('room_name', roomName),
       ]);
-      if (error) throw error;
+      if (error) {throw error;}
       const room = data[0];
       return room ? success(room) : { data: null, status: 404 };
     }
@@ -623,7 +625,7 @@ export const appwriteApi = {
         Query.equal('room', roomName),
         Query.orderAsc('timestamp'),
       ]);
-      if (error) throw error;
+      if (error) {throw error;}
       return success(data);
     }
 
@@ -631,7 +633,7 @@ export const appwriteApi = {
      if (path === 'users') {
        const user = getCurrentUser();
        const { data, error } = await db.list(COLLECTIONS.USERS);
-       if (error) throw error;
+       if (error) {throw error;}
        
        // Filter: admins see all; others only their org
        const filtered = user && (user.role === 'admin' || user.role === 'administrator')
@@ -659,7 +661,7 @@ export const appwriteApi = {
          });
        }
        const { data, error } = await db.list(COLLECTIONS.USERS);
-       if (error) throw error;
+       if (error) {throw error;}
        const results = data.map((u) => ({
          id: u.id,
          username: u.username || u.name || u.email,
@@ -696,7 +698,7 @@ export const appwriteApi = {
           },
           'default'
         );
-        if (createErr) throw createErr;
+        if (createErr) {throw createErr;}
         return success(newData);
       }
       return success(data);
@@ -737,7 +739,7 @@ export const appwriteApi = {
       }
 
       // Count advocates per organization
-      let advocatesCountMap = {};
+      const advocatesCountMap = {};
       if (orgIds.length > 0) {
         const advocateQuery = orgIds.length === 1
           ? Query.equal('organization_id', orgIds[0])
@@ -757,7 +759,7 @@ export const appwriteApi = {
       }
 
       // Count cases per organization
-      let casesCountMap = {};
+      const casesCountMap = {};
       if (orgIds.length > 0) {
         const caseQuery = orgIds.length === 1
           ? Query.equal('organization_id', orgIds[0])
@@ -800,7 +802,7 @@ export const appwriteApi = {
       const { data, error } = await db.list(COLLECTIONS.NOTES, [
         Query.equal('user_id', user.id),
       ]);
-      if (error) throw error;
+      if (error) {throw error;}
       return success({ results: data });
     }
 
@@ -810,7 +812,7 @@ export const appwriteApi = {
       const { data, error } = await db.list(COLLECTIONS.COMMUNICATIONS, [
         Query.equal('organization_id', user.organization_id),
       ]);
-      if (error) throw error;
+      if (error) {throw error;}
       return success({ results: data });
     }
 
@@ -818,7 +820,7 @@ export const appwriteApi = {
     if (path.startsWith('clientcomm/api/clientcommunications/') && path !== 'clientcomm/api/clientcommunications') {
       const id = path.split('/').filter(Boolean).pop();
       const { data, error } = await db.get(COLLECTIONS.COMMUNICATIONS, id);
-      if (error) throw error;
+      if (error) {throw error;}
       const user = getCurrentUser();
       if (data.organization_id !== user.organization_id) {
         return failure('Forbidden', 403);
@@ -1319,7 +1321,7 @@ export const appwriteApi = {
         case_number: `CW-${Date.now()}`,
         created_by: user.id,
       });
-      if (error) throw error;
+      if (error) {throw error;}
       const enriched = await enrichCase(data);
       return success(enriched, 201);
     }
@@ -1337,7 +1339,7 @@ export const appwriteApi = {
         organization_id,
         created_by: user.id,
       });
-      if (error) throw error;
+      if (error) {throw error;}
       const enriched = await enrichTask(data);
       return success(enriched, 201);
     }
@@ -1388,7 +1390,7 @@ export const appwriteApi = {
       };
 
       const { data, error } = await db.create(COLLECTIONS.DOCUMENTS, docData);
-      if (error) throw error;
+      if (error) {throw error;}
       const enriched = await enrichDocument(data);
       return success(enriched, 201);
     }
@@ -1415,7 +1417,7 @@ export const appwriteApi = {
       };
 
       const { data, error } = await db.create(COLLECTIONS.INVOICES, invoiceData);
-      if (error) throw error;
+      if (error) {throw error;}
       return success(mapInvoice(data), 201);
     }
 
@@ -1427,7 +1429,7 @@ export const appwriteApi = {
         amount: Number(payload.amount),
         date: payload.date?.format ? payload.date.format('YYYY-MM-DD') : payload.date,
       });
-      if (error) throw error;
+      if (error) {throw error;}
       return success(data, 201);
     }
 
@@ -1444,7 +1446,7 @@ export const appwriteApi = {
           ? payload.period_end.format('YYYY-MM-DD')
           : payload.period_end,
       });
-      if (error) throw error;
+      if (error) {throw error;}
       return success(data, 201);
     }
 
@@ -1481,7 +1483,7 @@ export const appwriteApi = {
       };
 
       const { data, error } = await db.create(COLLECTIONS.USERS, employeeData);
-      if (error) throw error;
+      if (error) {throw error;}
 
       return success(
         {
@@ -1518,7 +1520,7 @@ export const appwriteApi = {
       };
 
       const { data, error } = await db.create(COLLECTIONS.INVITES, inviteData);
-      if (error) throw error;
+      if (error) {throw error;}
 
       // Send email (async, non-blocking)
       // TODO: sendEmployeeInvite(...)
@@ -1650,7 +1652,7 @@ export const appwriteApi = {
         participants: [], // Team rooms are open to all org members
         organization_id: orgId,
       });
-      if (error) throw error;
+      if (error) {throw error;}
       return success(data, 201);
     }
 
@@ -1674,7 +1676,7 @@ export const appwriteApi = {
         participants: [first, second],
         organization_id,
       });
-      if (error) throw error;
+      if (error) {throw error;}
       return success(data, 201);
     }
 
@@ -1705,7 +1707,7 @@ export const appwriteApi = {
         timestamp: new Date().toISOString(),
         attachments: attachments.length > 0 ? attachments : undefined,
       });
-      if (error) throw error;
+      if (error) {throw error;}
       return success(data, 201);
     }
 
@@ -1725,36 +1727,23 @@ export const appwriteApi = {
       };
 
       const { data, error } = await db.create(COLLECTIONS.SERVICE_REQUESTS, requestData);
-      if (error) throw error;
+      if (error) {throw error;}
       return success(data, 201);
     }
 
-    // SERVICE REQUESTS: GET FOR LAWYER
-    if (path.startsWith('service-requests/lawyer/')) {
-      const lawyerId = path.split('/').pop();
-      const { data, error } = await db.list(COLLECTIONS.SERVICE_REQUESTS, [
-        Query.equal('lawyer_id', lawyerId),
-        Query.orderDesc('created_at'),
-      ]);
-      if (error) throw error;
-      return success({ results: data });
-    }
+     // SERVICE REQUESTS: GET FOR LAWYER
+     if (path.startsWith('service-requests/lawyer/')) {
+       const lawyerId = path.split('/').pop();
+       const { data, error } = await db.list(COLLECTIONS.SERVICE_REQUESTS, [
+         Query.equal('lawyer_id', lawyerId),
+         Query.orderDesc('created_at'),
+       ]);
+       if (error) {throw error;}
+       return success({ results: data });
+     }
 
-    // SERVICE REQUESTS: UPDATE STATUS
-    if (path.startsWith('service-requests/') && method === 'PUT') {
-      const requestId = path.split('/')[1];
-      const { status } = payload;
-
-      const { data, error } = await db.update(COLLECTIONS.SERVICE_REQUESTS, requestId, {
-        status,
-        updated_at: new Date().toISOString(),
-      });
-      if (error) throw error;
-      return success(data);
-    }
-
-    // REVIEWS: CREATE
-    if (path === 'reviews') {
+     // REVIEWS: CREATE
+     if (path === 'reviews') {
       const { lawyer_id, client_id, rating, comment, service_type } = payload;
 
       const reviewData = {
@@ -1768,7 +1757,7 @@ export const appwriteApi = {
       };
 
       const { data, error } = await db.create(COLLECTIONS.REVIEWS, reviewData);
-      if (error) throw error;
+      if (error) {throw error;}
       return success(data, 201);
     }
 
@@ -1780,7 +1769,7 @@ export const appwriteApi = {
         Query.equal('status', 'active'),
         Query.orderDesc('created_at'),
       ]);
-      if (error) throw error;
+      if (error) {throw error;}
 
       // Calculate average rating
       const reviews = data;
@@ -1807,7 +1796,7 @@ export const appwriteApi = {
         ])
       ]);
 
-      if (roomsError) throw roomsError;
+      if (roomsError) {throw roomsError;}
 
       // Filter out team rooms (those without exactly 2 participants)
       const directMessageRooms = rooms.filter(room =>
@@ -1855,7 +1844,7 @@ export const appwriteApi = {
         organization_id,
         created_at: new Date().toISOString(),
       });
-      if (error) throw error;
+      if (error) {throw error;}
       return success({
         success: true,
         checkout_request_id: payload.payment_method === 'mpesa' ? `mpesa-${data.id}` : null,
@@ -1870,7 +1859,7 @@ export const appwriteApi = {
         organization_id,
         created_at: new Date().toISOString(),
       });
-      if (error) throw error;
+      if (error) {throw error;}
       return success(data, 201);
     }
 
@@ -2040,7 +2029,7 @@ export const appwriteApi = {
         updated_at: new Date().toISOString(),
       };
       const { data, error } = await db.create(COLLECTIONS.NOTES, noteData);
-      if (error) throw error;
+      if (error) {throw error;}
       return success({ ...data, id: data.id }, 201);
     }
 
@@ -2057,7 +2046,7 @@ export const appwriteApi = {
         created_at: new Date().toISOString(),
       };
       const { data, error } = await db.create(COLLECTIONS.COMMUNICATIONS, commData);
-      if (error) throw error;
+      if (error) {throw error;}
       return success(data, 201);
     }
 
@@ -2087,7 +2076,7 @@ export const appwriteApi = {
         client_id: payload.individual ?? payload.client_id, // keep as string
         court_id: payload.court ? Number(payload.court) : payload.court_id, // integer
       });
-      if (error) throw error;
+      if (error) {throw error;}
       const enriched = await enrichCase(data);
       return success(enriched);
     }
@@ -2100,7 +2089,7 @@ export const appwriteApi = {
         assigned_to: payload.assigned_to, // keep as string ID
         case_id: payload.case ? String(payload.case) : undefined, // keep as string ID
       });
-      if (error) throw error;
+      if (error) {throw error;}
       const enriched = await enrichTask(data);
       return success(enriched);
     }
@@ -2110,7 +2099,7 @@ export const appwriteApi = {
         const id = parts[1];
       // Check permissions: fetch existing document
       const { data: existing, error: fetchErr } = await db.get(COLLECTIONS.DOCUMENTS, id);
-      if (fetchErr) throw fetchErr;
+      if (fetchErr) {throw fetchErr;}
       const user = await getCurrentUser();
       const hasAccess =
         existing.organization_id === (user.organization_id || user.id) ||
@@ -2123,7 +2112,7 @@ export const appwriteApi = {
         ...payload,
         updated_at: new Date().toISOString(),
       });
-      if (error) throw error;
+      if (error) {throw error;}
       const enriched = await enrichDocument(data);
       return success(enriched);
     }
@@ -2141,7 +2130,7 @@ export const appwriteApi = {
         updateData.role = payload.role;
       }
       const { data, error } = await db.update(COLLECTIONS.USERS, id, updateData);
-      if (error) throw error;
+      if (error) {throw error;}
       return success({ ...data, id: data.id, username: data.username });
     }
 
@@ -2149,7 +2138,7 @@ export const appwriteApi = {
     if (['user/communication-settings', 'user/task-settings'].includes(path)) {
       const user = getCurrentUser();
       const { data, error } = await db.update(COLLECTIONS.USERS, user.id, payload);
-      if (error) throw error;
+      if (error) {throw error;}
       return success(data);
     }
 
@@ -2159,7 +2148,20 @@ export const appwriteApi = {
         ...payload,
         updated_at: new Date().toISOString(),
       });
-      if (error) throw error;
+      if (error) {throw error;}
+      return success(data);
+    }
+
+    // SERVICE REQUESTS: UPDATE STATUS
+    if (path.startsWith('service-requests/')) {
+      const requestId = path.split('/')[1];
+      const { status } = payload;
+
+      const { data, error } = await db.update(COLLECTIONS.SERVICE_REQUESTS, requestId, {
+        status,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) {throw error;}
       return success(data);
     }
 
@@ -2177,7 +2179,7 @@ export const appwriteApi = {
     if (path.startsWith('tasks/') || path.startsWith('tasks')) {
       const id = parts[parts.length - 1];
       const { error } = await db.delete(COLLECTIONS.TASKS, id);
-      if (error) throw error;
+      if (error) {throw error;}
       return success({ success: true });
     }
 
@@ -2186,7 +2188,7 @@ export const appwriteApi = {
       const id = parts[parts.length - 1];
       // Check permissions: fetch document
       const { data: doc, error: fetchErr } = await db.get(COLLECTIONS.DOCUMENTS, id);
-      if (fetchErr) throw fetchErr;
+      if (fetchErr) {throw fetchErr;}
       const user = await getCurrentUser();
       const hasAccess =
         doc.organization_id === (user.organization_id || user.id) ||
@@ -2196,7 +2198,7 @@ export const appwriteApi = {
         return failure('You do not have permission to delete this document', 403);
       }
       const { error } = await db.delete(COLLECTIONS.DOCUMENTS, id);
-      if (error) throw error;
+      if (error) {throw error;}
       return success({ success: true });
     }
 

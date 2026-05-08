@@ -1,3 +1,4 @@
+/* global File */
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   Table,

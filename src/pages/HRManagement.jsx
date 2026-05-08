@@ -34,7 +34,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { formatCurrency, CURRENCIES } from '../utils/currency';
 import axiosInstance from '../axiosConfig';
 import useAuth from '../hooks/useAuth';
-/* eslint-disable no-console */
+ 
 
 const { Option } = Select;
 

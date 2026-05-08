@@ -270,7 +270,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
 
     // Save assistant response to conversation memory
     const saveToMemory = useCallback((userMsg, assistantData) => {
-      if (!threadId) return;
+      if (!threadId) {return;}
       try {
         appendMessage(threadId, userMsg, assistantData);
         setConversationHistory((prev) => [

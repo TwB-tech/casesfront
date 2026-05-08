@@ -9,7 +9,11 @@ const dbMode =
 const isAppwriteMode = dbMode === 'appwrite';
 
 // Configuration (only used in Appwrite mode)
-const appwriteEndpoint = import.meta.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+  const appwriteEndpoint =
+    import.meta.env.APPWRITE_ENDPOINT ||
+    import.meta.env.VITE_APPWRITE_ENDPOINT ||
+    import.meta.env.REACT_APP_APPWRITE_ENDPOINT ||
+    'https://tor.cloud.appwrite.io/v1';
 const projectId = import.meta.env.APPWRITE_PROJECT_ID;
 
 // In browser (both dev and prod), use same-origin proxy to avoid CORS
@@ -93,7 +97,11 @@ export const auth = {
   async createEmailSession(email, password) {
     try {
       // Use direct fetch to avoid SDK's internal session check
-      const baseEndpoint = import.meta.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+        const baseEndpoint =
+          import.meta.env.APPWRITE_ENDPOINT ||
+          import.meta.env.VITE_APPWRITE_ENDPOINT ||
+          import.meta.env.REACT_APP_APPWRITE_ENDPOINT ||
+          'https://tor.cloud.appwrite.io/v1';
       // In browser, go through Vercel proxy to avoid CORS
       const url = typeof window !== 'undefined'
         ? `${window.location.origin}/api/appwrite-proxy/account/sessions/email`
@@ -184,7 +192,11 @@ export const auth = {
    async deleteSession() {
      try {
        // Use direct fetch to be explicit
-       const baseEndpoint = import.meta.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+        const baseEndpoint =
+          import.meta.env.APPWRITE_ENDPOINT ||
+          import.meta.env.VITE_APPWRITE_ENDPOINT ||
+          import.meta.env.REACT_APP_APPWRITE_ENDPOINT ||
+          'https://tor.cloud.appwrite.io/v1';
        const url = typeof window !== 'undefined'
          ? `${window.location.origin}/api/appwrite-proxy/account/sessions/current`
          : `${baseEndpoint}/account/sessions/current`;
@@ -271,15 +283,15 @@ export const withOrganization = (queries = [], userId = null, collection = null)
   // Add user-specific access conditions based on collection attributes
   if (userId && collection && COLLECTION_ORG_ATTRIBUTES[collection]) {
     const attrs = COLLECTION_ORG_ATTRIBUTES[collection];
-    if (attrs.includes('client_id')) conditions.push(Query.equal('client_id', userId));
-    if (attrs.includes('advocate_id')) conditions.push(Query.equal('advocate_id', userId));
-    if (attrs.includes('assigned_to')) conditions.push(Query.equal('assigned_to', userId));
-    if (attrs.includes('created_by')) conditions.push(Query.equal('created_by', userId));
-    if (attrs.includes('owner')) conditions.push(Query.equal('owner', userId));
-    if (attrs.includes('submitted_by')) conditions.push(Query.equal('submitted_by', userId));
-    if (attrs.includes('user_id')) conditions.push(Query.equal('user_id', userId));
-    if (attrs.includes('invited_by')) conditions.push(Query.equal('invited_by', userId));
-    if (attrs.includes('shared_with')) conditions.push(Query.contains('shared_with', userId));
+    if (attrs.includes('client_id')) {conditions.push(Query.equal('client_id', userId));}
+    if (attrs.includes('advocate_id')) {conditions.push(Query.equal('advocate_id', userId));}
+    if (attrs.includes('assigned_to')) {conditions.push(Query.equal('assigned_to', userId));}
+    if (attrs.includes('created_by')) {conditions.push(Query.equal('created_by', userId));}
+    if (attrs.includes('owner')) {conditions.push(Query.equal('owner', userId));}
+    if (attrs.includes('submitted_by')) {conditions.push(Query.equal('submitted_by', userId));}
+    if (attrs.includes('user_id')) {conditions.push(Query.equal('user_id', userId));}
+    if (attrs.includes('invited_by')) {conditions.push(Query.equal('invited_by', userId));}
+    if (attrs.includes('shared_with')) {conditions.push(Query.contains('shared_with', userId));}
   }
 
   // Merge: use OR if multiple conditions; direct if single
@@ -342,7 +354,7 @@ const COLLECTION_ORG_ATTRIBUTES = {
 export const db = {
   // Normalize Appwrite document to Supabase-like shape
    normalize(doc) {
-     if (!doc) return doc;
+     if (!doc) {return doc;}
      const { $id, $createdAt, $updatedAt, ...rest } = doc;
      return {
        id: $id,

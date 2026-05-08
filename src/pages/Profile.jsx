@@ -28,7 +28,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useMediaQuery } from 'react-responsive';
 import axiosInstance from '../axiosConfig';
 import moment from 'moment';
-/* eslint-disable no-console */
+ 
 
 const { TabPane } = Tabs;
 

@@ -67,8 +67,8 @@ const sanitizeResponse = (value) => {
 // Response sanitization wrapper
 const sanitizeApiResponse = (response) => {
   if (response && typeof response === 'object') {
-    if (response.data !== undefined) response.data = sanitizeResponse(response.data);
-    if (response.results !== undefined) response.results = sanitizeResponse(response.results);
+    if (response.data !== undefined) {response.data = sanitizeResponse(response.data);}
+    if (response.results !== undefined) {response.results = sanitizeResponse(response.results);}
   }
   return response;
 };
@@ -76,8 +76,8 @@ const sanitizeApiResponse = (response) => {
 // Hybrid API with automatic Appwrite → Supabase fallback on network errors
 const createHybridApi = (primary, fallback) => {
   const isNetworkError = (error) => {
-    if (!error.response) return true;
-    if (error.response.status >= 500) return true;
+    if (!error.response) {return true;}
+    if (error.response.status >= 500) {return true;}
     const msg = error.message?.toLowerCase() || '';
     if (
       msg.includes('network') ||

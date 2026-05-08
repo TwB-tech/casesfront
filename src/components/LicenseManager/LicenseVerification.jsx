@@ -130,62 +130,20 @@ const LicenseVerification = ({ children }) => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [refreshData, performVerification]);
 
-   // If there's an error or we're not blocked, render the app
-   // TEMPORARY: License check disabled for deployment - always render children
-   if (true) {
-     return (
-       <>
-         {showActivation && !activation?.activated && !hasError && (
-           <LicenseActivationModal
-             visible={showActivation}
-             onClose={() => {
-               setShowActivation(false);
-             }}
-           />
-         )}
-         {children}
-       </>
-     );
-   }
-
-  // Only show the blocked state if we're explicitly blocked and there's no error
-  return (
-    <Result
-      status="lock"
-      title="Software License Required"
-      subTitle={
-        <Space direction="vertical" size="middle">
-          <Paragraph>
-            Your trial period has expired or the license is invalid. Please activate your software
-            license to continue using WakiliWorld CRM.
-          </Paragraph>
-          <Paragraph>
-            <Text strong>Contact for License:</Text>
-            <br />
-            Email: support@techwithbrands.com
-            <br />
-            Phone: +254 700 000 000
-            <br />
-            Mpesa Till: 8352474 | KCB: 1261709403
-          </Paragraph>
-        </Space>
-      }
-      extra={[
-        <Button
-          key="activate"
-          type="primary"
-          size="large"
-          onClick={() => setShowActivation(true)}
-          icon={<UnlockOutlined />}
-        >
-          Activate License
-        </Button>,
-        <Button key="retry" size="large" onClick={() => window.location.reload()}>
-          Retry
-        </Button>,
-      ]}
-    />
-  );
-};
+   // License check disabled for deployment - always render children
+   return (
+     <>
+       {showActivation && !activation?.activated && !hasError && (
+         <LicenseActivationModal
+           visible={showActivation}
+           onClose={() => {
+             setShowActivation(false);
+           }}
+         />
+       )}
+       {children}
+     </>
+   );
+ };
 
 export default LicenseVerification;

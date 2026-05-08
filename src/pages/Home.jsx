@@ -122,7 +122,7 @@ function Home() {
   // Compute case month-over-month growth
   const caseGrowth = useMemo(() => {
     const caseList = cases.results || [];
-    if (caseList.length === 0) return null;
+    if (caseList.length === 0) {return null;}
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
@@ -142,7 +142,7 @@ function Home() {
   // Compute client month-over-month growth
   const clientGrowth = useMemo(() => {
     const clientList = clients.results || [];
-    if (clientList.length === 0) return null;
+    if (clientList.length === 0) {return null;}
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
@@ -379,7 +379,7 @@ function Home() {
     console.log(value.format('YYYY-MM-DD'), mode);
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     fetchCases();
     fetchClients();

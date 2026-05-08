@@ -22,7 +22,7 @@ import Breadcrumbs from '../components/ui/Breadcrumbs';
 import api from '../axiosConfig';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-/* eslint-disable no-console */
+ 
 
 const LawFirmDirectory = () => {
   const { isFuturistic } = useTheme();

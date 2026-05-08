@@ -117,7 +117,7 @@ const normalizeRegisterPayload = (formData, userType) => {
 
   // Role-specific handling
   switch (role) {
-    case 'organization':
+    case 'organization': {
       const orgName = lowered['organization name'];
       if (!orgName || orgName.trim() === '') {
         throw new Error('Organization name is required');
@@ -128,8 +128,9 @@ const normalizeRegisterPayload = (formData, userType) => {
         organization_id: null,
         registration_number: lowered['registration number'] || '',
       };
+    }
 
-    case 'firm':
+    case 'firm': {
       const firmName = lowered['law firm name'];
       if (!firmName || firmName.trim() === '') {
         throw new Error('Law firm name is required');
@@ -144,8 +145,9 @@ const normalizeRegisterPayload = (formData, userType) => {
         practice_areas: practiceAreas,
         registration_number: lowered['registration number'] || '',
       };
+    }
 
-    case 'law_school':
+    case 'law_school': {
       const instName = lowered['institution name'];
       if (!instName || instName.trim() === '') {
         throw new Error('Institution name is required');
@@ -155,8 +157,9 @@ const normalizeRegisterPayload = (formData, userType) => {
         username: instName.trim(),
         organization_id: null,
       };
+    }
 
-    case 'legal_clinic':
+    case 'legal_clinic': {
       const clinicName = lowered['clinic name'];
       if (!clinicName || clinicName.trim() === '') {
         throw new Error('Clinic name is required');
@@ -166,8 +169,9 @@ const normalizeRegisterPayload = (formData, userType) => {
         username: clinicName.trim(),
         organization_id: null,
       };
+    }
 
-    case 'advocate':
+    case 'advocate': {
       const fullName = lowered['full name'];
       if (!fullName || fullName.trim() === '') {
         throw new Error('Full name is required');
@@ -185,9 +189,10 @@ const normalizeRegisterPayload = (formData, userType) => {
         occupation: lowered.occupation || '',
         date_of_birth: lowered['date of birth'] || '',
       };
+    }
 
     case 'individual':
-    default:
+    default: {
       const indName = lowered['full name'];
       if (!indName || indName.trim() === '') {
         throw new Error('Full name is required');
@@ -200,6 +205,7 @@ const normalizeRegisterPayload = (formData, userType) => {
         occupation: lowered.occupation || '',
         date_of_birth: lowered['date of birth'] || '',
       };
+    }
   }
 };
 

@@ -182,7 +182,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
      
      // Filter routes by role if specified
      routes = routes.filter(route => {
-       if (!route.roles) return true; // No role restriction
+       if (!route.roles) {return true;} // No role restriction
        return route.roles.includes(user?.role || '');
      });
      

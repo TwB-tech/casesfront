@@ -19,7 +19,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-/* eslint-disable no-console */
+ 
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;

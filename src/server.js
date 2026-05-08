@@ -54,7 +54,7 @@ module.exports = async function (context) {
         }
         res.setHeader(
           'Content-Security-Policy',
-          "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://cloud.appwrite.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+          "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://tor.cloud.appwrite.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
         );
         res.send(content);
         return;
@@ -72,7 +72,7 @@ module.exports = async function (context) {
       const nonce = require('crypto').randomBytes(16).toString('hex');
       indexContent = indexContent.replace(
         /<head>/i,
-        `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://cloud.appwrite.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"><meta name="csrf-token" content="${nonce}">`
+        `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://tor.cloud.appwrite.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"><meta name="csrf-token" content="${nonce}">`
       );
     }
 

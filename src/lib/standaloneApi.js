@@ -651,10 +651,10 @@ export const standaloneApi = {
 
     // Firm employees endpoint - get employees under a firm
     if (path === '/firm/employees/') {
-      const currentUser = user || {};
-      const orgId = currentUser.organization_id || currentUser.id;
+      const user = currentUser() || {};
+      const orgId = user.organization_id || user.id;
       const employees = db.users.filter(
-        (item) => item.organization_id === orgId || item.invited_by === currentUser.id
+        (item) => item.organization_id === orgId || item.invited_by === user.id
       );
       return success({ results: employees.map(publicUser) });
     }
@@ -972,8 +972,8 @@ export const standaloneApi = {
       const invites = db.invites || [];
       // Filter: only show invites relevant to current user's org/role
       const filtered = invites.filter((inv) => {
-        if (!user) return false;
-        if (user.role === 'admin') return true;
+        if (!user) {return false;}
+        if (user.role === 'admin') {return true;}
         return inv.invited_by === user.id || inv.organization_id === user.organization_id;
       });
       return success({ results: filtered });
@@ -1897,8 +1897,8 @@ export const standaloneApi = {
         return failure('Employee with this email already exists', 400);
       }
       // Get organization_id from current logged in user (firm owner)
-      const currentUser = user || {};
-      const orgId = currentUser.organization_id || currentUser.id;
+      const user = currentUser() || {};
+      const orgId = user.organization_id || user.id;
       const newUser = {
         id: nextId(db.users),
         username: payload.name || payload.full_name || email.split('@')[0],
@@ -1917,7 +1917,7 @@ export const standaloneApi = {
         verification_token: generateVerificationToken(),
         // Link employee to organization
         organization_id: orgId,
-        invited_by: currentUser.id,
+        invited_by: user.id,
       };
       db.users.push(newUser);
       writeDb(db);
@@ -1937,7 +1937,7 @@ export const standaloneApi = {
       if (exists) {
         return failure('Employee already exists', 400);
       }
-      const currentUser = user || {};
+      const user = currentUser() || {};
       const inviteToken = generateSecureToken();
       // In standalone mode, create a pending invite stored in localStorage
       const invite = {
@@ -1946,9 +1946,9 @@ export const standaloneApi = {
          name: payload.full_name || payload.email.split('@')[0],
          role: payload.role || 'employee',
          department: payload.department || '',
-         position: payload.position || '',
-         invited_by: currentUser.id,
-         token: inviteToken,
+          position: payload.position || '',
+          invited_by: user.id,
+          token: inviteToken,
          status: 'pending',
          created_at: new Date().toISOString(),
        };
@@ -1959,10 +1959,10 @@ export const standaloneApi = {
       db.invites.push(invite);
       writeDb(db);
       // Send invitation email
-      sendEmployeeInvite({
-        employeeEmail: payload.email,
-        employeeName: payload.full_name || payload.email.split('@')[0],
-        inviterName: currentUser.username || 'Your Law Firm',
+        sendEmployeeInvite({
+          employeeEmail: payload.email,
+          employeeName: payload.full_name || payload.email.split('@')[0],
+          inviterName: user.username || 'Your Law Firm',
         role: payload.role || 'employee',
         inviteToken,
       }).catch((err) => console.error('Failed to send invite email:', err));

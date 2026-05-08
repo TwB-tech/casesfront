@@ -40,15 +40,15 @@ export default function Chat() {
         setRoomName('team_chat');
       }
     };
-    if (user) getRoom();
+    if (user) {getRoom();}
   }, [user]);
 
   // Fetch team members if admin or firm
   useEffect(() => {
     const fetchTeam = async () => {
-      if (!user) return;
+      if (!user) {return;}
       const isAdminOrFirm = ['admin', 'administrator', 'firm'].includes(user.role?.toLowerCase());
-      if (!isAdminOrFirm) return;
+      if (!isAdminOrFirm) {return;}
 
       try {
         const response = await axiosInstance.get('/users');
@@ -62,7 +62,7 @@ export default function Chat() {
 
   // Fetch messages
   const fetchMessages = useCallback(async () => {
-    if (!user) return;
+    if (!user) {return;}
     try {
       setLoading(true);
       const messagesResponse = await axiosInstance.get(`chats/get-messages/${roomName}/`);
@@ -107,7 +107,7 @@ export default function Chat() {
   // Listen for new messages from other tabs
   useEffect(() => {
     const unsub = eventBus.on('chatMessageSent', () => {
-      if (user) fetchMessages();
+      if (user) {fetchMessages();}
     });
     return () => unsub();
   }, [user, fetchMessages]);
@@ -121,7 +121,7 @@ export default function Chat() {
 
   // Send message
   const sendMessage = async () => {
-    if ((!message && fileList.length === 0) || !user) return;
+    if ((!message && fileList.length === 0) || !user) {return;}
 
     const tempMessage = {
       sender_id: user.id,

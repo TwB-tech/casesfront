@@ -31,7 +31,7 @@ export default function Messages() {
   // Fetch users for starting new conversations
   useEffect(() => {
     const fetchUsers = async () => {
-      if (!user) return;
+      if (!user) {return;}
       try {
         const response = await axiosInstance.get('/users');
         // Filter out current user and get users from different organizations or external contacts
@@ -46,7 +46,7 @@ export default function Messages() {
 
   // Fetch conversations (direct message rooms)
   const fetchConversations = useCallback(async () => {
-    if (!user) return;
+    if (!user) {return;}
     try {
       setLoading(true);
       // This would need a new API endpoint to get all DM conversations for a user
@@ -63,7 +63,7 @@ export default function Messages() {
 
   // Fetch messages for selected conversation
   const fetchMessages = useCallback(async (roomName) => {
-    if (!user || !roomName) return;
+    if (!user || !roomName) {return;}
     try {
       const messagesResponse = await axiosInstance.get(`chats/get-messages/${roomName}`);
       const formattedMessages = messagesResponse.data.map((msg) => ({
@@ -134,7 +134,7 @@ export default function Messages() {
       setSelectedConversation(conversation);
       setConversations(prev => {
         const existing = prev.find(c => c.id === conversation.id);
-        if (existing) return prev;
+        if (existing) {return prev;}
         return [...prev, conversation];
       });
 
@@ -149,7 +149,7 @@ export default function Messages() {
 
   // Send message
   const sendMessage = async () => {
-    if ((!message && fileList.length === 0) || !user || !selectedConversation) return;
+    if ((!message && fileList.length === 0) || !user || !selectedConversation) {return;}
 
     const tempMessage = {
       sender_id: user.id,

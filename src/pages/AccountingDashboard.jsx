@@ -38,7 +38,7 @@ const AccountingDashboard = () => {
 
   const navigate = useNavigate();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     const abortController = new AbortController();
 
