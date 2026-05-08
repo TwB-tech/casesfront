@@ -31,8 +31,7 @@ function SignUpMultiStep() {
     Advocate: [
       ['full name', 'email', 'phone number', 'bar number'],
       ['practice areas', 'bio'],
-      ['services offered', 'consultation availability'],
-      ['password', 'confirm password'],
+      ['services offered', 'consultation availability', 'password', 'confirm password'],
     ],
     'Law School': [
       ['institution name', 'email', 'phone number'],
