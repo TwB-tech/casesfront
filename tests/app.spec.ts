@@ -84,10 +84,26 @@ test.describe('Documents Module', () => {
 });
 
 test.describe('Chat Module', () => {
-  test('chat users page loads', async ({ page }) => {
-    await page.goto('/chat-users');
+  test('messages page loads', async ({ page }) => {
+    await page.goto('/messages');
     await page.waitForLoadState('domcontentloaded');
     expect(page.url()).toBeTruthy();
+  });
+});
+
+test.describe('Law Firms Directory', () => {
+  test('firms directory loads', async ({ page }) => {
+    await page.goto('/firms');
+    await page.waitForLoadState('domcontentloaded');
+    expect(page.url()).toBeTruthy();
+  });
+
+  test('service filter works', async ({ page }) => {
+    await page.goto('/firms');
+    await page.waitForLoadState('domcontentloaded');
+    // Check if service filter dropdown exists
+    const serviceFilter = page.locator('select').filter({ hasText: 'All Services' });
+    await expect(serviceFilter).toBeVisible();
   });
 });
 

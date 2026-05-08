@@ -31,6 +31,7 @@ function SignUpMultiStep() {
     Advocate: [
       ['full name', 'email', 'phone number', 'bar number'],
       ['practice areas', 'bio'],
+      ['services offered', 'consultation availability'],
       ['password', 'confirm password'],
     ],
     'Law School': [
@@ -272,6 +273,70 @@ function SignUpMultiStep() {
                   borderColor: borderColor,
                 }}
               />
+            ) : field === 'services offered' ? (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium mb-2" style={{ color: textColor }}>
+                  Select the legal services you offer:
+                </label>
+                {[
+                  { key: 'consultation', label: 'Legal Consultation (30-60 min calls)' },
+                  { key: 'document_review', label: 'Document Review & Analysis' },
+                  { key: 'contract_drafting', label: 'Contract Drafting & Negotiation' },
+                  { key: 'court_representation', label: 'Court Representation' },
+                  { key: 'legal_advice', label: 'General Legal Advice' },
+                ].map((service) => (
+                  <label key={service.key} className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      name={`service_${service.key}`}
+                      checked={formData[`service_${service.key}`] || false}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        [`service_${service.key}`]: e.target.checked
+                      }))}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      style={{
+                        accentColor: accentColor,
+                      }}
+                    />
+                    <span style={{ color: textColor, fontSize: '14px' }}>
+                      {service.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            ) : field === 'consultation availability' ? (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium mb-2" style={{ color: textColor }}>
+                  When are you available for consultations?
+                </label>
+                {[
+                  { key: 'weekdays_9_5', label: 'Weekdays 9 AM - 5 PM' },
+                  { key: 'weekdays_evening', label: 'Weekdays Evening (5 PM - 8 PM)' },
+                  { key: 'weekends', label: 'Weekends' },
+                  { key: 'flexible', label: 'Flexible Schedule' },
+                ].map((option) => (
+                  <label key={option.key} className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      name="consultation_availability"
+                      value={option.key}
+                      checked={formData.consultation_availability === option.key}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        consultation_availability: option.key
+                      }))}
+                      className="border-gray-300 text-blue-600 focus:ring-blue-500"
+                      style={{
+                        accentColor: accentColor,
+                      }}
+                    />
+                    <span style={{ color: textColor, fontSize: '14px' }}>
+                      {option.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
             ) : (
               <input
                 type={field.includes('password') ? 'password' : 'text'}
@@ -351,6 +416,13 @@ function SignUpMultiStep() {
               : 'Not provided'}
           </div>
         ))}
+
+        <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: isFuturistic ? '#2a2a3a' : '#f0f0f0', color: mutedText }}>
+          <p className="text-sm text-center">
+            Please review your information above. Click <strong>Submit</strong> to create your account and receive a verification email.
+          </p>
+        </div>
+
         <div className="flex justify-between mt-6">
           <button
             onClick={prevStep}

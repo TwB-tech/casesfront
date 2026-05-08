@@ -1710,6 +1710,145 @@ export const appwriteApi = {
       return success(data, 201);
     }
 
+    // SERVICE REQUESTS: CREATE
+    if (path === 'service-requests') {
+      const { client_id, lawyer_id, service_category, case_description, preferred_time, urgency } = payload;
+
+      const requestData = {
+        client_id,
+        lawyer_id,
+        service_category,
+        case_description,
+        preferred_time: preferred_time || 'flexible',
+        urgency: urgency || 'normal',
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await db.create(COLLECTIONS.SERVICE_REQUESTS, requestData);
+      if (error) throw error;
+      return success(data, 201);
+    }
+
+    // SERVICE REQUESTS: GET FOR LAWYER
+    if (path.startsWith('service-requests/lawyer/')) {
+      const lawyerId = path.split('/').pop();
+      const { data, error } = await db.list(COLLECTIONS.SERVICE_REQUESTS, [
+        Query.equal('lawyer_id', lawyerId),
+        Query.orderDesc('created_at'),
+      ]);
+      if (error) throw error;
+      return success({ results: data });
+    }
+
+    // SERVICE REQUESTS: UPDATE STATUS
+    if (path.startsWith('service-requests/') && method === 'PUT') {
+      const requestId = path.split('/')[1];
+      const { status } = payload;
+
+      const { data, error } = await db.update(COLLECTIONS.SERVICE_REQUESTS, requestId, {
+        status,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+      return success(data);
+    }
+
+    // REVIEWS: CREATE
+    if (path === 'reviews') {
+      const { lawyer_id, client_id, rating, comment, service_type } = payload;
+
+      const reviewData = {
+        lawyer_id,
+        client_id,
+        rating: parseInt(rating),
+        comment: comment || '',
+        service_type: service_type || 'general',
+        created_at: new Date().toISOString(),
+        status: 'active',
+      };
+
+      const { data, error } = await db.create(COLLECTIONS.REVIEWS, reviewData);
+      if (error) throw error;
+      return success(data, 201);
+    }
+
+    // REVIEWS: GET BY LAWYER
+    if (path.startsWith('reviews/lawyer/')) {
+      const lawyerId = path.split('/').pop();
+      const { data, error } = await db.list(COLLECTIONS.REVIEWS, [
+        Query.equal('lawyer_id', lawyerId),
+        Query.equal('status', 'active'),
+        Query.orderDesc('created_at'),
+      ]);
+      if (error) throw error;
+
+      // Calculate average rating
+      const reviews = data;
+      const averageRating = reviews.length > 0
+        ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+        : 0;
+
+      return success({
+        reviews,
+        averageRating: Math.round(averageRating * 10) / 10,
+        totalReviews: reviews.length
+      });
+    }
+
+    // CHATS: GET USER CONVERSATIONS (direct messages)
+    if (path.startsWith('chats/user-conversations/')) {
+      const userId = path.split('/').pop();
+
+      // Find all chat rooms where the user is a participant
+      const { data: rooms, error: roomsError } = await db.list(COLLECTIONS.CHAT_ROOMS, [
+        Query.or([
+          Query.search('participants', userId),
+          Query.equal('participants', userId)
+        ])
+      ]);
+
+      if (roomsError) throw roomsError;
+
+      // Filter out team rooms (those without exactly 2 participants)
+      const directMessageRooms = rooms.filter(room =>
+        room.participants && room.participants.length === 2
+      );
+
+      // Get the other participant info and last message for each conversation
+      const conversations = await Promise.all(
+        directMessageRooms.map(async (room) => {
+          const otherUserId = room.participants.find(id => id !== userId);
+
+          // Get other user details
+          const { data: otherUser } = await db.get(COLLECTIONS.USERS, otherUserId);
+
+          // Get last message
+          const { data: messages } = await db.list(COLLECTIONS.CHAT_MESSAGES, [
+            Query.equal('room', room.room_name),
+            Query.orderDesc('timestamp'),
+            Query.limit(1)
+          ]);
+
+          return {
+            id: room.id,
+            room_name: room.room_name,
+            participants: room.participants,
+            other_user: otherUser ? {
+              id: otherUser.id,
+              username: otherUser.username || otherUser.name || otherUser.email,
+              email: otherUser.email,
+              role: otherUser.role || 'individual'
+            } : null,
+            last_message: messages.length > 0 ? messages[0].content : null,
+            last_message_time: messages.length > 0 ? messages[0].timestamp : null,
+          };
+        })
+      );
+
+      return success({ conversations });
+    }
+
     // BILLING: SUBSCRIBE
      if (path === 'billing/subscribe') {
       const { data, error } = await db.create(COLLECTIONS.SUBSCRIPTIONS, {

@@ -33,6 +33,7 @@ const { Content } = Layout;
 const CaseForm = lazy(() => import('./components/CaseManagement/CaseForm'));
 const CaseList = lazy(() => import('./components/CaseManagement/CaseList'));
 const Chat = lazy(() => import('./pages/Chat'));
+const Messages = lazy(() => import('./pages/Messages'));
 const CaseDetails = lazy(() => import('./components/CaseManagement/CaseDetails'));
 const ClientList = lazy(() => import('./components/ClientManagement/ClientList'));
 const ClientDetails = lazy(() => import('./components/ClientManagement/ClientDetails'));
@@ -60,7 +61,7 @@ const OnboardingRequest = lazy(() => import('./components/OnboardingRequest'));
 const AddClient = lazy(() => import('./components/AddClient'));
 const ClientRegister = lazy(() => import('./pages/ClientRegister'));
 const ClientDashboard = lazy(() => import('./pages/ClientDashboard'));
-const FirmsMarketplace = lazy(() => import('./pages/FirmsMarketplace'));
+const LawFirmDirectory = lazy(() => import('./pages/FirmsMarketplace'));
 const AccountingDashboard = lazy(() => import('./pages/AccountingDashboard'));
 const ExpenseManagement = lazy(() => import('./pages/ExpenseManagement'));
 const HRManagement = lazy(() => import('./pages/HRManagement'));
@@ -340,16 +341,24 @@ function AppContent() {
                          </ProtectedRoute>
                        }
                      />
-                     <Route
-                       path="/chat"
-                       element={
-                         <ProtectedRoute>
-                           <ErrorBoundary><Chat /></ErrorBoundary>
-                         </ProtectedRoute>
-                       }
-                     />
-                     <Route
-                       path="/tasks/"
+                      <Route
+                        path="/chat"
+                        element={
+                          <ProtectedRoute>
+                            <ErrorBoundary><Chat /></ErrorBoundary>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/messages"
+                        element={
+                          <ProtectedRoute>
+                            <ErrorBoundary><Messages /></ErrorBoundary>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/tasks/"
                        element={
                          <ProtectedRoute>
                            <ErrorBoundary><Tasks /></ErrorBoundary>
@@ -427,7 +436,7 @@ function AppContent() {
                      <Route path="/terms" element={<ErrorBoundary><Terms /></ErrorBoundary>} />
                      <Route path="/onboarding" element={<ErrorBoundary><OnboardingRequest /></ErrorBoundary>} />
                      <Route path="/client-register" element={<ErrorBoundary><ClientRegister /></ErrorBoundary>} />
-                     <Route path="/firms" element={<ErrorBoundary><FirmsMarketplace /></ErrorBoundary>} />
+                      <Route path="/firms" element={<ErrorBoundary><LawFirmDirectory /></ErrorBoundary>} />
                      <Route
                        path="/accounting"
                        element={

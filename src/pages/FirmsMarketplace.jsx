@@ -21,14 +21,17 @@ import { CURRENCIES } from '../utils/currency';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import api from '../axiosConfig';
 import { useNavigate } from 'react-router-dom';
+import useAuth from '../hooks/useAuth';
 /* eslint-disable no-console */
 
-const FirmsMarketplace = () => {
+const LawFirmDirectory = () => {
   const { isFuturistic } = useTheme();
   const { currency } = useCurrency();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('all');
   const [activeCategory, setActiveCategory] = useState('all');
+  const [activeService, setActiveService] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [firms, setFirms] = useState([]);
@@ -41,23 +44,73 @@ const FirmsMarketplace = () => {
       const response = await api.get('/firm/');
       const responseData = response.data || {};
       const firmsList = Array.isArray(responseData.results) ? responseData.results : [];
-      const firmsData = firmsList.map((firm) => ({
-        id: firm.id,
-        name: firm.name || firm.username || 'Unknown Firm',
-        email: firm.email,
-        phone: firm.phone || '',
-        bio: firm.bio || 'Professional legal services',
-        specialties: Array.isArray(firm.practice_areas)
-          ? firm.practice_areas.slice(0, 3)
-          : firm.practice_areas
-          ? String(firm.practice_areas).split(',').slice(0, 3)
-          : [],
-        location: firm.address || 'Nairobi, Kenya',
-        verified: firm.verified || false,
-        memberSince: firm.memberSince || (firm.created_at ? firm.created_at.split('T')[0] : ''),
-        advocatesCount: firm.advocatesCount || 0,
-        completedProjects: firm.completedProjects || 0,
+      // Fetch reviews for all firms in parallel
+      const firmsData = await Promise.all(firmsList.map(async (firm) => {
+        try {
+          const reviewsResponse = await api.get(`/reviews/lawyer/${firm.id}`);
+          const reviewData = reviewsResponse.data || { averageRating: 0, totalReviews: 0, reviews: [] };
+
+          return {
+            id: firm.id,
+            name: firm.name || firm.username || 'Unknown Firm',
+            email: firm.email,
+            phone: firm.phone || '',
+            bio: firm.bio || 'Professional legal services',
+            specialties: Array.isArray(firm.practice_areas)
+              ? firm.practice_areas.slice(0, 3)
+              : firm.practice_areas
+              ? String(firm.practice_areas).split(',').slice(0, 3)
+              : [],
+            location: firm.address || 'Nairobi, Kenya',
+            verified: firm.verified || false,
+            memberSince: firm.memberSince || (firm.created_at ? firm.created_at.split('T')[0] : ''),
+            // Service information
+            services: {
+              consultation: firm.service_consultation || false,
+              document_review: firm.service_document_review || false,
+              contract_drafting: firm.service_contract_drafting || false,
+              court_representation: firm.service_court_representation || false,
+              legal_advice: firm.service_legal_advice || false,
+            },
+            consultation_availability: firm.consultation_availability || null,
+            // Review information
+            averageRating: reviewData.averageRating || 0,
+            totalReviews: reviewData.totalReviews || 0,
+            reviews: reviewData.reviews || [],
+          };
+        } catch (error) {
+          console.error(`Error fetching reviews for firm ${firm.id}:`, error);
+          return {
+            id: firm.id,
+            name: firm.name || firm.username || 'Unknown Firm',
+            email: firm.email,
+            phone: firm.phone || '',
+            bio: firm.bio || 'Professional legal services',
+            specialties: Array.isArray(firm.practice_areas)
+              ? firm.practice_areas.slice(0, 3)
+              : firm.practice_areas
+              ? String(firm.practice_areas).split(',').slice(0, 3)
+              : [],
+            location: firm.address || 'Nairobi, Kenya',
+            verified: firm.verified || false,
+            memberSince: firm.memberSince || (firm.created_at ? firm.created_at.split('T')[0] : ''),
+            // Service information
+            services: {
+              consultation: firm.service_consultation || false,
+              document_review: firm.service_document_review || false,
+              contract_drafting: firm.service_contract_drafting || false,
+              court_representation: firm.service_court_representation || false,
+              legal_advice: firm.service_legal_advice || false,
+            },
+            consultation_availability: firm.consultation_availability || null,
+            // Default review values
+            averageRating: 0,
+            totalReviews: 0,
+            reviews: [],
+          };
+        }
       }));
+
       setFirms(firmsData);
     } catch (error) {
       console.error('Error fetching firms:', error);
@@ -144,12 +197,34 @@ const FirmsMarketplace = () => {
     const matchesCategory =
       activeCategory === 'all' ||
       (firm.specialties && firm.specialties.some((spec) => spec.toLowerCase().includes(activeCategory)));
-    return matchesSearch && matchesCategory;
+    const matchesService =
+      activeService === 'all' ||
+      (firm.services && firm.services[activeService]);
+    return matchesSearch && matchesCategory && matchesService;
   });
 
-  const handleContact = (firm) => {
-    // Redirect to chat page with hire parameters; ProtectedRoute ensures only authenticated users can access
-    navigate(`/chat?hire=${firm.id}&type=firm`);
+  const handleContact = async (firm) => {
+    if (!user) {
+      // User not authenticated, redirect to login with return URL
+      navigate(`/login?returnUrl=${encodeURIComponent('/firms')}`);
+      message.info('Please sign in to request consultations');
+      return;
+    }
+
+    // For now, create a direct message conversation
+    // Later this can be enhanced with a service request form
+    try {
+      const response = await api.post('/chats/create-or-get-chat-room', {
+        user_id: user.id,
+        other_user_id: firm.id,
+      });
+
+      navigate('/messages');
+      message.success('Consultation request sent! The lawyer will respond soon.');
+    } catch (error) {
+      console.error('Error creating consultation request:', error);
+      message.error('Failed to send request. Please try again.');
+    }
   };
 
   const tabItems = [
@@ -213,7 +288,7 @@ const FirmsMarketplace = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className={`min-h-screen ${isFuturistic ? 'bg-[#0a0a0f]' : 'bg-gray-50'}`}>
       <Breadcrumbs />
 
       {/* Hero Section */}
@@ -304,10 +379,28 @@ const FirmsMarketplace = () => {
       {/* Stats Section */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Verified Law Firms', value: '50+', icon: Building },
-          { label: 'Cases Handled', value: '25,000+', icon: CheckCircle2 },
-          { label: 'Average Rating', value: '4.8/5', icon: Star },
-          { label: 'Response Time', value: '< 1 hour', icon: Clock },
+          {
+            label: 'Verified Law Firms',
+            value: firms.filter(f => f.verified).length.toString(),
+            icon: Building
+          },
+          {
+            label: 'Active Lawyers',
+            value: firms.length.toString(),
+            icon: CheckCircle2
+          },
+          {
+            label: 'Average Rating',
+            value: firms.length > 0
+              ? (firms.reduce((sum, f) => sum + f.averageRating, 0) / firms.length).toFixed(1) + '/5'
+              : '0/5',
+            icon: Star
+          },
+          {
+            label: 'Response Time',
+            value: '< 24 hours',
+            icon: Clock
+          },
         ].map((stat, idx) => (
           <div
             key={idx}
@@ -337,6 +430,31 @@ const FirmsMarketplace = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Service Filter */}
+      <div className="mb-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <span className={`text-sm font-medium ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}>
+            Filter by Service:
+          </span>
+          <select
+            value={activeService}
+            onChange={(e) => setActiveService(e.target.value)}
+            className={`px-3 py-2 rounded-lg border ${
+              isFuturistic
+                ? 'bg-cyber-bg border-cyber-border text-aurora-text'
+                : 'bg-white border-neutral-200 text-neutral-800'
+            }`}
+          >
+            <option value="all">All Services</option>
+            <option value="consultation">Legal Consultation</option>
+            <option value="document_review">Document Review</option>
+            <option value="contract_drafting">Contract Drafting</option>
+            <option value="court_representation">Court Representation</option>
+            <option value="legal_advice">General Legal Advice</option>
+          </select>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -560,6 +678,14 @@ const FirmCard = ({ firm, onContact }) => {
               </h3>
               {firm.verified && <CheckCircle2 className="w-4 h-4 text-success-500 flex-shrink-0" />}
             </div>
+            {firm.averageRating > 0 && (
+              <div className="flex items-center gap-1 mt-1">
+                <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                <span className={`text-xs font-medium ${isFuturistic ? 'text-aurora-text' : 'text-neutral-700'}`}>
+                  {firm.averageRating.toFixed(1)} ({firm.totalReviews} reviews)
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-1 mt-1 text-sm">
               <MapPin className="w-3 h-3 text-neutral-400" />
               <span className={isFuturistic ? 'text-aurora-muted' : 'text-neutral-500'}>{firm.location}</span>
@@ -597,6 +723,42 @@ const FirmCard = ({ firm, onContact }) => {
           )}
         </div>
 
+        {/* Services Offered */}
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-2">
+            {firm.services?.consultation && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                <MessageSquare size={10} />
+                Consultation
+              </span>
+            )}
+            {firm.services?.document_review && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                <FileText size={10} />
+                Document Review
+              </span>
+            )}
+            {firm.services?.contract_drafting && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                <FileText size={10} />
+                Contract Drafting
+              </span>
+            )}
+            {firm.services?.court_representation && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                <Scale size={10} />
+                Court Representation
+              </span>
+            )}
+            {firm.services?.legal_advice && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                <Award size={10} />
+                Legal Advice
+              </span>
+            )}
+          </div>
+        </div>
+
         <div
           className={`grid grid-cols-2 gap-3 mb-4 text-sm ${
             isFuturistic ? 'text-aurora-muted' : 'text-neutral-600'
@@ -630,23 +792,13 @@ const FirmCard = ({ firm, onContact }) => {
           </div>
           <div className="flex gap-2">
             <Button
-              size="small"
-              icon={<MessageSquare size={14} />}
-              className={isFuturistic ? 'border-cyber-border' : ''}
-              onClick={onContact}
-            >
-              Contact
-            </Button>
-            <Button
               type="primary"
               size="small"
+              icon={<MessageSquare size={14} />}
               className={isFuturistic ? 'futuristic-btn' : ''}
-              style={{
-                background: isFuturistic ? undefined : '#1890ff',
-              }}
               onClick={onContact}
             >
-              Retain
+              Request Consultation
             </Button>
           </div>
         </div>
@@ -655,4 +807,4 @@ const FirmCard = ({ firm, onContact }) => {
   );
 };
 
-export default FirmsMarketplace;
+export default LawFirmDirectory;

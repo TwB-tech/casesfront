@@ -89,6 +89,13 @@ const BASE_ROUTES = [
     routes: ['/chat'],
   },
   {
+    key: 'messages',
+    path: '/messages',
+    label: 'Messages',
+    icon: MailOutlined,
+    routes: ['/messages'],
+  },
+  {
     key: 'notes',
     path: '/notes',
     label: 'Notes',

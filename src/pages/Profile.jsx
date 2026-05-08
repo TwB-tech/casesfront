@@ -369,8 +369,79 @@ const ProfilePage = () => {
           <p>Clients list will be displayed here.</p>
         </TabPane>
         <TabPane tab="Documents" key="3">
-          {/* Documents content */}
-          <p>Documents will be displayed here.</p>
+
+        </TabPane>
+        <TabPane tab="Reviews" key="reviews">
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">My Reviews</h3>
+              <p className="text-gray-600 mb-4">
+                Reviews you've left for lawyers and services.
+              </p>
+              {/* Reviews list would go here */}
+              <div className="text-center py-8 text-gray-500">
+                No reviews yet. Reviews will appear here after consultations.
+              </div>
+            </div>
+          </div>
+        </TabPane>
+        <TabPane tab="Services" key="services">
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Legal Services Offered</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {[
+                  { key: 'consultation', label: 'Legal Consultation (30-60 min calls)', icon: '💬' },
+                  { key: 'document_review', label: 'Document Review & Analysis', icon: '📄' },
+                  { key: 'contract_drafting', label: 'Contract Drafting & Negotiation', icon: '📝' },
+                  { key: 'court_representation', label: 'Court Representation', icon: '⚖️' },
+                  { key: 'legal_advice', label: 'General Legal Advice', icon: '🎯' },
+                ].map((service) => (
+                  <div
+                    key={service.key}
+                    className={`p-4 border rounded-lg ${
+                      profileData?.[`service_${service.key}`]
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-gray-200 bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">{service.icon}</span>
+                      <div className="flex-1">
+                        <h4 className="font-medium">{service.label}</h4>
+                        <p className="text-sm text-gray-600">
+                          {profileData?.[`service_${service.key}`] ? '✓ Offered' : 'Not offered'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Consultation Availability</h3>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm">
+                  <strong>Current Availability:</strong>{' '}
+                  {profileData?.consultation_availability
+                    ? profileData.consultation_availability.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                    : 'Not set'
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={() => setEditModalVisible(true)}
+              >
+                Update Services
+              </Button>
+            </div>
+          </div>
         </TabPane>
         <TabPane tab="Settings" key="4">
           {/* Settings content */}
@@ -406,6 +477,82 @@ const ProfilePage = () => {
           >
             <Input />
           </Form.Item>
+
+          {/* Service fields for advocates/lawyers */}
+          {profileData?.role === 'advocate' && (
+            <>
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-lg font-medium mb-3">Legal Services</h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  Select the legal services you offer to clients:
+                </p>
+                <div className="space-y-3">
+                  {[
+                    { key: 'consultation', label: 'Legal Consultation (30-60 min calls)' },
+                    { key: 'document_review', label: 'Document Review & Analysis' },
+                    { key: 'contract_drafting', label: 'Contract Drafting & Negotiation' },
+                    { key: 'court_representation', label: 'Court Representation' },
+                    { key: 'legal_advice', label: 'General Legal Advice' },
+                  ].map((service) => (
+                    <div key={service.key} className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id={`service_${service.key}`}
+                        checked={form.getFieldValue(`service_${service.key}`) || false}
+                        onChange={(e) => {
+                          const currentValues = form.getFieldsValue();
+                          form.setFieldsValue({
+                            ...currentValues,
+                            [`service_${service.key}`]: e.target.checked
+                          });
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label htmlFor={`service_${service.key}`} className="text-sm">
+                        {service.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-lg font-medium mb-3">Consultation Availability</h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  When are you available for client consultations?
+                </p>
+                <div className="space-y-3">
+                  {[
+                    { key: 'weekdays_9_5', label: 'Weekdays 9 AM - 5 PM' },
+                    { key: 'weekdays_evening', label: 'Weekdays Evening (5 PM - 8 PM)' },
+                    { key: 'weekends', label: 'Weekends' },
+                    { key: 'flexible', label: 'Flexible Schedule' },
+                  ].map((option) => (
+                    <div key={option.key} className="flex items-center space-x-3">
+                      <input
+                        type="radio"
+                        id={`availability_${option.key}`}
+                        name="consultation_availability"
+                        value={option.key}
+                        checked={form.getFieldValue('consultation_availability') === option.key}
+                        onChange={(e) => {
+                          const currentValues = form.getFieldsValue();
+                          form.setFieldsValue({
+                            ...currentValues,
+                            consultation_availability: option.key
+                          });
+                        }}
+                        className="border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label htmlFor={`availability_${option.key}`} className="text-sm">
+                        {option.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </Form>
       </Modal>
 

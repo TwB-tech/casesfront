@@ -669,7 +669,7 @@ function Home() {
             onClick={() => navigate('/firms')}
           >
             <p style={{ margin: 0, fontWeight: 500, color: isFuturistic ? '#f8fafc' : '#102a43' }}>
-              Firms Marketplace
+              Law Firms
             </p>
           </Card>
         </Col>
@@ -870,6 +870,41 @@ function Home() {
           </Col>
         )}
       </Row>
+
+      {/* Service Requests Card - Advocates only */}
+      {user && user.role === 'advocate' && (
+        <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
+          <Col xs={24}>
+            <Card
+              className={isFuturistic ? 'hover-glow' : ''}
+              style={{
+                borderRadius: '16px',
+                background: isFuturistic ? '#1a1a24' : '#ffffff',
+                border: isFuturistic ? '1px solid #2a2a3a' : '1px solid transparent',
+              }}
+              title={
+                <span style={{ color: isFuturistic ? '#f8fafc' : '#102a43', fontWeight: 600 }}>
+                  📋 Consultation Requests
+                </span>
+              }
+              extra={
+                <Button type="link" onClick={() => navigate('/messages')}>
+                  View All
+                </Button>
+              }
+            >
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <p style={{ color: isFuturistic ? '#94a3b8' : '#627d98', marginBottom: '16px' }}>
+                  New consultation requests will appear here. Check your Messages tab for client inquiries.
+                </p>
+                <Button type="primary" onClick={() => navigate('/messages')}>
+                  Check Messages
+                </Button>
+              </div>
+            </Card>
+          </Col>
+        </Row>
+      )}
 
       <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
         {/* Analytics Section */}

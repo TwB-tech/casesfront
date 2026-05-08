@@ -73,7 +73,7 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
-          REACT_APP_USE_APPWRITE: false
+          REACT_APP_DATABASE_MODE: appwrite
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

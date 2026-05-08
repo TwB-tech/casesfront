@@ -67,6 +67,8 @@ export const COLLECTIONS = {
   INVOICE_ITEMS: 'invoice_items',
   CHAT_ROOMS: 'chat_rooms',
   CHAT_MESSAGES: 'chat_messages',
+  SERVICE_REQUESTS: 'service_requests',
+  REVIEWS: 'reviews',
   AUDIT_LOGS: 'audit_logs',
   EXPENSES: 'expenses',
    PAYROLL_RUNS: 'payroll_runs',
