@@ -1,62 +1,11 @@
-// Vercel serverless function: verify email token via appwrite-proxy
-// Uses the same proxy as frontend to ensure consistent query handling
+// Vercel serverless function: verify email token by calling Appwrite directly
 export default async function handler(req, res) {
-    try {
-      // Call Appwrite directly (server-side, no CORS) with absolute URL
-      const appwriteEndpoint = (process.env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1').replace(/\/$/, '');
-      const proxyUrl = `${appwriteEndpoint}/databases/${databaseId}/collections/users/documents`;
+  try {
+    console.log('🔔 verify-email called', { method: req.method, token: req.body?.token?.substring(0, 10) });
 
-      // Build query parameters using Appwrite's expected format: queries[0] with JSON string
-      const params = new URLSearchParams();
-      params.append('queries[0]', JSON.stringify({
-        method: 'equal',
-        attribute: 'verification_token',
-        values: [token]
-      }));
-      params.append('limit', '1');
-
-      const fullUrl = proxyUrl + '?' + params.toString();
-      console.log('🔍 Querying Appwrite URL:', fullUrl);
-
-      const listRes = await fetch(fullUrl, {
-        method: 'GET',
-        headers: {
-          'X-Appwrite-Project': projectId,
-          'Content-Type': 'application/json',
-          'X-Appwrite-Key': process.env.APPWRITE_API_KEY,
-        },
-      });
-
-      console.log('📥 Appwrite list response status:', listRes.status);
-      const ct = listRes.headers.get('content-type');
-      console.log('📦 Content-Type:', ct);
-
-      if (!listRes.ok) {
-        let err;
-        try {
-          err = await listRes.json();
-        } catch (e) {
-          const text = await listRes.text();
-          console.error('❌ Appwrite list error (non-JSON):', listRes.status, text.substring(0, 200));
-          return res.status(listRes.status).json({ error: 'Appwrite error', details: text.substring(0, 200) });
-        }
-        console.error('❌ Appwrite list error:', listRes.status, err);
-        return res.status(listRes.status).json({ error: err.message || 'Failed to lookup token' });
-      }
-
-      let data;
-      try {
-        data = await listRes.json();
-      } catch (parseErr) {
-        const raw = await listRes.text();
-        console.error('❌ Failed to parse Appwrite response as JSON:', parseErr.message, 'Raw:', raw.substring(0, 200));
-        return res.status(500).json({ error: 'Invalid response from database', details: parseErr.message });
-      }
-
-      const { documents } = data;
-      if (!documents || documents.length === 0) {
-        return res.status(404).json({ error: 'Invalid verification token' });
-      }
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
 
     const projectId = process.env.APPWRITE_PROJECT_ID;
     const databaseId = process.env.APPWRITE_DATABASE_ID;
@@ -69,17 +18,17 @@ export default async function handler(req, res) {
       return res.status(503).json({ error: 'Server configuration error', missing });
     }
 
-    // Safely get token (handle cases where body parsing might not have occurred)
+    // Safely extract token
     const token = req.body?.token;
     if (!token || typeof token !== 'string' || token.trim() === '') {
       return res.status(400).json({ error: 'Verification token is required' });
     }
 
-    // Call Appwrite directly (server-side, no CORS) with absolute URL
+    // Build absolute Appwrite URL
     const appwriteEndpoint = (process.env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1').replace(/\/$/, '');
-    const proxyUrl = `${appwriteEndpoint}/databases/${databaseId}/collections/users/documents`;
+    const baseUrl = `${appwriteEndpoint}/databases/${databaseId}/collections/users/documents`;
 
-    // Build query parameters using Appwrite's expected format: queries[0] with JSON string
+    // Build query: queries[0]=JSON({method:'equal',attribute:'verification_token',values:[token]})
     const params = new URLSearchParams();
     params.append('queries[0]', JSON.stringify({
       method: 'equal',
@@ -87,8 +36,10 @@ export default async function handler(req, res) {
       values: [token]
     }));
     params.append('limit', '1');
+    const fullUrl = `${baseUrl}?${params.toString()}`;
 
-    const listRes = await fetch(proxyUrl + '?' + params.toString(), {
+    console.log('🔍 GET Appwrite:', fullUrl);
+    const listRes = await fetch(fullUrl, {
       method: 'GET',
       headers: {
         'X-Appwrite-Project': projectId,
@@ -97,25 +48,34 @@ export default async function handler(req, res) {
       },
     });
 
-    if (!listRes.ok) {
-      const err = await listRes.json().catch(() => ({}));
-      console.error('❌ Appwrite list error:', listRes.status, err);
-      return res.status(listRes.status).json({ error: err.message || 'Failed to lookup token' });
+    console.log('📥 Appwrite list status:', listRes.status);
+    let listData;
+    try {
+      listData = await listRes.json();
+    } catch (e) {
+      const raw = await listRes.text();
+      console.error('❌ Failed to parse list JSON:', raw.substring(0, 200));
+      return res.status(listRes.status).json({ error: 'Database returned invalid JSON', details: raw.substring(0, 200) });
     }
 
-    const { documents } = await listRes.json();
-    if (!documents || documents.length === 0) {
+    if (!listRes.ok) {
+      console.error('❌ Appwrite list error:', listData);
+      return res.status(listRes.status).json({ error: listData.message || 'Failed to lookup token' });
+    }
+
+    const documents = listData.documents || [];
+    if (documents.length === 0) {
       return res.status(404).json({ error: 'Invalid verification token' });
     }
 
     const user = documents[0];
-    console.log('🔍 Found user by token:', { userId: user.$id, email: user.email, current_verified: user.email_verified });
+    console.log('🔍 Found user:', { id: user.$id, email: user.email, email_verified: user.email_verified });
 
     if (user.email_verified) {
       return res.status(200).json({ message: 'Email already verified', email_verified: true });
     }
 
-    // Update directly via Appwrite
+    // PATCH update
     const updateUrl = `${appwriteEndpoint}/databases/${databaseId}/collections/users/documents/${user.$id}`;
     const updatePayload = {
       email_verified: true,
@@ -123,7 +83,7 @@ export default async function handler(req, res) {
       status: 'Active',
     };
 
-    console.log('🔍 PATCH to Appwrite:', updateUrl);
+    console.log('🔍 PATCH Appwrite:', updateUrl);
     const updateRes = await fetch(updateUrl, {
       method: 'PATCH',
       headers: {
@@ -134,37 +94,29 @@ export default async function handler(req, res) {
       body: JSON.stringify(updatePayload),
     });
 
-    console.log('📥 Appwrite update response status:', updateRes.status);
-    if (!updateRes.ok) {
-      let err;
-      try {
-        err = await updateRes.json();
-      } catch (e) {
-        const text = await updateRes.text();
-        console.error('❌ Appwrite update error (non-JSON):', updateRes.status, text.substring(0, 200));
-        return res.status(updateRes.status).json({ error: 'Update failed', details: text.substring(0, 200) });
-      }
-      console.error('❌ Appwrite update error:', updateRes.status, err);
-      return res.status(updateRes.status).json({ error: err.message || 'Failed to update verification' });
-    }
-
-    let updated;
+    console.log('📥 Appwrite update status:', updateRes.status);
+    let updateData;
     try {
-      updated = await updateRes.json();
-    } catch (parseErr) {
+      updateData = await updateRes.json();
+    } catch (e) {
       const raw = await updateRes.text();
-      console.error('❌ Failed to parse update response:', parseErr.message, 'Raw:', raw.substring(0, 200));
-      return res.status(500).json({ error: 'Invalid response from database on update' });
+      console.error('❌ Failed to parse update JSON:', raw.substring(0, 200));
+      return res.status(updateRes.status).json({ error: 'Update response invalid', details: raw.substring(0, 200) });
     }
-    console.log('✅ Verification updated successfully:', { userId: updated.$id, email_verified: updated.email_verified });
 
+    if (!updateRes.ok) {
+      console.error('❌ Appwrite update error:', updateData);
+      return res.status(updateRes.status).json({ error: updateData.message || 'Failed to update verification' });
+    }
+
+    console.log('✅ Verification successful for:', updateData.$id);
     return res.status(200).json({
       message: 'Email verified successfully',
       email_verified: true,
-      user_id: updated.$id,
+      user_id: updateData.$id,
     });
   } catch (error) {
-    console.error('❌ Verification error:', error);
+    console.error('❌ Verification handler error:', error);
     return res.status(500).json({ error: error?.message || 'Verification failed' });
   }
 }
