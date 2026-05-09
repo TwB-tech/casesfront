@@ -6,7 +6,8 @@
 **Branch:** `main`  
 **Latest Deployments:**
 
-- `b513d2c` — Ready (fix: email verification query format, add employee invite endpoint, remove duplicate code) ← current
+- `d32b840` — Ready (fix: correct Appwrite query format — use 'column' and 'values' array) ← current
+- `b513d2c` — Ready (fix: email verification query format, add employee invite endpoint, remove duplicate code)
 - `3bfafaf` — Ready (fix: Reya minimize, chat crash, invites, document formats, firm contact)
 - `caa8af8` — Ready (fix: restore correct ZAI endpoint for Reya AI)
 - `fa5c3e7` — Ready (fix: React error #31, email verification propagation, document formats, client invites, rewrite ordering)
@@ -797,19 +798,25 @@ if (typeof window !== 'undefined') {
 - **File:** `src/lib/appwriteApi.jsx`
 
 #### Email Verification API Query Fix
-- **Problem:** Email verification link returned 400 error: "Invalid query: Equal queries require at least one value."
-- **Root Cause:** `/api/verify-email` serverless function built the Appwrite query incorrectly by passing a JSON string as a single `queries[0]` parameter instead of separate `queries[0][method]`, `queries[0][attribute]`, `queries[0][value]` fields.
-- **Fix:** Rewrote query parameter construction in `api/verify-email.js` to use the proper Appwrite REST format:
+- **Problem:** Email verification link returned 400 error: "Invalid query: Equal queries require at least one value." Then after first fix: "Invalid `queries` param: Value must be a valid array"
+- **Root Cause:** `/api/verify-email` serverless function built the Appwrite query with wrong field names. Appwrite REST expects:
+  ```json
+  {"method":"equal","column":"verification_token","values":["token"]}
   ```
-  queries[0][method]=equal
-  queries[0][attribute]=verification_token
-  queries[0][value]=<token>
+  Not `{"method":"equal","attribute":"verification_token","value":"token"}`. The fields are `column` (not `attribute`) and `values` (array, not single value).
+- **Fix:** Corrected query construction in `api/verify-email.js`:
+  ```javascript
+  queryParams.append('queries[0]', JSON.stringify({
+    method: 'equal',
+    column: 'verification_token',
+    values: [token],
+  }));
   ```
-- Also corrected employee invite email URL to point to `/auth/accept-invite` (was `/auth/register`).
-- Removed duplicate `hr/invites` handler block from `src/lib/appwriteApi.jsx` that was causing build failures.
+- Also corrected employee invite email URL to `/auth/accept-invite` (was `/auth/register`).
+- Removed duplicate `hr/invites` handler block from `src/lib/appwriteApi.jsx` causing build failure.
 - Added `/api/send-employee-invite` route to local `api-server.js`.
 - **Files:** `api/verify-email.js`, `api/send-employee-invite.js`, `api-server.js`, `src/lib/appwriteApi.jsx`
-- **Commit:** `b513d2c`
+- **Commit:** `d32b840` (query fix), `b513d2c` (invite endpoints)
 
 ---
 
