@@ -27,13 +27,11 @@ export default async function handler(req, res) {
    }
 
     try {
-      // Build query using Appwrite Query.equal format: { method, attribute, value }
+      // Build query using Appwrite Query.equal format: queries[0][method]=equal&queries[0][attribute]=verification_token&queries[0][value]=TOKEN
       const queryParams = new URLSearchParams();
-      queryParams.append('queries[0]', JSON.stringify({
-        method: 'equal',
-        attribute: 'verification_token',
-        value: token,
-      }));
+      queryParams.append('queries[0][method]', 'equal');
+      queryParams.append('queries[0][attribute]', 'verification_token');
+      queryParams.append('queries[0][value]', token);
       queryParams.append('limit', '1');
       const listUrl = `${endpoint}/databases/${databaseId}/collections/users/documents?${queryParams.toString()}`;
       const listRes = await fetch(listUrl, {

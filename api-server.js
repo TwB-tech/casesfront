@@ -6,6 +6,7 @@ import contactHandler from './api/contact.js';
 import sendVerificationEmailHandler from './api/send-verification-email.js';
 import verifyEmailHandler from './api/verify-email.js';
 import sendClientInviteHandler from './api/send-client-invite.js';
+import sendEmployeeInviteHandler from './api/send-employee-invite.js';
 
 // Load environment variables from .env
 import { config } from 'dotenv';
@@ -28,6 +29,7 @@ app.post('/api/contact', (req, res) => contactHandler(req, res));
 app.post('/api/send-verification-email', (req, res) => sendVerificationEmailHandler(req, res));
 app.post('/api/verify-email', (req, res) => verifyEmailHandler(req, res));
 app.post('/api/send-client-invite', sendClientInviteHandler);
+app.post('/api/send-employee-invite', sendEmployeeInviteHandler);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -39,6 +41,10 @@ app.listen(PORT, () => {
   console.log(`✅ API server running on http://localhost:${PORT}`);
   console.log(`   • POST /api/reya`);
   console.log(`   • /api/appwrite-proxy/*`);
+  console.log(`   • POST /api/contact`);
+  console.log(`   • POST /api/send-verification-email`);
+  console.log(`   • POST /api/verify-email`);
   console.log(`   • POST /api/send-client-invite`);
+  console.log(`   • POST /api/send-employee-invite`);
   console.log(`   • GET /api/health`);
 });

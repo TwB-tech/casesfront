@@ -1649,43 +1649,64 @@ export const appwriteApi = {
       );
     }
 
-    // HR: SEND INVITATION
-     if (path === 'hr/invites') {
-      const orgId = localStorage.getItem('organization_id') || payload.organization_id;
+     // HR: SEND INVITATION
+      if (path === 'hr/invites') {
+       const orgId = localStorage.getItem('organization_id') || payload.organization_id;
 
-      if (!user.id || !['advocate', 'firm', 'admin', 'administrator'].includes(user.role)) {
-        return failure('You do not have permission to send invitations', 403);
-      }
+       if (!user.id || !['advocate', 'firm', 'admin', 'administrator'].includes(user.role)) {
+         return failure('You do not have permission to send invitations', 403);
+       }
 
-      const inviteToken = generateToken();
-      const inviteData = {
-        email: payload.email,
-        role: payload.role || 'employee',
-        department: payload.department || '',
-        organization_id: orgId,
-        status: 'pending',
-        invited_by: user.id,
-        token: inviteToken,
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        created_at: new Date().toISOString(),
-      };
+       // Get inviter's details for email
+       const { data: inviter, error: inviterErr } = await db.get(COLLECTIONS.USERS, user.id);
+       const inviterName = inviter?.username || inviter?.name || 'A WakiliWorld Team Member';
+       const inviterEmail = inviter?.email || '';
 
-      const { data, error } = await db.create(COLLECTIONS.INVITES, inviteData);
-      if (error) {throw error;}
+       const inviteToken = generateToken();
+       const inviteData = {
+         email: payload.email,
+         role: payload.role || 'employee',
+         department: payload.department || '',
+         organization_id: orgId,
+         status: 'pending',
+         invited_by: user.id,
+         token: inviteToken,
+         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+         created_at: new Date().toISOString(),
+       };
 
-      // Send email (async, non-blocking)
-      // TODO: sendEmployeeInvite(...)
+       const { data, error } = await db.create(COLLECTIONS.INVITES, inviteData);
+       if (error) {throw error;}
 
-      return success(
-        {
-          message: `Invitation sent to ${payload.email}`,
-          invite: data,
-        },
-        201
-      );
-     }
+       // Send invitation email via serverless function (async, non-blocking)
+       try {
+         await fetch('/api/send-employee-invite', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+             inviterName,
+             inviterEmail,
+             inviteeName: payload.name || payload.email.split('@')[0],
+             inviteeEmail: payload.email,
+             role: payload.role || 'employee',
+             department: payload.department || '',
+             inviteToken,
+           }),
+         }).catch(() => {});
+       } catch (emailErr) {
+         console.warn('Failed to send employee invite email:', emailErr);
+       }
 
-    // CLIENTS: SEND INVITATION (CRM add client)
+       return success(
+         {
+           message: `Invitation sent to ${payload.email}`,
+           invite: data,
+         },
+         201
+       );
+       }
+
+     // CLIENTS: SEND INVITATION (CRM add client)
     if (path === 'clients/invite') {
       const currentUser = getCurrentUser();
       if (!currentUser?.id) {
@@ -1755,27 +1776,28 @@ export const appwriteApi = {
          expires_at: expiresAt,
        };
 
-      const { data: createdInvite, error: createErr } = await db.create(COLLECTIONS.INVITES, inviteData);
-      if (createErr) {
-        console.error('Failed to create invite:', createErr);
-        return failure('Failed to create invitation', 500);
-      }
+       const { data: createdInvite, error: createErr } = await db.create(COLLECTIONS.INVITES, inviteData);
+       if (createErr) {
+         console.error('Failed to create invite:', createErr);
+         return failure('Failed to create invitation', 500);
+       }
 
-      // Send invitation email via serverless function (best effort)
-      try {
-        await fetch('/api/send-client-invite', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            inviterName: currentUser.username || 'A WakiliWorld user',
-            clientName: clientName,
-            clientEmail: normalizedEmail,
-            inviteToken,
-          }),
-        }).catch(() => {});
-      } catch (emailErr) {
-        console.warn('Failed to send invite email:', emailErr);
-      }
+       // Send invitation email via serverless function (best effort)
+       try {
+         await fetch('/api/send-client-invite', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+             inviterName: currentUser.username || 'A WakiliWorld user',
+             inviterEmail: currentUser.email,
+             clientName: clientName,
+             clientEmail: normalizedEmail,
+             inviteToken,
+           }),
+         }).catch(() => {});
+       } catch (emailErr) {
+         console.warn('Failed to send invite email:', emailErr);
+       }
 
       return success({
         message: `Invitation sent to ${normalizedEmail}`,
