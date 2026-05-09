@@ -76,37 +76,36 @@ export default function Notes() {
       )
     : notes;
 
-  // Create/update note
-  const saveNote = async () => {
-    if (!title.trim()) {
-      return;
-    }
+   // Create/update note
+   const saveNote = async () => {
+     if (!title.trim()) {
+       return;
+     }
 
-    try {
-      if (editingNote) {
-        // Update
-        await axiosInstance.post('/notes/', {
-          id: editingNote.id,
-          title,
-          content,
-        });
-      } else {
-        // Create
-        await axiosInstance.post('/notes/', {
-          title,
-          content,
-        });
-      }
+     try {
+       if (editingNote) {
+         // Update using PUT
+         await axiosInstance.put(`/notes/${editingNote.id}/`, {
+           title,
+           content,
+         });
+       } else {
+         // Create
+         await axiosInstance.post('/notes/', {
+           title,
+           content,
+         });
+       }
 
-      setTitle('');
-      setContent('');
-      setShowEditor(false);
-      setEditingNote(null);
-      fetchNotes();
-    } catch (error) {
-      console.error('Error saving note:', error);
-    }
-  };
+       setTitle('');
+       setContent('');
+       setShowEditor(false);
+       setEditingNote(null);
+       fetchNotes();
+     } catch (error) {
+       console.error('Error saving note:', error);
+     }
+   };
 
   // Edit note
   const editNote = (note) => {
