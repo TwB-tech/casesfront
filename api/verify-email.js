@@ -1,17 +1,15 @@
 import { Client, Databases, Query } from 'appwrite';
 
-// Initialize Appwrite client (server-side, no CORS issues)
-const client = new Client();
-client.setEndpoint(process.env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1');
-client.setProject(process.env.APPWRITE_PROJECT_ID);
-if (process.env.APPWRITE_API_KEY) {
-  client.setKey(process.env.APPWRITE_API_KEY);
-}
-
-const db = new Databases(client);
-
 export default async function handler(req, res) {
   try {
+    // Initialize Appwrite client
+    const client = new Client();
+    client.setEndpoint(process.env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1');
+    client.setProject(process.env.APPWRITE_PROJECT_ID);
+    if (process.env.APPWRITE_API_KEY) {
+      client.setKey(process.env.APPWRITE_API_KEY);
+    }
+    const db = new Databases(client);
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Method not allowed' });
     }
