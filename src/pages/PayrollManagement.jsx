@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Calendar, Download, Plus, FileText, CheckCircle } from 'lucide-react';
+import { CreditCard, Calendar, Download, Plus, FileText, CheckCircle, Eye } from 'lucide-react';
 import { Card, Table, Button, Modal, Form, DatePicker, Tag, message } from 'antd';
 import { useTheme } from '../contexts/ThemeContext';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { formatCurrency } from '../utils/currency';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import axiosInstance from '../axiosConfig';
- 
 
 const PayrollManagement = () => {
   const { isFuturistic } = useTheme();
   const { currency } = useCurrency();
   const [payrolls, setPayrolls] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [selectedPayroll, setSelectedPayroll] = useState(null);
+  const [employeeItems, setEmployeeItems] = useState([]);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -79,39 +81,106 @@ const PayrollManagement = () => {
     {
       title: 'Actions',
       key: 'actions',
-      render: (_, _record) => (
+      render: (_, record) => (
         <div className="flex gap-2">
-          <Button size="small" type="link">
-            View
+          <Button size="small" type="link" onClick={() => handleView(record)}>
+            <Eye className="w-4 h-4" /> View
           </Button>
-          <Button size="small" type="link">
-            Download
+          <Button size="small" type="link" onClick={() => handleDownload(record)}>
+            <Download className="w-4 h-4" /> Download
           </Button>
         </div>
       ),
     },
   ];
 
-  const handleCreatePayroll = async (values) => {
-    try {
-      setLoading(true);
-      // Format dates properly
-      values.period = values.period.format('YYYY-MM');
-      values.paymentDate = values.paymentDate.format('YYYY-MM-DD');
-      await axiosInstance.post('/payroll/', values);
-      message.success('Payroll created successfully');
-      setIsModalVisible(false);
-      form.resetFields();
-      fetchPayrolls();
-    } catch (error) {
-      console.error('Error creating payroll:', error);
-      message.error('Failed to create payroll');
-    } finally {
-      setLoading(false);
-    }
-  };
+   const handleCreatePayroll = async (values) => {
+     try {
+       setLoading(true);
+       // Format dates properly
+       values.period = values.period.format('YYYY-MM');
+       values.paymentDate = values.paymentDate.format('YYYY-MM-DD');
+       await axiosInstance.post('/payroll/', values);
+       message.success('Payroll created successfully');
+       setCreateModalVisible(false);
+       form.resetFields();
+       fetchPayrolls();
+     } catch (error) {
+       console.error('Error creating payroll:', error);
+       message.error('Failed to create payroll');
+     } finally {
+       setLoading(false);
+     }
+   };
 
-  return (
+   // View payroll details
+   const handleView = async (record) => {
+     try {
+       const response = await axiosInstance.get(`/payroll/${record.id}/`);
+       setSelectedPayroll(response.data);
+       setEmployeeItems(response.data.items || []);
+       setViewModalVisible(true);
+     } catch (error) {
+       console.error('Error fetching payroll details:', error);
+       message.error('Failed to load payroll details');
+     }
+   };
+
+   // Download payroll summary (CSV)
+   const handleDownload = async (record) => {
+     try {
+       const response = await axiosInstance.get(`/payroll/${record.id}/`);
+       const p = response.data;
+       const items = p.items || [];
+       const headers = ['Employee Name', 'Email', 'Salary', 'Net Pay', 'Period'];
+       const rows = items.map(item => [
+         item.name,
+         item.email,
+         item.salary,
+         item.netPay,
+         item.period,
+       ]);
+       const csvContent = [headers, ...rows]
+         .map(row => row.map(field => `"${field}"`).join(','))
+         .join('\n');
+       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = `payroll-${record.period || record.id}.csv`;
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+       URL.revokeObjectURL(url);
+       message.success('Payroll download started');
+     } catch (error) {
+       console.error('Error downloading payroll:', error);
+       message.error('Failed to download payroll');
+     }
+   };
+
+   // Download single payslip (text file)
+   const handleDownloadSinglePayslip = (item) => {
+     const content = `Payslip
+=======
+Employee: ${item.name}
+Email: ${item.email}
+Period: ${item.period}
+Salary: ${currency.symbol}${item.salary.toFixed(2)}
+Net Pay: ${currency.symbol}${item.netPay.toFixed(2)}`.trim();
+     const blob = new Blob([content], { type: 'text/plain' });
+     const url = URL.createObjectURL(blob);
+     const a = document.createElement('a');
+     a.href = url;
+     a.download = `payslip-${item.name.replace(/\s+/g, '_')}-${item.period}.txt`;
+     document.body.appendChild(a);
+     a.click();
+     document.body.removeChild(a);
+     URL.revokeObjectURL(url);
+     message.success('Payslip downloaded');
+   };
+
+   return (
     <div className="min-h-screen">
       <Breadcrumbs />
 
@@ -150,8 +219,8 @@ const PayrollManagement = () => {
                 size="large"
                 icon={<Plus className="w-4 h-4" />}
                 className={isFuturistic ? 'futuristic-btn' : ''}
-                style={{ background: isFuturistic ? '#6366f1' : undefined }}
-                onClick={() => setIsModalVisible(true)}
+                 style={{ background: isFuturistic ? '#6366f1' : undefined }}
+                 onClick={() => setCreateModalVisible(true)}
               >
                 Process Payroll
               </Button>
@@ -285,8 +354,8 @@ const PayrollManagement = () => {
       {/* Create Payroll Modal */}
       <Modal
         title="Process New Payroll"
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
+        open={createModalVisible}
+        onCancel={() => setCreateModalVisible(false)}
         footer={null}
         width={600}
       >
@@ -307,13 +376,69 @@ const PayrollManagement = () => {
           </Form.Item>
           <Form.Item>
             <div className="flex justify-end gap-3">
-              <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
+               <Button onClick={() => setCreateModalVisible(false)}>Cancel</Button>
               <Button type="primary" htmlType="submit">
                 Process Payroll
               </Button>
             </div>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Payroll Details Modal */}
+      <Modal
+        title={`Payroll Details - ${selectedPayroll?.period || ''}`}
+        open={viewModalVisible}
+        onCancel={() => setViewModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setViewModalVisible(false)}>
+            Close
+          </Button>,
+          <Button key="download" type="primary" onClick={() => selectedPayroll && handleDownload(selectedPayroll)}>
+            Download CSV
+          </Button>,
+        ]}
+        width={800}
+      >
+        {selectedPayroll && (
+          <div>
+            <div className="mb-4 flex gap-4">
+              <p><strong>Total Amount:</strong> {formatCurrency(selectedPayroll.total_amount, currency)}</p>
+              <p><strong>Status:</strong> {selectedPayroll.status}</p>
+              <p><strong>Employee Count:</strong> {selectedPayroll.employee_count}</p>
+            </div>
+            <Table
+              dataSource={employeeItems}
+              rowKey="employeeId"
+              pagination={false}
+              columns={[
+                { title: 'Name', dataIndex: 'name', key: 'name' },
+                { title: 'Email', dataIndex: 'email', key: 'email' },
+                {
+                  title: 'Salary',
+                  dataIndex: 'salary',
+                  key: 'salary',
+                  render: (val) => <span>{currency.symbol}{val.toFixed(2)}</span>,
+                },
+                {
+                  title: 'Net Pay',
+                  dataIndex: 'netPay',
+                  key: 'netPay',
+                  render: (val) => <span>{currency.symbol}{val.toFixed(2)}</span>,
+                },
+                {
+                  title: 'Payslip',
+                  key: 'payslip',
+                  render: (_, record) => (
+                    <Button size="small" type="link" onClick={() => handleDownloadSinglePayslip(record)}>
+                      Download
+                    </Button>
+                  ),
+                },
+              ]}
+            />
+          </div>
+        )}
       </Modal>
     </div>
   );

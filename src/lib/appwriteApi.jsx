@@ -418,23 +418,87 @@ export const appwriteApi = {
        });
      }
 
-     // FINANCIAL REPORTS
-     if (path === 'reports/financial') {
-       const user = getCurrentUser();
-       const { data: invoices, error } = await db.list(COLLECTIONS.INVOICES);
-      if (error) {throw error;}
+      // FINANCIAL REPORTS
+      if (path === 'reports/financial') {
+        const user = getCurrentUser();
+        const { data: invoices, error: invErr } = await db.list(COLLECTIONS.INVOICES);
+        if (invErr) {throw invErr;}
+        const { data: expenses, error: expErr } = await db.list(COLLECTIONS.EXPENSES);
+        if (expErr) {throw expErr;}
 
-      const summary = {
-        totalRevenue: invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0),
-        paidInvoices: invoices.filter((i) => i.status === 'paid').length,
-        pendingInvoices: invoices.filter((i) => i.status === 'pending').length,
-        overdueInvoices: invoices.filter((i) => i.status === 'overdue').length,
-        averageInvoiceValue: invoices.length
-          ? invoices.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0) / invoices.length
-          : 0,
-      };
-      return success({ results: [summary] });
-    }
+        // Summary totals
+        const totalRevenue = invoices?.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0) || 0;
+        const totalExpenses = expenses?.reduce((sum, exp) => sum + Number(exp.amount || 0), 0) || 0;
+        const netProfit = totalRevenue - totalExpenses;
+        const grossMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+
+        // Monthly revenue & expense aggregation
+        const monthlyMap = {};
+        const addToMonthly = (dateStr, rev, exp) => {
+          const date = new Date(dateStr);
+          if (isNaN(date.getTime())) {
+            return;
+          }
+          const key = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
+          if (!monthlyMap[key]) {
+            const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            monthlyMap[key] = { month: monthNames[date.getMonth()], revenue: 0, expenses: 0 };
+          }
+          monthlyMap[key].revenue += rev;
+          monthlyMap[key].expenses += exp;
+        };
+
+        invoices?.forEach(inv => {
+          const amt = Number(inv.total_amount || 0);
+          addToMonthly(inv.created_at || inv.date, amt, 0);
+        });
+        expenses?.forEach(exp => {
+          const amt = Number(exp.amount || 0);
+          addToMonthly(exp.date || exp.created_at, 0, amt);
+        });
+
+        const revenueByMonth = Object.values(monthlyMap).map(m => ({
+          month: m.month,
+          revenue: m.revenue,
+          profit: m.revenue - m.expenses,
+        }));
+
+        // Revenue by category: group by client_name
+        const clientMap = {};
+        invoices?.forEach(inv => {
+          const name = inv.client_name || 'Unknown';
+          clientMap[name] = (clientMap[name] || 0) + Number(inv.total_amount || 0);
+        });
+        const colors = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe', '#f472b6', '#fb7185'];
+        const revenueByCategory = Object.entries(clientMap)
+          .sort((a,b) => b[1] - a[1])
+          .slice(0, 8)
+          .map(([name, value], idx) => ({ name, value, color: colors[idx % colors.length] }));
+
+        // Top clients table
+        const topClients = Object.entries(clientMap)
+          .sort((a,b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([name, revenue], idx) => ({
+            id: idx.toString(),
+            name,
+            revenue,
+            cases: 0, // not directly available
+            status: 'active',
+          }));
+
+        return success({
+          incomeStatement: {
+            totalRevenue,
+            totalExpenses,
+            netProfit,
+            grossMargin,
+            revenueByMonth,
+            revenueByCategory,
+          },
+          topClients,
+        });
+      }
 
      // ACCOUNTING DASHBOARD
      if (['accounting/dashboard', 'accounting/dashboard/summary'].includes(path)) {
@@ -562,15 +626,103 @@ export const appwriteApi = {
        return success(data);
      }
 
-     // PAYROLL
-     if (path === 'payroll') {
-       const user = getCurrentUser();
-       const { data, error } = await db.list(COLLECTIONS.PAYROLL_RUNS);
-       if (error) {throw error;}
-       return success(data);
-     }
+      // PAYROLL
+      if (path === 'payroll') {
+        const { data: payrollRuns, error } = await db.list(COLLECTIONS.PAYROLL_RUNS);
+        if (error) {throw error;}
 
-     // HR: EMPLOYEES
+        // Enrich each payroll run with computed fields
+        const staffRoles = ['advocate', 'firm', 'employee', 'admin', 'administrator'];
+        const enriched = await Promise.all(
+          (payrollRuns || []).map(async (run) => {
+            // Count employees in the organization at the time of payroll
+            const { data: employees } = await db.list(COLLECTIONS.USERS, [
+              Query.equal('organization_id', run.organization_id),
+            ]);
+            const staff = (employees || []).filter(emp => staffRoles.includes(emp.role || ''));
+            const employeeCount = staff.length;
+
+            // Format period from period_start (e.g., "2025-05" or date)
+            let period = '';
+            if (run.period_start) {
+              const d = new Date(run.period_start);
+              if (!isNaN(d.getTime())) {
+                const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                period = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+              } else {
+                period = run.period_start; // fallback to raw string
+              }
+            }
+
+            // Format date processed
+            let dateProcessed = '';
+            if (run.created_at) {
+              const d = new Date(run.created_at);
+              if (!isNaN(d.getTime())) {
+                dateProcessed = d.toLocaleDateString();
+              }
+            }
+
+            return {
+              id: run.id,
+              period,
+              employeeCount,
+              totalAmount: run.total_amount,
+              payslips: employeeCount, // assume all employees receive payslip
+              status: run.status || 'processed',
+              date: dateProcessed,
+            };
+          })
+        );
+
+        // Sort by created_at descending (newest first)
+        enriched.sort((a, b) => {
+          // We need original created_at to sort; we can parse date or sort by id (newer first)
+          // Simpler: sort by id descending as proxy for creation order (if auto-increment not guaranteed but appwrite IDs are roughly chronological)
+          return b.id.localeCompare(a.id);
+        });
+
+        return success({ results: enriched });
+       }
+
+      // PAYROLL: GET SINGLE PAYROLL RUN BY ID (for view details)
+      if (path.startsWith('payroll/') && path !== 'payroll') {
+        const id = path.split('/')[1];
+        const { data: payroll, error } = await db.get(COLLECTIONS.PAYROLL_RUNS, id);
+        if (error) {throw error;}
+        const user = getCurrentUser();
+        // Authorization: user must belong to same org or be admin
+        if (user.role !== 'admin' && payroll.organization_id !== user.organization_id) {
+          return failure('Forbidden', 403);
+        }
+
+        // Fetch employees (staff) for this organization
+        const { data: employees } = await db.list(COLLECTIONS.USERS, [
+          Query.equal('organization_id', payroll.organization_id),
+        ]);
+        const staffRoles = ['advocate', 'firm', 'employee', 'admin', 'administrator'];
+        const staff = (employees || []).filter(emp => staffRoles.includes(emp.role || ''));
+
+        // Build payslip items
+        const items = staff.map(emp => ({
+          employeeId: emp.id,
+          name: emp.username || emp.name || 'Unknown',
+          email: emp.email,
+          salary: Number(emp.salary || 0),
+          netPay: Number(emp.salary || 0), // no deductions
+          period: payroll.period_start ? payroll.period_start.slice(0, 7) : '',
+        }));
+
+        return success({
+          ...payroll,
+          period: payroll.period_start ? new Date(payroll.period_start).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '',
+          employee_count: staff.length,
+          items,
+          computed_total: items.reduce((sum, i) => sum + i.netPay, 0),
+        });
+      }
+
+      // HR: EMPLOYEES
      if (path === 'hr/employees') {
        const user = getCurrentUser();
        // Filter: exclude individual/clients, only show org members (unless admin)
@@ -1095,18 +1247,7 @@ export const appwriteApi = {
           };
           console.log('[register] userProfile created:', { ...userProfile, verification_token: userProfile.verification_token ? `${userProfile.verification_token.substring(0, 10)}...` : 'MISSING' });
 
-          // Clear any stale user document with the same ID (leftover from previous incomplete registration)
-          try {
-            const delRes = await db.delete(COLLECTIONS.USERS, newUser.user.$id);
-            if (delRes.error && !delRes.error.message?.toLowerCase().includes('not found')) {
-              console.warn('⚠️ Pre-delete stale user doc warning:', delRes.error.message);
-            } else {
-              console.log(`🧹 Cleared stale user document ${newUser.user.$id}`);
-            }
-          } catch (e) {
-            console.warn('⚠️ Pre-delete failed (non-fatal):', e.message);
-          }
-
+          // Create user document (upsert handled by db.create conflict resolution)
           const { data: createdUser, error: createUserErr } = await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
          if (createUserErr) {
            console.error('❌ Failed to create user profile:', createUserErr);
@@ -1434,22 +1575,31 @@ export const appwriteApi = {
       return success(data, 201);
     }
 
-    // CREATE PAYROLL RUN
-     if (path === 'payroll') {
-      const { data, error } = await db.create(COLLECTIONS.PAYROLL_RUNS, {
-        ...payload,
-        organization_id,
-        total_amount: Number(payload.total_amount || 0),
-        period_start: payload.period_start?.format
-          ? payload.period_start.format('YYYY-MM-DD')
-          : payload.period_start,
-        period_end: payload.period_end?.format
-          ? payload.period_end.format('YYYY-MM-DD')
-          : payload.period_end,
-      });
-      if (error) {throw error;}
-      return success(data, 201);
-    }
+     // CREATE PAYROLL RUN
+      if (path === 'payroll') {
+       // Compute total_amount from salaries of all staff in organization
+       const { data: employees, error: empErr } = await db.list(COLLECTIONS.USERS, [
+         Query.equal('organization_id', organization_id),
+       ]);
+       if (empErr) { throw empErr; }
+       const staffRoles = ['advocate', 'firm', 'employee', 'admin', 'administrator'];
+       const staff = (employees || []).filter(emp => staffRoles.includes(emp.role || ''));
+       const computedTotal = staff.reduce((sum, emp) => sum + Number(emp.salary || 0), 0);
+
+       // The frontend sends: payload.period (YYYY-MM) as payroll period, and payload.paymentDate (YYYY-MM-DD) as payment date
+       const period_start = payload.period || '';
+       const period_end = payload.paymentDate || '';
+
+       const { data, error } = await db.create(COLLECTIONS.PAYROLL_RUNS, {
+         ...payload,
+         organization_id,
+         total_amount: Number(computedTotal),
+         period_start,
+         period_end,
+       });
+       if (error) {throw error;}
+       return success({ ...data, employee_count: staff.length }, 201);
+     }
 
     // HR: CREATE EMPLOYEE
      if (path === 'hr/employees') {
@@ -2135,6 +2285,25 @@ export const appwriteApi = {
       return success({ ...data, id: data.id, username: data.username });
     }
 
+    // UPDATE NOTE
+    if (path.startsWith('notes/')) {
+      const id = parts[1];
+      const currentUser = getCurrentUser();
+      // Verify ownership before update
+      const { data: note, error: fetchErr } = await db.get(COLLECTIONS.NOTES, id);
+      if (fetchErr) {throw fetchErr;}
+      if (note.user_id !== currentUser.id) {
+        return failure('You do not have permission to edit this note', 403);
+      }
+      const { data, error } = await db.update(COLLECTIONS.NOTES, id, {
+        title: payload.title,
+        content: payload.content,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) {throw error;}
+      return success({ ...data, id: data.id });
+    }
+
     // UPDATE SETTINGS
     if (['user/communication-settings', 'user/task-settings'].includes(path)) {
       const user = getCurrentUser();
@@ -2175,6 +2344,21 @@ export const appwriteApi = {
   async delete(url) {
     const path = url.replace(/^\/api\//, '').replace(/^\//, '').replace(/\/$/, '');
     const parts = path.split('/').filter(Boolean);
+
+    // DELETE NOTE
+    if (path.startsWith('notes/')) {
+      const id = parts[1];
+      const currentUser = getCurrentUser();
+      // Verify ownership before deletion
+      const { data: note, error: fetchErr } = await db.get(COLLECTIONS.NOTES, id);
+      if (fetchErr) {throw fetchErr;}
+      if (note.user_id !== currentUser.id) {
+        return failure('You do not have permission to delete this note', 403);
+      }
+      const { error } = await db.delete(COLLECTIONS.NOTES, id);
+      if (error) {throw error;}
+      return success({ success: true });
+    }
 
     // DELETE TASK
     if (path.startsWith('tasks/') || path.startsWith('tasks')) {

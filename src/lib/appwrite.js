@@ -413,51 +413,49 @@ export const db = {
           return await databases.createDocument(DATABASE_ID, collection, id, enriched);
         };
 
-       try {
-         const doc = await doCreate(docId);
-         return { data: this.normalize(doc) };
-       } catch (error) {
-         // Normalize error to string for robust detection (handles AppwriteException, axios errors, etc.)
-         const errString = String(error?.message || error);
-         const msg = errString.toLowerCase();
-         const isConflict = error?.code === 'document_already_exists' ||
-                           error?.status === 409 ||
-                           error?.response?.status === 409 ||
-                           msg.includes('already exists') ||
-                           msg.includes('document with the requested id') ||
-                           msg.includes('document_already_exists');
+        try {
+          const doc = await doCreate(docId);
+          return { data: this.normalize(doc) };
+        } catch (error) {
+          const errString = String(error?.message || error);
+          const msg = errString.toLowerCase();
+          const isConflict = error?.code === 'document_already_exists' ||
+                            error?.status === 409 ||
+                            error?.response?.status === 409 ||
+                            msg.includes('already exists') ||
+                            msg.includes('document with the requested id') ||
+                            msg.includes('document_already_exists');
 
-         if (!isConflict) {
-           console.error(`Appwrite create ${collection} failed:`, error.message || error);
-           return { error };
+          if (!isConflict) {
+            console.error(`Appwrite create ${collection} failed:`, error.message || error);
+            return { error };
+          }
+
+          // Conflict detected — perform upsert via update (avoids needing delete permission)
+          console.warn(`⚠️ ID conflict on ${collection}/${docId}, performing update instead`);
+          const { id: _omitId, created_at: _omitCreated, ...updateData } = data;
+          try {
+            const updated = await databases.updateDocument(
+              DATABASE_ID,
+              collection,
+              docId,
+              { ...updateData, updated_at: new Date().toISOString() }
+            );
+            return { data: this.normalize(updated) };
+          } catch (updateErr) {
+            console.error('Update during conflict resolution failed:', updateErr.message || updateErr);
+            // If update fails because doc was concurrently deleted, retry create once
+            try {
+              const retryDoc = await doCreate(docId);
+              return { data: this.normalize(retryDoc) };
+            } catch (retryError) {
+              console.error('Retry create after failed update also failed:', retryError.message || retryError);
+              return { error: retryError };
+            }
+          }
          }
 
-         // Conflict detected — resolve stale collision
-         console.warn(`⚠️ ID conflict on ${collection}/${docId}, attempting cleanup and retry`);
-
-         // Try to delete any existing document at this ID (may be stale)
-         try {
-           await databases.deleteDocument(DATABASE_ID, collection, docId);
-           console.log(`🧹 Deleted conflicting document ${collection}/${docId}`);
-         } catch (deleteErr) {
-           // If doc not found, it's already gone — that's fine
-           const deleteMsg = String(deleteErr?.message || deleteErr).toLowerCase();
-           if (!deleteMsg.includes('not found')) {
-             console.warn('⚠️ Delete during conflict resolution failed:', deleteErr.message);
-           }
-         }
-
-         // Retry create once with the same ID
-         try {
-           const retryDoc = await doCreate(docId);
-           console.log(`✅ Retry create succeeded after conflict resolution: ${collection}/${docId}`);
-           return { data: this.normalize(retryDoc) };
-         } catch (retryError) {
-           console.error(`❌ Retry create failed after conflict resolution:`, retryError.message || retryError);
-           return { error: retryError };
-         }
-       }
-     },
+      },
 
   // UPDATE document
   async update(collection, docId, data) {

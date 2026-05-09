@@ -14,25 +14,52 @@ function ClientDashboard() {
   const { isFuturistic } = useTheme();
   const navigate = useNavigate();
   const [cases, setCases] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingCases, setLoadingCases] = useState(true);
+  const [loadingDocs, setLoadingDocs] = useState(true);
+  const [loadingInvoices, setLoadingInvoices] = useState(true);
 
-  useEffect(() => {
-    if (!user || user.role !== 'client') {
-      navigate('/login');
-      return;
-    }
-    const fetchData = async () => {
-      try {
-        const response = await axiosInstance.get('/case/individual-cases/');
-        setCases(response.data.results || []);
-      } catch (error) {
-        console.error('Error fetching cases:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [user, navigate]);
+   useEffect(() => {
+     if (!user || user.role !== 'client') {
+       navigate('/login');
+       return;
+     }
+     const fetchData = async () => {
+       try {
+         // Fetch cases
+         const casesResponse = await axiosInstance.get('/case/individual-cases/');
+         setCases(casesResponse.data.results || []);
+         setLoadingCases(false);
+
+          // Fetch documents owned by user
+          const docsResponse = await axiosInstance.get('/documents/');
+          const allDocs = docsResponse.data.results || [];
+          // Filter documents where user is owner (owner is enriched object)
+          const myDocuments = allDocs.filter(doc => doc.owner?.id === user.id);
+          setDocuments(myDocuments);
+          setLoadingDocs(false);
+
+         // Fetch invoices for client (pending invoices)
+         const invResponse = await axiosInstance.get('/invoices/');
+         const allInvoices = invResponse.data.results || [];
+         // Filter pending invoices for this client
+         const pendingInvoices = allInvoices.filter(inv => inv.status === 'pending' && inv.client_id === user.id);
+         setInvoices(pendingInvoices);
+         setLoadingInvoices(false);
+
+       } catch (error) {
+         console.error('Error fetching dashboard data:', error);
+         setLoadingCases(false);
+         setLoadingDocs(false);
+         setLoadingInvoices(false);
+       } finally {
+         setLoading(false);
+       }
+     };
+     fetchData();
+   }, [user, navigate]);
 
   const activeCases = cases.filter(c => c.status === 'open' || c.status === 'pending');
   const closedCases = cases.filter(c => c.status === 'closed');
@@ -73,26 +100,26 @@ function ClientDashboard() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card style={cardStyle} hoverable onClick={() => navigate('/documents')}>
-            <Statistic
-              title={<span className={isFuturistic ? 'text-aurora-muted' : 'text-gray-500'}>My Documents</span>}
-              value={0}
-              prefix={<FileTextOutlined className="text-purple-500" />}
-              valueStyle={{ color: isFuturistic ? '#a78bfa' : '#722ed1' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card style={cardStyle} hoverable>
-            <Statistic
-              title={<span className={isFuturistic ? 'text-aurora-muted' : 'text-gray-500'}>Pending Invoices</span>}
-              value={0}
-              prefix={<DollarOutlined className="text-yellow-500" />}
-              valueStyle={{ color: isFuturistic ? '#fbbf24' : '#faad14' }}
-            />
-          </Card>
-        </Col>
+         <Col xs={24} sm={12} lg={6}>
+           <Card style={cardStyle} hoverable onClick={() => navigate('/documents')}>
+             <Statistic
+               title={<span className={isFuturistic ? 'text-aurora-muted' : 'text-gray-500'}>My Documents</span>}
+               value={loadingDocs ? 0 : documents.length}
+               prefix={<FileTextOutlined className="text-purple-500" />}
+               valueStyle={{ color: isFuturistic ? '#a78bfa' : '#722ed1' }}
+             />
+           </Card>
+         </Col>
+         <Col xs={24} sm={12} lg={6}>
+           <Card style={cardStyle} hoverable>
+             <Statistic
+               title={<span className={isFuturistic ? 'text-aurora-muted' : 'text-gray-500'}>Pending Invoices</span>}
+               value={loadingInvoices ? 0 : invoices.length}
+               prefix={<DollarOutlined className="text-yellow-500" />}
+               valueStyle={{ color: isFuturistic ? '#fbbf24' : '#faad14' }}
+             />
+           </Card>
+         </Col>
       </Row>
 
       <Row gutter={[16, 16]} className="mt-6">
