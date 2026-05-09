@@ -894,7 +894,8 @@ export const appwriteApi = {
               throw new Error('Not found');
             }
           } catch (e) {
-            // Document doesn't exist, create it
+            // Document doesn't exist; create it reflecting account state
+            const isVerified = !!accountUser.emailVerification;
             const { data: newUser, error: createErr } = await db.create(
               COLLECTIONS.USERS,
               {
@@ -906,7 +907,7 @@ export const appwriteApi = {
                 status: 'Active',
                 messaging_enabled: true,
                 deadline_notifications: true,
-                email_verified: false,
+                email_verified: isVerified,
               },
               userId
             );
