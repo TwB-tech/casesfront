@@ -1,10 +1,12 @@
 import { Client, Databases, Query } from 'appwrite';
 
 // Initialize Appwrite client (server-side, no CORS issues)
-const client = new Client()
-  .setEndpoint(process.env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1')
-  .setProject(process.env.APPWRITE_PROJECT_ID)
-  .setKey(process.env.APPWRITE_API_KEY || '');
+const client = new Client();
+client.setEndpoint(process.env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1');
+client.setProject(process.env.APPWRITE_PROJECT_ID);
+if (process.env.APPWRITE_API_KEY) {
+  client.setKey(process.env.APPWRITE_API_KEY);
+}
 
 const db = new Databases(client);
 
