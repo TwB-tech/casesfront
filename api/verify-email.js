@@ -49,8 +49,12 @@ export default async function handler(req, res) {
     try {
       data = JSON.parse(rawBody);
     } catch (e) {
-      console.error('❌ Failed to parse list response as JSON:', rawBody.substring(0, 200));
-      return res.status(response.status).json({ error: 'Database returned invalid JSON', raw: rawBody.substring(0, 200) });
+      console.error('❌ JSON parse failed. Raw:', rawBody.substring(0, 200));
+      return res.status(response.status).json({
+        error: 'Database returned invalid JSON',
+        raw: rawBody.substring(0, 200),
+        parseError: e.message
+      });
     }
 
     if (!response.ok) {
