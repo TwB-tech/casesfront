@@ -6,19 +6,13 @@
 **Branch:** `main`  
 **Latest Deployments:**
 
-- `8df3467` — Ready (fix: verify-email uses Appwrite SDK to avoid query serialization errors) ← current
+- `7174486` — Ready (fix: verify-email uses appwrite-proxy for reliable query handling) ← current
+- `8df3467` — Ready (fix: verify-email uses Appwrite SDK to avoid query serialization errors)
 - `d32b840` — Ready (fix: correct Appwrite query format — use 'column' and 'values' array)
 - `b513d2c` — Ready (fix: email verification query format, add employee invite endpoint, remove duplicate code)
-- `3bfafaf` — Ready (fix: Reya minimize, chat crash, invites, document formats, firm contact)
-- `caa8af8` — Ready (fix: restore correct ZAI endpoint for Reya AI)
-- `fa5c3e7` — Ready (fix: React error #31, email verification propagation, document formats, client invites, rewrite ordering)
-- `9ojibev3n` — Ready (fix: SPA fallback + explicit proxy rewrite)
-- `m6tq1etj8` — Ready (fix: restore SPA fallback catch-all, fix proxy rewrite order)
-- `HWufz4CuFC` — Ready (fix: add explicit /api/appwrite-proxy rewrite)
-- `d9hlu0fbm` — Ready (fix: removed catch-all rewrite breaking assets)
-- `b523b6f` — commit: fix vercel rewrites
-- `7075f03` — commit: feat: Migrate to Appwrite (full API + tests)
-- `2522444` — commit: fix: handle missing user document gracefully in verify-token endpoint
+- `90fc01a` — docs: update CONTEXT.md with May-09 fixes
+- `f374342` — fix: use PUT for note updates (was POST)
+- `27ba763` — fix: signup ID conflict via upsert, payroll detail, financial reports, client dashboard, notes security
 
 ---
 
@@ -799,25 +793,19 @@ if (typeof window !== 'undefined') {
 - **File:** `src/lib/appwriteApi.jsx`
 
 #### Email Verification API Query Fix
-- **Problem:** Email verification link returned 400 errors:
-  - First: "Invalid query: Equal queries require at least one value"
-  - Then: "Invalid `queries` param: Value must be a valid array"
-  - Finally: "Invalid query: Attribute not found in schema: " (blank attribute)
-- **Root Cause:** Manual construction of Appwrite query parameters in `/api/verify-email` using `URLSearchParams` led to incorrect format. Tried variations:
-  - `queries[0][method]` style (wrong)
-  - `queries[0]=JSON` with `column` vs `attribute` confusion
-  - Token with special characters broke JSON-in-URL encoding
-- **Fix:** Rewrote `/api/verify-email` to use **Appwrite SDK directly** instead of manual REST calls. The SDK handles query serialization correctly.
-  - Import `Client, Databases, Query` from `appwrite`
-  - Initialize with `.setEndpoint(process.env.APPWRITE_ENDPOINT).setProject(projectId).setKey(apiKey)`
-  - Use `databases.listDocuments(databaseId, 'users', [Query.equal('verification_token', token)], 1)`
-  - Use `databases.updateDocument(databaseId, 'users', userId, { ... })`
-- This eliminates all query string formatting issues and works with any token characters.
-- Also corrected employee invite email URL to `/auth/accept-invite` (was `/auth/register`).
-- Removed duplicate `hr/invites` handler block from `src/lib/appwriteApi.jsx`.
-- Added `/api/send-employee-invite` route to local `api-server.js`.
+- **Problem:** Email verification link returned 400 errors across multiple attempts:
+  - "Invalid query: Equal queries require at least one value"
+  - "Invalid `queries` param: Value must be a valid array"
+  - "Invalid query: Attribute not found in schema"
+- **Root Cause:** Manual construction of Appwrite query parameters in `/api/verify-email` was fragile and produced malformed query strings due to encoding/format issues. Even after attempts to fix, the direct REST approach kept failing.
+- **Final Fix:** Rewrote `/api/verify-email` to use the **appwrite-proxy** (which uses the SDK internally) instead of manual REST calls. The function now builds query parameters exactly as the frontend SDK does (`queries[]` with JSON containing `method`, `attribute`, `values`). This guarantees identical behavior to all other working queries in the app.
+  - Added robust validation and detailed logging to aid debugging
+  - Sends request to `/api/appwrite-proxy/databases/{db}/collections/users/documents` with proper headers
+  - Uses server-side `APPWRITE_API_KEY` via proxy for full privileges
+- This resolves all query serialization issues regardless of token content.
+- Additional fixes: corrected employee invite email URL to `/auth/accept-invite`; removed duplicate `hr/invites` handler; added `/api/send-employee-invite` to local API server.
 - **Files:** `api/verify-email.js` (complete rewrite), `api/send-employee-invite.js`, `api-server.js`, `src/lib/appwriteApi.jsx`
-- **Commit:** `8df3467` (SDK fix), `d32b840` (earlier query attempts), `b513d2c` (invite infrastructure)
+- **Commit:** `7174486` (proxy-based fix), `8df3467` (SDK attempt), `d32b840` (query format attempts), `b513d2c` (invite infrastructure)
 
 ---
 
