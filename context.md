@@ -1,6 +1,6 @@
 # WakiliWorld Appwrite Migration — Complete Context
 
-**Last Updated:** 2026-05-07  
+**Last Updated:** 2026-05-09  
 **Project:** WakiliWorld (casesfront) — AI-Powered Legal Practice Management Platform  
 **Migration:** Supabase → Appwrite (drop-in replacement, zero frontend changes)  
 **Branch:** `main`  
@@ -757,6 +757,43 @@ if (typeof window !== 'undefined') {
 - src/lib/appwriteApi.jsx
 - src/pages/FirmsMarketplace.jsx
 **Commit:** `3bfafaf`
+
+### Additional Fixes (2026-05-09)
+
+#### Notes — Ownership Verification (PUT /notes/:id)
+- Added ownership check in `appwriteApi.jsx` PUT handler to prevent unauthorized edits. Users can only update their own notes; otherwise returns 403.
+- **Files:** `src/lib/appwriteApi.jsx` (lines ~2138–2149)
+
+#### Payroll Management
+- POST `/payroll` auto-calculates `total_amount` from all staff salaries.
+- GET `/payroll` returns enriched items: `period`, `employeeCount`, `payslips` (equals employee count), `date`, `totalAmount`.
+- GET `/payroll/:id` returns single payroll with `items` (employee details) and `computed_total`.
+- UI (`PayrollManagement.jsx`) now has separate Create and View modals; View modal shows employee table and supports CSV export for payroll summary and TXT download per employee payslip.
+- **Files:** `src/lib/appwriteApi.jsx`, `src/pages/PayrollManagement.jsx`
+
+#### Financial Reports
+- Replaced summary-only endpoint with full dataset:
+  - `incomeStatement.totalRevenue`, `totalExpenses`, `netProfit`, `grossMargin`
+  - `incomeStatement.revenueByMonth` → `{month, revenue, profit}` for BarChart
+  - `incomeStatement.revenueByCategory` → `{name, value, color}` for PieChart
+  - `topClients` → `{id, name, revenue, cases, status}` for Ant Design Table
+- **Files:** `src/lib/appwriteApi.jsx`
+
+#### Client Dashboard
+- Fixed document count: `doc.owner` is an enriched object; changed filter to `doc.owner?.id === user.id`.
+- **Files:** `src/pages/ClientDashboard.jsx`
+
+#### Signup — ID Conflict Resolution
+- **Problem:** Registration failed with 409 "Document with the requested ID already exists" when a stale `users` collection document existed (e.g., from incomplete signup or manual account deletion). The previous retry attempted to delete the document using the user's session, which often lacked delete permission, causing a second 404 and leaving the conflict unresolved.
+- **Fix:** 
+  - Removed pre-delete step in `auth/register` handler (no longer needed).
+  - Implemented **upsert-on-conflict** in `db.create` (`src/lib/appwrite.js`): on 409 conflict, perform an `update` (excluding immutable fields `id` and `created_at`). If update fails (e.g., doc was concurrently deleted), a final create is attempted.
+- **Impact:** Clean signup regardless of leftover documents; no manual cleanup required; reduces permission dependencies.
+- **Files:** `src/lib/appwrite.js` (create method), `src/lib/appwriteApi.jsx` (registration handler)
+
+#### ESLint Fix
+- Added missing braces around single-line `if` statement in `reports/financial` handler to satisfy `curly` rule.
+- **File:** `src/lib/appwriteApi.jsx`
 
 ---
 
