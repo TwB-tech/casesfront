@@ -6,7 +6,8 @@
 **Branch:** `main`  
 **Latest Deployments:**
 
-- `d32b840` — Ready (fix: correct Appwrite query format — use 'column' and 'values' array) ← current
+- `8df3467` — Ready (fix: verify-email uses Appwrite SDK to avoid query serialization errors) ← current
+- `d32b840` — Ready (fix: correct Appwrite query format — use 'column' and 'values' array)
 - `b513d2c` — Ready (fix: email verification query format, add employee invite endpoint, remove duplicate code)
 - `3bfafaf` — Ready (fix: Reya minimize, chat crash, invites, document formats, firm contact)
 - `caa8af8` — Ready (fix: restore correct ZAI endpoint for Reya AI)
@@ -798,25 +799,25 @@ if (typeof window !== 'undefined') {
 - **File:** `src/lib/appwriteApi.jsx`
 
 #### Email Verification API Query Fix
-- **Problem:** Email verification link returned 400 error: "Invalid query: Equal queries require at least one value." Then after first fix: "Invalid `queries` param: Value must be a valid array"
-- **Root Cause:** `/api/verify-email` serverless function built the Appwrite query with wrong field names. Appwrite REST expects:
-  ```json
-  {"method":"equal","column":"verification_token","values":["token"]}
-  ```
-  Not `{"method":"equal","attribute":"verification_token","value":"token"}`. The fields are `column` (not `attribute`) and `values` (array, not single value).
-- **Fix:** Corrected query construction in `api/verify-email.js`:
-  ```javascript
-  queryParams.append('queries[0]', JSON.stringify({
-    method: 'equal',
-    column: 'verification_token',
-    values: [token],
-  }));
-  ```
+- **Problem:** Email verification link returned 400 errors:
+  - First: "Invalid query: Equal queries require at least one value"
+  - Then: "Invalid `queries` param: Value must be a valid array"
+  - Finally: "Invalid query: Attribute not found in schema: " (blank attribute)
+- **Root Cause:** Manual construction of Appwrite query parameters in `/api/verify-email` using `URLSearchParams` led to incorrect format. Tried variations:
+  - `queries[0][method]` style (wrong)
+  - `queries[0]=JSON` with `column` vs `attribute` confusion
+  - Token with special characters broke JSON-in-URL encoding
+- **Fix:** Rewrote `/api/verify-email` to use **Appwrite SDK directly** instead of manual REST calls. The SDK handles query serialization correctly.
+  - Import `Client, Databases, Query` from `appwrite`
+  - Initialize with `.setEndpoint(process.env.APPWRITE_ENDPOINT).setProject(projectId).setKey(apiKey)`
+  - Use `databases.listDocuments(databaseId, 'users', [Query.equal('verification_token', token)], 1)`
+  - Use `databases.updateDocument(databaseId, 'users', userId, { ... })`
+- This eliminates all query string formatting issues and works with any token characters.
 - Also corrected employee invite email URL to `/auth/accept-invite` (was `/auth/register`).
-- Removed duplicate `hr/invites` handler block from `src/lib/appwriteApi.jsx` causing build failure.
+- Removed duplicate `hr/invites` handler block from `src/lib/appwriteApi.jsx`.
 - Added `/api/send-employee-invite` route to local `api-server.js`.
-- **Files:** `api/verify-email.js`, `api/send-employee-invite.js`, `api-server.js`, `src/lib/appwriteApi.jsx`
-- **Commit:** `d32b840` (query fix), `b513d2c` (invite endpoints)
+- **Files:** `api/verify-email.js` (complete rewrite), `api/send-employee-invite.js`, `api-server.js`, `src/lib/appwriteApi.jsx`
+- **Commit:** `8df3467` (SDK fix), `d32b840` (earlier query attempts), `b513d2c` (invite infrastructure)
 
 ---
 
