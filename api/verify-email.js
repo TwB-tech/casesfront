@@ -23,29 +23,28 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Verification token is required' });
   }
 
-  try {
-    // Call the appwrite-proxy which uses the SDK internally and handles query serialization correctly
-    const proxyUrl = `/api/appwrite-proxy/databases/${databaseId}/collections/users/documents`;
-    
-    // Build query parameters using the format the proxy expects (same as frontend)
-    const params = new URLSearchParams();
-    // The proxy expects queries as 'queries[]' array of JSON strings
-    params.append('queries[]', JSON.stringify({
-      method: 'equal',
-      attribute: 'verification_token',
-      values: [token]
-    }));
-    params.append('limit', '1');
-
-    const listRes = await fetch(proxyUrl + '?' + params.toString(), {
-      method: 'GET',
-      headers: {
-        'X-Appwrite-Project': projectId,
-        'Content-Type': 'application/json',
-        // Use server-side API key so proxy forwards with full privileges
-        'X-Appwrite-Key': process.env.APPWRITE_API_KEY,
-      },
-    });
+   try {
+     // Call Appwrite directly (server-side, no CORS) with absolute URL
+     const appwriteEndpoint = (process.env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1').replace(/\/$/, '');
+     const proxyUrl = `${appwriteEndpoint}/databases/${databaseId}/collections/users/documents`;
+     
+     // Build query parameters using Appwrite's expected format: queries[0] with JSON string
+     const params = new URLSearchParams();
+     params.append('queries[0]', JSON.stringify({
+       method: 'equal',
+       attribute: 'verification_token',
+       values: [token]
+     }));
+     params.append('limit', '1');
+     
+     const listRes = await fetch(proxyUrl + '?' + params.toString(), {
+       method: 'GET',
+       headers: {
+         'X-Appwrite-Project': projectId,
+         'Content-Type': 'application/json',
+         'X-Appwrite-Key': process.env.APPWRITE_API_KEY,
+       },
+     });
 
     if (!listRes.ok) {
       const err = await listRes.json().catch(() => ({}));
@@ -65,23 +64,23 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: 'Email already verified', email_verified: true });
     }
 
-    // Update via proxy
-    const updateUrl = `/api/appwrite-proxy/databases/${databaseId}/collections/users/documents/${user.$id}`;
-    const updatePayload = {
-      email_verified: true,
-      verification_token: null,
-      status: 'Active',
-    };
+     // Update directly via Appwrite
+     const updateUrl = `${appwriteEndpoint}/databases/${databaseId}/collections/users/documents/${user.$id}`;
+     const updatePayload = {
+       email_verified: true,
+       verification_token: null,
+       status: 'Active',
+     };
 
-    const updateRes = await fetch(updateUrl, {
-      method: 'PATCH',
-      headers: {
-        'X-Appwrite-Project': projectId,
-        'Content-Type': 'application/json',
-        'X-Appwrite-Key': process.env.APPWRITE_API_KEY,
-      },
-      body: JSON.stringify(updatePayload),
-    });
+     const updateRes = await fetch(updateUrl, {
+       method: 'PATCH',
+       headers: {
+         'X-Appwrite-Project': projectId,
+         'Content-Type': 'application/json',
+         'X-Appwrite-Key': process.env.APPWRITE_API_KEY,
+       },
+       body: JSON.stringify(updatePayload),
+     });
 
     if (!updateRes.ok) {
       const err = await updateRes.json().catch(() => ({}));
