@@ -1,7 +1,7 @@
 import { config } from 'dotenv';
 config();
 
-const endpoint = (process.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1').replace(/\/$/, '');
+const endpoint = (process.env.APPWRITE_ENDPOINT || 'https://tor.cloud.appwrite.io/v1').replace(/\/$/, '');
 const projectId = process.env.APPWRITE_PROJECT_ID;
 const apiKey = process.env.APPWRITE_API_KEY;
 const databaseId = process.env.APPWRITE_DATABASE_ID || 'default';
@@ -61,7 +61,7 @@ async function testSignupVerifyLogin() {
   const patchRes = await fetch(`${endpoint}/databases/${databaseId}/collections/users/documents/${verifyId}`, {
     method: 'PATCH',
     headers: { 'X-Appwrite-Project': projectId, 'X-Appwrite-Key': apiKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data: { email_verified: true, verification_token: null } }),
+    body: JSON.stringify({ email_verified: true, verification_token: null, status: 'Active' }),
   });
   const patchResult = await patchRes.json();
   if (!patchRes.ok) throw new Error('Verification failed: ' + (patchResult.message || JSON.stringify(patchResult)));
