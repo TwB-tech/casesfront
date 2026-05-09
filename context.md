@@ -6,7 +6,8 @@
 **Branch:** `main`  
 **Latest Deployments:**
 
-- `3bfafaf` — Ready (fix: Reya minimize, chat crash, invites, document formats, firm contact) ← current
+- `b513d2c` — Ready (fix: email verification query format, add employee invite endpoint, remove duplicate code) ← current
+- `3bfafaf` — Ready (fix: Reya minimize, chat crash, invites, document formats, firm contact)
 - `caa8af8` — Ready (fix: restore correct ZAI endpoint for Reya AI)
 - `fa5c3e7` — Ready (fix: React error #31, email verification propagation, document formats, client invites, rewrite ordering)
 - `9ojibev3n` — Ready (fix: SPA fallback + explicit proxy rewrite)
@@ -794,6 +795,21 @@ if (typeof window !== 'undefined') {
 #### ESLint Fix
 - Added missing braces around single-line `if` statement in `reports/financial` handler to satisfy `curly` rule.
 - **File:** `src/lib/appwriteApi.jsx`
+
+#### Email Verification API Query Fix
+- **Problem:** Email verification link returned 400 error: "Invalid query: Equal queries require at least one value."
+- **Root Cause:** `/api/verify-email` serverless function built the Appwrite query incorrectly by passing a JSON string as a single `queries[0]` parameter instead of separate `queries[0][method]`, `queries[0][attribute]`, `queries[0][value]` fields.
+- **Fix:** Rewrote query parameter construction in `api/verify-email.js` to use the proper Appwrite REST format:
+  ```
+  queries[0][method]=equal
+  queries[0][attribute]=verification_token
+  queries[0][value]=<token>
+  ```
+- Also corrected employee invite email URL to point to `/auth/accept-invite` (was `/auth/register`).
+- Removed duplicate `hr/invites` handler block from `src/lib/appwriteApi.jsx` that was causing build failures.
+- Added `/api/send-employee-invite` route to local `api-server.js`.
+- **Files:** `api/verify-email.js`, `api/send-employee-invite.js`, `api-server.js`, `src/lib/appwriteApi.jsx`
+- **Commit:** `b513d2c`
 
 ---
 
