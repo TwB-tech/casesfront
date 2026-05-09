@@ -27,12 +27,12 @@ export default async function handler(req, res) {
    }
 
     try {
-      // Build proper Appwrite query using queries[] array (JSON-encoded query objects)
+      // Build query using Appwrite Query.equal format: { method, attribute, value }
       const queryParams = new URLSearchParams();
       queryParams.append('queries[0]', JSON.stringify({
         method: 'equal',
         attribute: 'verification_token',
-        values: [token],
+        value: token,
       }));
       queryParams.append('limit', '1');
       const listUrl = `${endpoint}/databases/${databaseId}/collections/users/documents?${queryParams.toString()}`;
