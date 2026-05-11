@@ -7,6 +7,7 @@ import sendVerificationEmailHandler from './api/send-verification-email.js';
 import verifyEmailHandler from './api/verify-email.js';
 import sendClientInviteHandler from './api/send-client-invite.js';
 import sendEmployeeInviteHandler from './api/send-employee-invite.js';
+import signupHandler from './api/signup.js';
 
 // Load environment variables from .env
 import { config } from 'dotenv';
@@ -30,6 +31,7 @@ app.post('/api/send-verification-email', (req, res) => sendVerificationEmailHand
 app.post('/api/verify-email', (req, res) => verifyEmailHandler(req, res));
 app.post('/api/send-client-invite', sendClientInviteHandler);
 app.post('/api/send-employee-invite', sendEmployeeInviteHandler);
+app.post('/api/signup', (req, res) => signupHandler(req, res));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -46,5 +48,6 @@ app.listen(PORT, () => {
   console.log(`   • POST /api/verify-email`);
   console.log(`   • POST /api/send-client-invite`);
   console.log(`   • POST /api/send-employee-invite`);
+  console.log(`   • POST /api/signup`);
   console.log(`   • GET /api/health`);
 });

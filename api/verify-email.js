@@ -63,15 +63,21 @@ export default async function handler(req, res) {
     }
 
     const updateUrl = `${endpoint}/databases/${databaseId}/collections/users/documents/${user.$id}`;
-    const updateRes = await fetch(updateUrl, {
-      method: 'PATCH',
-      headers: {
-        'X-Appwrite-Project': projectId,
-        'Content-Type': 'application/json',
-        'X-Appwrite-Key': process.env.APPWRITE_API_KEY || '',
-      },
-      body: JSON.stringify({ email_verified: true, verification_token: null, status: 'Active' }),
-    });
+     const updateRes = await fetch(updateUrl, {
+       method: 'PATCH',
+       headers: {
+         'X-Appwrite-Project': projectId,
+         'Content-Type': 'application/json',
+         'X-Appwrite-Key': process.env.APPWRITE_API_KEY || '',
+       },
+       body: JSON.stringify({
+         data: {
+           email_verified: true,
+           verification_token: null,
+           status: 'Active'
+         }
+       }),
+     });
 
     const updateRaw = await updateRes.text();
     let updateData;

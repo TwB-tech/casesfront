@@ -292,9 +292,29 @@ const AuthProvider = ({ children }) => {
         throw new Error('Password must be at least 6 characters long');
       }
 
-      console.log('Registration data:', { ...registrationData, password: '[REDACTED]' });
+       console.log('Registration data:', { ...registrationData, password: '[REDACTED]' });
 
-      const { data } = await axiosInstance.post('/auth/register/', registrationData);
+       let result;
+       // Use server-side signup for Appwrite mode to handle orphan cleanup and proper security
+       if (import.meta.env.DATABASE_MODE === 'appwrite') {
+         const response = await fetch('/api/signup', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(registrationData),
+         });
+         const json = await response.json();
+         if (!response.ok) {
+           const err = new Error(json.error || 'Registration failed');
+           err.response = { status: response.status, data: json };
+           throw err;
+         }
+         result = { data: json };
+       } else {
+         // Fallback to original client-side compatibility layer (standalone mode)
+         result = await axiosInstance.post('/auth/register/', registrationData);
+       }
+
+       const { data } = result;
 
       notification.success({
         message: 'Registration Successful',
