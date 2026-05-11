@@ -1174,7 +1174,7 @@ export const appwriteApi = {
 
         // Create user in Appwrite (no metadata in prefs; store everything in users collection)
         const { data: newUser, error: createErr } = await auth.create(
-          null,
+          ID.unique(),
           payload.email.trim(),
           payload.password,
           payload.username.trim()
@@ -1245,10 +1245,31 @@ export const appwriteApi = {
               ? String(payload.practice_areas).split(',').map(s => s.trim()).filter(Boolean)
               : [],
           };
-          console.log('[register] userProfile created:', { ...userProfile, verification_token: userProfile.verification_token ? `${userProfile.verification_token.substring(0, 10)}...` : 'MISSING' });
+           console.log('[register] userProfile created:', { ...userProfile, verification_token: userProfile.verification_token ? `${userProfile.verification_token.substring(0, 10)}...` : 'MISSING' });
 
-          // Create user document (upsert handled by db.create conflict resolution)
-          const { data: createdUser, error: createUserErr } = await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
+           // Cleanup orphaned user documents with same email (from previously deleted accounts)
+           try {
+             const { documents } = await databases.listDocuments(
+               DATABASE_ID,
+               COLLECTIONS.USERS,
+               [Query.equal('email', payload.email.trim())]
+             );
+             for (const existing of documents) {
+               if (existing.id !== newUser.user.$id) {
+                 try {
+                   await databases.deleteDocument(DATABASE_ID, COLLECTIONS.USERS, existing.id);
+                   console.log(`[register] Deleted orphan user doc ${existing.id} for email ${payload.email}`);
+                 } catch (delErr) {
+                   console.warn(`[register] Failed to delete orphan ${existing.id}:`, delErr.message);
+                 }
+               }
+             }
+           } catch (cleanupErr) {
+             console.warn('[register] Orphan cleanup warning:', cleanupErr.message);
+           }
+
+           // Create user document (upsert handled by db.create conflict resolution)
+           const { data: createdUser, error: createUserErr } = await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
          if (createUserErr) {
            console.error('❌ Failed to create user profile:', createUserErr);
            return failure('Failed to create user profile', 500, { detail: createUserErr.message });
@@ -1355,7 +1376,7 @@ export const appwriteApi = {
 
       // Create user account
       const { data: authData, error: authError } = await auth.create(
-        null,
+        ID.unique(),
         invite.email,
         password,
         fullName || invite.email.split('@')[0],
@@ -2158,7 +2179,7 @@ export const appwriteApi = {
       }
       // Create user account
       const { data: authData, error: authError } = await auth.create(
-        null,
+        ID.unique(),
         invite.email,
         password,
         name || invite.email.split('@')[0]
