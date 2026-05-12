@@ -81,8 +81,9 @@ export const COLLECTIONS = {
    ONBOARDING: 'onboarding',
    INVITES: 'invites',
    COURTS: 'courts',
-   NOTES: 'notes',
- };
+  NOTES: 'notes',
+  LEAVE_REQUESTS: 'leave_requests',
+};
 
 // Storage buckets (matching Supabase)
 export const BUCKETS = {
@@ -322,10 +323,13 @@ export const ORG_SCOPED = new Set([
    'onboarding',
    'invites',
    'notes',
+   'leave_requests',
+   'service_requests',
+   'reviews',
    // 'courts' is global, not org-scoped
    // 'chat_messages' doesn't have organization_id
    // 'admin_settings' doesn't have organization_id
- ]);
+  ]);
 
 // Map of collection -> attributes that exist in Appwrite schema for org-aware queries
 // This prevents querying attributes that don't exist in the schema
@@ -346,7 +350,10 @@ const COLLECTION_ORG_ATTRIBUTES = {
    onboarding: ['organization_id'],
    invites: ['organization_id', 'invited_by'],
    notes: ['organization_id', 'user_id'],
- };
+   leave_requests: ['organization_id', 'employee_id'],
+   service_requests: ['organization_id', 'lawyer_id', 'client_id'],
+   reviews: ['organization_id', 'lawyer_id', 'client_id'],
+  };
 
 // ============================================
 // CRUD OPERATIONS
@@ -393,25 +400,28 @@ export const db = {
      }
    },
 
-      // CREATE document
-      // documentId: optional. If not provided, generates a unique ID.
-      // The 'id' field is required by Appwrite schema and must be in the document body.
-      async create(collection, data, documentId) {
-        const docId = documentId || ID.unique();
-        const enrich = (d, id) => ({
-          ...d,
-          id: id,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+   // CREATE document
+   // documentId: optional. If not provided, generates a unique ID.
+   // The 'id' field is required by Appwrite schema and must be in the document body.
+   async create(collection, data, documentId) {
+     const docId = documentId || ID.unique();
+     const enrich = (d, id) => ({
+       ...d,
+       id: id,
+       created_at: new Date().toISOString(),
+       updated_at: new Date().toISOString(),
+     });
 
-        const doCreate = async (id) => {
-          const enriched = enrich(data, id);
-          if (ORG_SCOPED.has(collection)) {
+      const doCreate = async (id) => {
+        const enriched = enrich(data, id);
+        if (ORG_SCOPED.has(collection)) {
+          // Only auto-set organization_id if not already provided
+          if (!enriched.organization_id) {
             enriched.organization_id = getCurrentOrganizationId();
           }
-          return await databases.createDocument(DATABASE_ID, collection, id, enriched);
-        };
+        }
+        return await databases.createDocument(DATABASE_ID, collection, id, enriched);
+      };
 
         try {
           const doc = await doCreate(docId);

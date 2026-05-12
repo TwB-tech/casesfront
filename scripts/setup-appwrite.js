@@ -149,10 +149,23 @@ const collections = [
       { key: 'marital_status', type: 'string', size: 50 },
       { key: 'nationality', type: 'string', size: 100 },
       { key: 'occupation', type: 'string', size: 100 },
-      { key: 'date_of_birth', type: 'string', size: 20 },
-      { key: 'registration_number', type: 'string', size: 100 },
-      { key: 'created_at', type: 'datetime' },
-      { key: 'updated_at', type: 'datetime' },
+       { key: 'date_of_birth', type: 'string', size: 20 },
+       { key: 'registration_number', type: 'string', size: 100 },
+       // Extended profile and HR fields
+       { key: 'name', type: 'string', size: 255 },
+       { key: 'phone_number', type: 'string', size: 50 },
+       { key: 'address', type: 'text' },
+       { key: 'department', type: 'string', size: 100 },
+       { key: 'salary', type: 'float' },
+       { key: 'hire_date', type: 'string', size: 20 },
+       { key: 'leave_balance', type: 'integer', default: 30 },
+       { key: 'billable_rate', type: 'float' },
+       { key: 'messaging', type: 'boolean', default: true },
+       { key: 'task_management', type: 'boolean', default: true },
+       { key: 'client_communication', type: 'boolean', default: false },
+       { key: 'invited_by', type: 'string', size: 255 },
+       { key: 'created_at', type: 'datetime' },
+       { key: 'updated_at', type: 'datetime' },
     ],
     permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
@@ -277,18 +290,19 @@ const collections = [
     ],
     permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
   },
-  {
-    name: 'invoice_items',
-    attributes: [
-      { key: 'id', type: 'string', size: 255, required: true },
-      { key: 'invoice_id', type: 'string', size: 255, required: true },
-      { key: 'description', type: 'string', size: 255, required: true },
-      { key: 'quantity', type: 'integer' },
-      { key: 'unit_price', type: 'float' },
-      { key: 'total', type: 'float' },
-    ],
-    permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
-  },
+   {
+     name: 'invoice_items',
+     attributes: [
+       { key: 'id', type: 'string', size: 255, required: true },
+       { key: 'organization_id', type: 'string', size: 255 },
+       { key: 'invoice_id', type: 'string', size: 255, required: true },
+       { key: 'description', type: 'string', size: 255, required: true },
+       { key: 'quantity', type: 'integer' },
+       { key: 'unit_price', type: 'float' },
+       { key: 'total', type: 'float' },
+     ],
+     permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
+   },
   {
     name: 'chat_rooms',
     attributes: [
@@ -314,8 +328,40 @@ const collections = [
       ],
       permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
     },
-  {
-    name: 'audit_logs',
+    {
+      name: 'service_requests',
+      attributes: [
+        { key: 'id', type: 'string', size: 255, required: true },
+        { key: 'organization_id', type: 'string', size: 255 },
+        { key: 'client_id', type: 'string', size: 255, required: true },
+        { key: 'lawyer_id', type: 'string', size: 255, required: true },
+        { key: 'service_category', type: 'string', size: 100 },
+        { key: 'case_description', type: 'text' },
+        { key: 'preferred_time', type: 'string', size: 50, default: 'flexible' },
+        { key: 'urgency', type: 'string', size: 50, default: 'normal' },
+        { key: 'status', type: 'string', size: 50, default: 'pending' },
+        { key: 'created_at', type: 'datetime' },
+        { key: 'updated_at', type: 'datetime' },
+      ],
+      permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
+    },
+    {
+      name: 'reviews',
+      attributes: [
+        { key: 'id', type: 'string', size: 255, required: true },
+        { key: 'organization_id', type: 'string', size: 255 },
+        { key: 'lawyer_id', type: 'string', size: 255, required: true },
+        { key: 'client_id', type: 'string', size: 255, required: true },
+        { key: 'rating', type: 'integer', required: true },
+        { key: 'comment', type: 'text' },
+        { key: 'service_type', type: 'string', size: 100, default: 'general' },
+        { key: 'status', type: 'string', size: 50, default: 'active' },
+        { key: 'created_at', type: 'datetime' },
+      ],
+      permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
+    },
+   {
+     name: 'audit_logs',
     attributes: [
       { key: 'id', type: 'string', size: 255, required: true },
       { key: 'organization_id', type: 'string', size: 255 },
@@ -395,20 +441,36 @@ const collections = [
      ],
      permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
    },
-   {
-     name: 'notes',
-     attributes: [
-       { key: 'id', type: 'string', size: 255, required: true },
-       { key: 'user_id', type: 'string', size: 255, required: true },
-       { key: 'organization_id', type: 'string', size: 255 },
+    {
+      name: 'notes',
+      attributes: [
+        { key: 'id', type: 'string', size: 255, required: true },
+        { key: 'user_id', type: 'string', size: 255, required: true },
+        { key: 'organization_id', type: 'string', size: 255 },
         { key: 'title', type: 'string', size: 255 },
-       { key: 'content', type: 'text', required: true },
-       { key: 'created_at', type: 'datetime' },
-       { key: 'updated_at', type: 'datetime' },
-     ],
-     permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
-   },
- ];
+        { key: 'content', type: 'text', required: true },
+        { key: 'created_at', type: 'datetime' },
+        { key: 'updated_at', type: 'datetime' },
+      ],
+      permissions: ['read("any")', 'create("users")', 'update("users")', 'delete("users")'],
+    },
+    {
+      name: 'leave_requests',
+      attributes: [
+        { key: 'id', type: 'string', size: 255, required: true },
+        { key: 'organization_id', type: 'string', size: 255 },
+        { key: 'employee_id', type: 'string', size: 255, required: true },
+        { key: 'start_date', type: 'string', size: 20, required: true },
+        { key: 'end_date', type: 'string', size: 20, required: true },
+        { key: 'leave_type', type: 'string', size: 50, default: 'annual' },
+        { key: 'reason', type: 'text' },
+        { key: 'status', type: 'string', size: 50, default: 'pending' },
+        { key: 'created_at', type: 'datetime' },
+        { key: 'updated_at', type: 'datetime' },
+      ],
+      permissions: ['read("users")', 'create("users")', 'update("users")', 'delete("users")'],
+    },
+  ];
 
 async function ensureCollection(def) {
   try {
@@ -419,20 +481,40 @@ async function ensureCollection(def) {
     if (e.status !== 404) throw e;
   }
 
-   const payload = {
-     collectionId: def.name,
-     name: def.name.charAt(0).toUpperCase() + def.name.slice(1),
-     documentSecurity: false, // use collection-level permissions
-   };
-   // Use permissions array if provided
-   if (Array.isArray(def.permissions)) {
-     payload.permissions = def.permissions;
-   } else if (def.permissions) {
-     // fallback to read/write object
-     payload.read = def.permissions.read;
-     payload.write = def.permissions.write;
-   }
-   await api('POST', `/databases/${databaseId}/collections`, payload);
+  const payload = {
+    collectionId: def.name,
+    name: def.name.charAt(0).toUpperCase() + def.name.slice(1),
+    documentSecurity: false, // use collection-level permissions
+  };
+  // Build read/write permissions from def.permissions (supports both legacy array and new object formats)
+  if (Array.isArray(def.permissions)) {
+    // Legacy array format, e.g. ['read("any")', 'create("users")', ...]
+    // Extract role from each permission string
+    const extractRole = (str) => {
+      const match = str.match(/\(\s*['"]?([^'"]+)['"]?\s*\)/);
+      return match ? match[1] : 'users';
+    };
+    // Read permission is the first 'read' entry
+    const readEntry = def.permissions.find(p => p.startsWith('read('));
+    const readRole = extractRole(readEntry);
+    // Write permissions include create, update, delete entries; they usually share the same role
+    // Take the role from the first create/update/delete entry
+    const writeEntry = def.permissions.find(p => p.startsWith('create(') || p.startsWith('update(') || p.startsWith('delete('));
+    const writeRole = extractRole(writeEntry);
+    // Convert to Appwrite format: 'any' -> 'role:all', 'users' -> 'role:users', otherwise 'role:<value>'
+    const toAppwrite = (r) => {
+      if (r === 'any') return 'role:all';
+      if (r === 'users') return 'role:users';
+      return `role:${r}`;
+    };
+    payload.read = [toAppwrite(readRole)];
+    payload.write = [toAppwrite(writeRole)];
+  } else if (def.permissions && typeof def.permissions === 'object') {
+    // New format: { read: ['role:all'], write: ['role:users'] }
+    payload.read = def.permissions.read;
+    payload.write = def.permissions.write;
+  }
+  await api('POST', `/databases/${databaseId}/collections`, payload);
   log.success(`  ✓ Created collection ${def.name}`);
 }
 

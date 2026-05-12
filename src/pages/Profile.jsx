@@ -28,6 +28,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useMediaQuery } from 'react-responsive';
 import axiosInstance from '../axiosConfig';
 import moment from 'moment';
+import DocumentList from '../components/Documents/DocumentList';
+import Settings from './Settings';
  
 
 const { TabPane } = Tabs;
@@ -369,7 +371,9 @@ const ProfilePage = () => {
           <p>Clients list will be displayed here.</p>
         </TabPane>
         <TabPane tab="Documents" key="3">
-
+          <div className="mt-4">
+            <DocumentList />
+          </div>
         </TabPane>
         <TabPane tab="Reviews" key="reviews">
           <div className="space-y-6">
@@ -444,8 +448,9 @@ const ProfilePage = () => {
           </div>
         </TabPane>
         <TabPane tab="Settings" key="4">
-          {/* Settings content */}
-          <p>Settings options will be displayed here.</p>
+          <div className="mt-4">
+            <Settings />
+          </div>
         </TabPane>
       </Tabs>
 

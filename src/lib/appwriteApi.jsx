@@ -49,56 +49,87 @@ const generateToken = () => {
 // (Supabase joins → manual Appwrite lookups)
 // ============================================
 const enrichCase = async (item) => {
-  if (!item) {return null;}
+  if (!item) { return null; }
 
-  const user = getCurrentUser();
-  const client = item.client_id ? await db.get(COLLECTIONS.USERS, item.client_id) : { data: null };
-  const advocate = item.advocate_id
-    ? await db.get(COLLECTIONS.USERS, item.advocate_id)
-    : { data: null };
-  const court = item.court_id
-    ? await db.get(COLLECTIONS.COURTS, String(item.court_id))
-    : { data: null };
+  let client = item.client_id;
+  if (client && typeof client === 'string') {
+    const res = await db.get(COLLECTIONS.USERS, client);
+    client = res.data || null;
+  } else if (!client || typeof client !== 'object') {
+    client = null;
+  }
+
+  let advocate = item.advocate_id;
+  if (advocate && typeof advocate === 'string') {
+    const res = await db.get(COLLECTIONS.USERS, advocate);
+    advocate = res.data || null;
+  } else if (!advocate || typeof advocate !== 'object') {
+    advocate = null;
+  }
+
+  let court = item.court_id;
+  if (court && typeof court === 'string') {
+    const res = await db.get(COLLECTIONS.COURTS, court);
+    court = res.data || null;
+  } else if (!court || typeof court !== 'object') {
+    court = null;
+  }
 
   return {
     ...item,
-    name: client.data?.username || 'Unknown Client',
-    client: client.data
-      ? { id: client.data.id, name: client.data.username, username: client.data.username }
-      : null,
-    advocate: advocate.data ? { id: advocate.data.id, username: advocate.data.username } : null,
-    court: court.data || null,
-    court_name: court.data?.name || 'Not assigned',
+    name: client?.username || 'Unknown Client',
+    client: client ? { id: client.id, name: client.username, username: client.username } : null,
+    advocate: advocate ? { id: advocate.id, username: advocate.username } : null,
+    court: court,
+    court_name: court?.name || 'Not assigned',
     organization: item.organization || { name: 'TwB Cases' },
   };
 };
 
 const enrichTask = async (task) => {
-  if (!task) {return null;}
+  if (!task) { return null; }
 
-  const assignee = task.assigned_to
-    ? await db.get(COLLECTIONS.USERS, task.assigned_to)
-    : { data: null };
-  const caseItem = task.case_id ? await db.get(COLLECTIONS.CASES, task.case_id) : { data: null };
+  let assignee = task.assigned_to;
+  if (assignee && typeof assignee === 'string') {
+    const res = await db.get(COLLECTIONS.USERS, assignee);
+    assignee = res.data || null;
+  } else if (!assignee || typeof assignee !== 'object') {
+    assignee = null;
+  }
+
+  let caseItem = task.case_id;
+  if (caseItem && typeof caseItem === 'string') {
+    const res = await db.get(COLLECTIONS.CASES, caseItem);
+    caseItem = res.data || null;
+  } else if (!caseItem || typeof caseItem !== 'object') {
+    caseItem = null;
+  }
 
   return {
     ...task,
     case: task.case_id, // keep original case id (alias for compatibility)
-    assigned_to_name: assignee.data?.username || 'Unassigned',
-    case_title: caseItem.data?.title || 'No case',
+    assigned_to_name: assignee?.username || 'Unassigned',
+    case_title: caseItem?.title || 'No case',
   };
 };
 
 const enrichDocument = async (doc) => {
-  if (!doc) {return null;}
+  if (!doc) { return null; }
 
-  const owner = doc.owner ? await db.get(COLLECTIONS.USERS, doc.owner) : { data: null };
+  let owner = doc.owner;
+  if (owner && typeof owner === 'string') {
+    const ownerResult = await db.get(COLLECTIONS.USERS, owner);
+    owner = ownerResult.data || null;
+  } else if (!owner || typeof owner !== 'object') {
+    owner = null;
+  }
+
   const sharedWith = (doc.shared_with || []).map((uid) => ({ id: uid }));
 
   return {
     ...doc,
-    owner: owner.data
-      ? { id: owner.data.id, username: owner.data.username, name: owner.data.username }
+    owner: owner
+      ? { id: owner.id, username: owner.username || owner.name, name: owner.username || owner.name }
       : null,
     shared_with: sharedWith,
   };
@@ -737,7 +768,13 @@ export const appwriteApi = {
          return isValidRole && item.organization_id === user?.organization_id;
        });
 
-       return success({ results: filtered.map((doc) => ({ ...doc, id: doc.id })) });
+        return success({
+          results: filtered.map((doc) => ({
+            ...doc,
+            id: doc.id,
+            name: doc.username || doc.name || doc.email,
+          })),
+        });
      }
 
      // HR: INVITES
@@ -958,8 +995,48 @@ export const appwriteApi = {
       return success({ results: data });
     }
 
-    // CLIENTCOMM: LIST COMMUNICATIONS
-    if (path === 'clientcomm/api/clientcommunications') {
+     // LEAVE REQUESTS: LIST
+     if (path === 'hr/leave-requests') {
+       const user = getCurrentUser();
+       const { data, error } = await db.list(COLLECTIONS.LEAVE_REQUESTS);
+       if (error) {throw error;}
+
+       // Filter: non-admin/manager/HR see only their own requests
+       let filtered = data;
+       if (!['admin', 'administrator', 'manager', 'hr'].includes(user.role)) {
+         filtered = data.filter(lr => lr.employee_id === user.id);
+       }
+
+       // Enrich with employee names and compute days
+       const enriched = await Promise.all(filtered.map(async (lr) => {
+         let employeeName = 'Unknown';
+         try {
+           const { data: emp } = await db.get(COLLECTIONS.USERS, lr.employee_id);
+           employeeName = emp.username || emp.name || 'Unknown';
+         } catch (e) { /* ignore */ }
+         const start = new Date(lr.start_date);
+         const end = new Date(lr.end_date);
+         const diffTime = Math.abs(end - start);
+         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // inclusive
+
+         return {
+           id: lr.id,
+           employee: employeeName,
+           employee_id: lr.employee_id,
+           type: lr.leave_type,
+           startDate: lr.start_date,
+           endDate: lr.end_date,
+           days: diffDays,
+           status: lr.status,
+           reason: lr.reason,
+         };
+       }));
+
+       return success({ results: enriched });
+     }
+
+     // CLIENTCOMM: LIST COMMUNICATIONS
+     if (path === 'clientcomm/api/clientcommunications') {
       const user = getCurrentUser();
       const { data, error } = await db.list(COLLECTIONS.COMMUNICATIONS, [
         Query.equal('organization_id', user.organization_id),
@@ -1584,17 +1661,26 @@ export const appwriteApi = {
       return success(mapInvoice(data), 201);
     }
 
-    // CREATE EXPENSE
-     if (path === 'expenses') {
-      const { data, error } = await db.create(COLLECTIONS.EXPENSES, {
-        ...payload,
-        organization_id,
-        amount: Number(payload.amount),
-        date: payload.date?.format ? payload.date.format('YYYY-MM-DD') : payload.date,
-      });
-      if (error) {throw error;}
-      return success(data, 201);
-    }
+      // CREATE EXPENSE
+       if (path === 'expenses') {
+        // Map 'description' to 'title' if title not provided (frontend uses description)
+        const expenseData = {
+          ...payload,
+          organization_id,
+          submitted_by: user.id,
+          amount: Number(payload.amount),
+          date: payload.date?.format ? payload.date.format('YYYY-MM-DD') : payload.date,
+        };
+        // Ensure title exists (required by schema)
+        if (!expenseData.title && expenseData.description) {
+          expenseData.title = expenseData.description;
+        } else if (!expenseData.title && !expenseData.description) {
+          return failure('Expense title or description is required', 400);
+        }
+        const { data, error } = await db.create(COLLECTIONS.EXPENSES, expenseData);
+        if (error) {throw error;}
+        return success(data, 201);
+      }
 
      // CREATE PAYROLL RUN
       if (path === 'payroll') {
@@ -1724,10 +1810,38 @@ export const appwriteApi = {
            invite: data,
          },
          201
-       );
-       }
+        );
+        }
 
-     // CLIENTS: SEND INVITATION (CRM add client)
+      // HR: CREATE LEAVE REQUEST
+      if (path === 'hr/leave-requests') {
+        const currentUser = getCurrentUser();
+        const employee_id = payload.employee_id || currentUser.id;
+        // If not admin/HR, can only create for self
+        if (!['admin', 'administrator', 'manager', 'hr'].includes(currentUser.role) && payload.employee_id) {
+          return failure('Cannot create leave request for another employee', 403);
+        }
+        const orgId = currentUser.organization_id;
+        if (!orgId) {
+          return failure('Organization context required', 400);
+        }
+        const leaveData = {
+          employee_id,
+          organization_id: orgId,
+          start_date: payload.start_date,
+          end_date: payload.end_date,
+          leave_type: payload.leave_type || 'annual',
+          reason: payload.reason || '',
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        const { data, error } = await db.create(COLLECTIONS.LEAVE_REQUESTS, leaveData);
+        if (error) {throw error;}
+        return success({ ...data, id: data.id }, 201);
+      }
+
+      // CLIENTS: SEND INVITATION (CRM add client)
     if (path === 'clients/invite') {
       const currentUser = getCurrentUser();
       if (!currentUser?.id) {
@@ -2372,6 +2486,48 @@ export const appwriteApi = {
 
       const { data, error } = await db.update(COLLECTIONS.SERVICE_REQUESTS, requestId, {
         status,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) {throw error;}
+      return success(data);
+    }
+
+    // UPDATE EMPLOYEE (HR)
+    if (path.startsWith('hr/employees/')) {
+      const id = parts[1];
+      const currentUser = getCurrentUser();
+      if (!['admin', 'administrator', 'manager', 'hr'].includes(currentUser.role)) {
+        return failure('You do not have permission to edit employees', 403);
+      }
+      const updateData = {
+        username: payload.name || payload.username,
+        email: payload.email,
+        role: payload.role,
+        department: payload.department,
+        phone: payload.phone || payload.phone_number,
+      };
+      if (payload.salary !== undefined) {
+        updateData.salary = Number(payload.salary);
+      }
+      if (payload.status) {
+        updateData.status = payload.status;
+      }
+      // Remove undefined
+      Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+      const { data, error } = await db.update(COLLECTIONS.USERS, id, updateData);
+      if (error) {throw error;}
+      return success({ ...data, id: data.id, username: data.username });
+    }
+
+    // UPDATE LEAVE REQUEST (approve/decline)
+    if (path.startsWith('hr/leave-requests/')) {
+      const id = parts[1];
+      const user = getCurrentUser();
+      if (!['admin', 'administrator', 'manager', 'hr'].includes(user.role)) {
+        return failure('Forbidden: only managers can update leave requests', 403);
+      }
+      const { data, error } = await db.update(COLLECTIONS.LEAVE_REQUESTS, id, {
+        status: payload.status,
         updated_at: new Date().toISOString(),
       });
       if (error) {throw error;}

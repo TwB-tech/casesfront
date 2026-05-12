@@ -44,14 +44,23 @@ const HRManagement = () => {
   const { user } = useAuth();
   const isAdmin = user && ['admin', 'administrator'].includes(user.role);
   const [employees, setEmployees] = useState([]);
+  const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [leaveLoading, setLeaveLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState(() => isAdmin ? 'employees' : 'leave');
+  const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
+  const [isLeaveModalVisible, setIsLeaveModalVisible] = useState(false);
+  const [isViewModalVisible, setIsViewModalVisible] = useState(false);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [leaveForm] = Form.useForm();
   const [form] = Form.useForm();
   const [inviteForm] = Form.useForm();
+  const [editForm] = Form.useForm();
+  const [viewEmployee, setViewEmployee] = useState(null);
+  const [editEmployee, setEditEmployee] = useState(null);
+  const [activeTab, setActiveTab] = useState(() => isAdmin ? 'employees' : 'leave');
   const [filterDept, setFilterDept] = useState('');
   const [filterRole, setFilterRole] = useState('');
-  const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
   const [invitations, setInvitations] = useState([]);
 
   useEffect(() => {
@@ -110,9 +119,30 @@ const HRManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+   };
 
-  const employeeColumns = [
+   const fetchLeaveRequests = async () => {
+     try {
+       setLeaveLoading(true);
+       const response = await axiosInstance.get('/hr/leave-requests/');
+       setLeaveRequests(response.data.results || []);
+     } catch (error) {
+       console.error('Error fetching leave requests:', error);
+       message.error('Failed to load leave requests');
+       setLeaveRequests([]);
+     } finally {
+       setLeaveLoading(false);
+     }
+   };
+
+   // Fetch leave requests when leave tab is active (if component already mounted)
+   useEffect(() => {
+     if (activeTab === 'leave') {
+       fetchLeaveRequests();
+     }
+   }, [activeTab]);
+
+   const employeeColumns = [
     {
       title: 'Employee',
       dataIndex: 'name',
@@ -163,10 +193,10 @@ const HRManagement = () => {
       key: 'actions',
       render: (_, record) => (
         <div className="flex gap-2">
-          <Button size="small" type="link">
+          <Button size="small" type="link" onClick={() => handleViewEmployee(record)}>
             View
           </Button>
-          <Button size="small" type="link">
+          <Button size="small" type="link" onClick={() => handleEditEmployee(record)}>
             Edit
           </Button>
         </div>
@@ -233,9 +263,93 @@ const HRManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+    };
 
-  return (
+    const handleApproveLeave = async (id) => {
+      try {
+        await axiosInstance.put(`/hr/leave-requests/${id}/`, { status: 'approved' });
+        message.success('Leave request approved');
+        fetchLeaveRequests();
+      } catch (error) {
+        console.error('Error approving leave:', error);
+        message.error('Failed to approve leave request');
+      }
+    };
+
+    const handleRejectLeave = async (id) => {
+      try {
+        await axiosInstance.put(`/hr/leave-requests/${id}/`, { status: 'rejected' });
+        message.success('Leave request rejected');
+        fetchLeaveRequests();
+      } catch (error) {
+        console.error('Error rejecting leave:', error);
+        message.error('Failed to reject leave request');
+      }
+    };
+
+    const handleViewEmployee = (record) => {
+      setViewEmployee(record);
+      setIsViewModalVisible(true);
+    };
+
+    const handleEditEmployee = (record) => {
+      setEditEmployee(record);
+      editForm.setFieldsValue({
+        name: record.name,
+        email: record.email,
+        role: record.role,
+        department: record.department || '',
+        salary: record.salary || '',
+        // phone field if exists? record.phone
+      });
+      setIsEditModalVisible(true);
+    };
+
+    const handleUpdateEmployee = async (values) => {
+      try {
+        setLoading(true);
+        const payload = {
+          name: values.name,
+          email: values.email,
+          role: values.role,
+          department: values.department || '',
+          salary: values.salary || 0,
+        };
+        await axiosInstance.put(`/hr/employees/${editEmployee.id}/`, payload);
+        message.success(`Employee ${values.name} updated successfully`);
+        setIsEditModalVisible(false);
+        fetchEmployees();
+      } catch (error) {
+        console.error('Error updating employee:', error);
+        message.error(error.response?.data?.message || 'Failed to update employee');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handleLeaveSubmit = async (values) => {
+      try {
+        setLoading(true);
+        const payload = {
+          start_date: values.startDate.format('YYYY-MM-DD'),
+          end_date: values.endDate.format('YYYY-MM-DD'),
+          leave_type: values.leaveType,
+          reason: values.reason || '',
+        };
+        await axiosInstance.post('/hr/leave-requests/', payload);
+        message.success('Leave request submitted successfully');
+        setIsLeaveModalVisible(false);
+        leaveForm.resetFields();
+        fetchLeaveRequests();
+      } catch (error) {
+        console.error('Error submitting leave request:', error);
+        message.error('Failed to submit leave request');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+   return (
     <div className="min-h-screen">
 
 
@@ -545,11 +659,21 @@ const HRManagement = () => {
 
           {activeTab === 'leave' && (
             <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold">Leave Requests</h3>
+                <Button
+                  type="primary"
+                  icon={<Calendar className="w-4 h-4" />}
+                  onClick={() => setIsLeaveModalVisible(true)}
+                >
+                  Request Leave
+                </Button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <Card className={isFuturistic ? 'bg-cyber-card border-cyber-border' : ''}>
                   <Statistic
                     title="Pending Requests"
-                    value={3}
+                    value={leaveRequests.filter(lr => lr.status === 'pending').length}
                     valueStyle={{ color: '#faad14', fontWeight: 600 }}
                     prefix={<Clock className="mr-2" />}
                   />
@@ -557,7 +681,14 @@ const HRManagement = () => {
                 <Card className={isFuturistic ? 'bg-cyber-card border-cyber-border' : ''}>
                   <Statistic
                     title="Approved This Month"
-                    value={8}
+value={leaveRequests.filter(lr => {
+  if (lr.status !== 'approved') {
+    return false;
+  }
+  const created = new Date(lr.created_at);
+  const now = new Date();
+  return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+}).length}
                     valueStyle={{ color: '#52c41a', fontWeight: 600 }}
                     prefix={<CheckCircle className="mr-2" />}
                   />
@@ -565,7 +696,9 @@ const HRManagement = () => {
                 <Card className={isFuturistic ? 'bg-cyber-card border-cyber-border' : ''}>
                   <Statistic
                     title="Total Leave Days Used"
-                    value={47}
+                    value={leaveRequests
+                      .filter(lr => lr.status === 'approved')
+                      .reduce((sum, lr) => sum + (lr.days || 0), 0)}
                     valueStyle={{ color: '#1890ff', fontWeight: 600 }}
                     prefix={<Calendar className="mr-2" />}
                   />
@@ -615,35 +748,7 @@ const HRManagement = () => {
 
               <h4 className="text-lg font-semibold mb-4">Leave Request History</h4>
               <Table
-                dataSource={[
-                  {
-                    id: 1,
-                    employee: 'Sarah Mitchell',
-                    type: 'Annual Leave',
-                    startDate: '2024-05-01',
-                    endDate: '2024-05-05',
-                    days: 5,
-                    status: 'pending',
-                  },
-                  {
-                    id: 2,
-                    employee: 'Michael Chen',
-                    type: 'Sick Leave',
-                    startDate: '2024-04-08',
-                    endDate: '2024-04-10',
-                    days: 3,
-                    status: 'approved',
-                  },
-                  {
-                    id: 3,
-                    employee: 'Amanda Rodriguez',
-                    type: 'Personal Leave',
-                    startDate: '2024-04-01',
-                    endDate: '2024-04-02',
-                    days: 2,
-                    status: 'approved',
-                  },
-                ]}
+                dataSource={leaveRequests}
                 columns={[
                   { title: 'Employee', dataIndex: 'employee', key: 'employee' },
                   {
@@ -673,20 +778,28 @@ const HRManagement = () => {
                   {
                     title: 'Actions',
                     key: 'actions',
-                    render: () => (
+                    render: (_, record) => (
                       <div className="flex gap-2">
-                        <Button size="small" type="primary">
-                          Approve
-                        </Button>
-                        <Button size="small" danger>
-                          Decline
-                        </Button>
+                        {record.status === 'pending' && user && ['admin', 'administrator', 'manager', 'hr'].includes(user.role) ? (
+                          <>
+                            <Button size="small" type="primary" onClick={() => handleApproveLeave(record.id)}>
+                              Approve
+                            </Button>
+                            <Button size="small" danger onClick={() => handleRejectLeave(record.id)}>
+                              Decline
+                            </Button>
+                          </>
+                        ) : (
+                          <span>-</span>
+                        )}
                       </div>
                     ),
                   },
                 ]}
                 rowKey="id"
-                pagination={false}
+                loading={leaveLoading}
+                pagination={{ pageSize: 10 }}
+                data-testid="hr-leave-requests-table"
               />
             </div>
           )}
@@ -861,6 +974,174 @@ const HRManagement = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* View Employee Modal */}
+      <Modal
+        title="Employee Details"
+        open={isViewModalVisible}
+        onCancel={() => setIsViewModalVisible(false)}
+        footer={<Button onClick={() => setIsViewModalVisible(false)}>Close</Button>}
+        width={500}
+      >
+        {viewEmployee && (
+          <div>
+            <div className="flex items-center gap-4 mb-6">
+              <Avatar
+                size={64}
+                style={{
+                  background: isFuturistic ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#3b82f6',
+                  fontWeight: 600,
+                }}
+              >
+                {viewEmployee.name?.charAt(0)?.toUpperCase() || 'U'}
+              </Avatar>
+              <div>
+                <h3 className="text-lg font-semibold m-0">{viewEmployee.name}</h3>
+                <p className="text-neutral-500 m-0">{viewEmployee.email}</p>
+                <Tag color="blue" className="mt-2">{viewEmployee.role}</Tag>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <strong>Department:</strong> {viewEmployee.department || 'N/A'}
+              </div>
+              <div>
+                <strong>Status:</strong> {viewEmployee.status}
+              </div>
+              {viewEmployee.phone && (
+                <div>
+                  <strong>Phone:</strong> {viewEmployee.phone}
+                </div>
+              )}
+              {viewEmployee.salary && (
+                <div>
+                  <strong>Salary:</strong> {formatCurrency(viewEmployee.salary, currency)}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Edit Employee Modal */}
+      <Modal
+        title="Edit Employee"
+        open={isEditModalVisible}
+        onCancel={() => setIsEditModalVisible(false)}
+        footer={null}
+        width={600}
+      >
+        <Form form={editForm} layout="vertical" onFinish={handleUpdateEmployee}>
+          <Form.Item
+            name="name"
+            label="Full Name"
+            rules={[{ required: true, message: 'Please enter full name' }]}
+          >
+            <Input placeholder="John Doe" />
+          </Form.Item>
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[{ required: true, type: 'email', message: 'Please enter valid email' }]}
+          >
+            <Input placeholder="employee@company.com" />
+          </Form.Item>
+          <Form.Item
+            name="role"
+            label="Role"
+            rules={[{ required: true, message: 'Please select role' }]}
+          >
+            <Select placeholder="Select role">
+              <Option value="partner">Partner</Option>
+              <Option value="associate">Associate</Option>
+              <Option value="paralegal">Paralegal</Option>
+              <Option value="legal_researcher">Legal Researcher</Option>
+              <Option value="office_manager">Office Manager</Option>
+              <Option value="administrator">Administrator</Option>
+              <Option value="employee">Employee</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="department"
+            label="Department"
+            rules={[{ required: true, message: 'Please select department' }]}
+          >
+            <Select placeholder="Select department">
+              <Option value="litigation">Litigation</Option>
+              <Option value="corporate">Corporate</Option>
+              <Option value="research">Research</Option>
+              <Option value="administration">Administration</Option>
+              <Option value="marketing">Marketing</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="salary" label={`Salary (${CURRENCIES[currency].symbol})`}>
+            <Input type="number" placeholder="0.00" />
+          </Form.Item>
+          <Form.Item>
+            <div className="flex justify-end gap-3">
+              <Button onClick={() => setIsEditModalVisible(false)}>Cancel</Button>
+              <Button type="primary" htmlType="submit">
+                Save Changes
+              </Button>
+            </div>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+     {/* Request Leave Modal */}
+      <Modal
+        title="Request Leave"
+        open={isLeaveModalVisible}
+        onCancel={() => setIsLeaveModalVisible(false)}
+        footer={null}
+        width={600}
+      >
+        <Form form={leaveForm} layout="vertical" onFinish={handleLeaveSubmit}>
+          <Form.Item
+            name="startDate"
+            label="Start Date"
+            rules={[{ required: true, message: 'Please select start date' }]}
+          >
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="endDate"
+            label="End Date"
+            rules={[{ required: true, message: 'Please select end date' }]}
+          >
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="leaveType"
+            label="Leave Type"
+            rules={[{ required: true, message: 'Please select leave type' }]}
+          >
+            <Select placeholder="Select type">
+              <Option value="annual">Annual Leave</Option>
+              <Option value="sick">Sick Leave</Option>
+              <Option value="personal">Personal Leave</Option>
+              <Option value="maternity">Maternity Leave</Option>
+              <Option value="paternity">Paternity Leave</Option>
+              <Option value="unpaid">Unpaid Leave</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="reason"
+            label="Reason (optional)"
+          >
+            <Input.TextArea rows={3} placeholder="Reason for leave" />
+          </Form.Item>
+          <Form.Item>
+            <div className="flex justify-end gap-3">
+              <Button onClick={() => setIsLeaveModalVisible(false)}>Cancel</Button>
+              <Button type="primary" htmlType="submit">
+                Submit Request
+              </Button>
+            </div>
+          </Form.Item>
+        </Form>
+      </Modal>
+
     </div>
   );
 };
