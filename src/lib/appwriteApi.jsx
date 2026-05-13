@@ -2425,22 +2425,22 @@ export const appwriteApi = {
       return success(enriched);
     }
 
-    // UPDATE USER PROFILE
-     if (path.startsWith('individual/') || path === 'auth/profile') {
-       const id = path === 'auth/profile' ? getCurrentUser().id : parts[1];
-      const updateData = {
-        username: payload.username,
-        email: payload.email,
-        phone_number: payload.phone_number,
-        address: payload.address,
-      };
-      if (payload.role) {
-        updateData.role = payload.role;
-      }
-      const { data, error } = await db.update(COLLECTIONS.USERS, id, updateData);
-      if (error) {throw error;}
-      return success({ ...data, id: data.id, username: data.username });
-    }
+     // UPDATE USER PROFILE
+      if (path.startsWith('individual/') || path === 'auth/profile') {
+        const id = path === 'auth/profile' ? getCurrentUser().id : parts[1];
+       const updateData = {
+         username: payload.username,
+         email: payload.email,
+         phone_number: payload.phone_number,
+         address: payload.address,
+       };
+       if (payload.role && ['admin', 'administrator'].includes(user.role)) {
+         updateData.role = payload.role;
+       }
+       const { data, error } = await db.update(COLLECTIONS.USERS, id, updateData);
+       if (error) {throw error;}
+       return success({ ...data, id: data.id, username: data.username });
+     }
 
     // UPDATE NOTE
     if (path.startsWith('notes/')) {

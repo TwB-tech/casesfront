@@ -317,30 +317,30 @@ function AppContent() {
                          </ProtectedRoute>
                        }
                      />
-                     <Route
-                       path="/invoices"
-                       element={
-                         <ProtectedRoute>
-                           <ErrorBoundary><InvoiceList /></ErrorBoundary>
-                         </ProtectedRoute>
-                       }
-                     />
-                     <Route
-                       path="/invoice-details/:id"
-                       element={
-                         <ProtectedRoute>
-                           <ErrorBoundary><InvoiceDetails /></ErrorBoundary>
-                         </ProtectedRoute>
-                       }
-                     />
-                     <Route
-                       path="/new-invoice"
-                       element={
-                         <ProtectedRoute>
-                           <ErrorBoundary><NewInvoice /></ErrorBoundary>
-                         </ProtectedRoute>
-                       }
-                     />
+                      <Route
+                        path="/invoices"
+                        element={
+                          <AccountingRoute>
+                            <ErrorBoundary><InvoiceList /></ErrorBoundary>
+                          </AccountingRoute>
+                        }
+                      />
+                      <Route
+                        path="/invoice-details/:id"
+                        element={
+                          <AccountingRoute>
+                            <ErrorBoundary><InvoiceDetails /></ErrorBoundary>
+                          </AccountingRoute>
+                        }
+                      />
+                      <Route
+                        path="/new-invoice"
+                        element={
+                          <AccountingRoute>
+                            <ErrorBoundary><NewInvoice /></ErrorBoundary>
+                          </AccountingRoute>
+                        }
+                      />
                       <Route
                         path="/chat"
                         element={
