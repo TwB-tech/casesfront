@@ -1,6 +1,6 @@
 /**
  * Appwrite API Wrapper
- * Full migration from Supabase → Appwrite
+ * Full migration from Supabase ΓåÆ Appwrite
  * Maintains identical API shape to minimize frontend changes
  */
 
@@ -46,7 +46,7 @@ const generateToken = () => {
 
 // ============================================
 // ENRICHMENT HELPERS
-// (Supabase joins → manual Appwrite lookups)
+// (Supabase joins ΓåÆ manual Appwrite lookups)
 // ============================================
 const enrichCase = async (item) => {
   if (!item) { return null; }
@@ -380,7 +380,7 @@ export const appwriteApi = {
     if (['invoices', 'api/invoices'].includes(path)) {
       const { data, error } = await db.list(COLLECTIONS.INVOICES);
       if (error) {throw error;}
-      // Map snake_case → camelCase
+      // Map snake_case ΓåÆ camelCase
       return success(data.map(mapInvoice));
     }
 
@@ -419,74 +419,10 @@ export const appwriteApi = {
        });
      }
 
-      // EMAIL VERIFY (stub - handled by Appwrite auth)
-      if (path === 'auth/email-verify') {
-        return success({ detail: 'Email verified successfully.' });
-      }
-
-      // FORGOT PASSWORD / REQUEST RESET EMAIL
-      if (path === 'auth/request-reset-email') {
-        // Validate email
-        if (!payload.email || typeof payload.email !== 'string' || payload.email.trim() === '') {
-          return failure('Email is required', 400, {
-            status_code: 400,
-            errors: { email: ['Email is required'] },
-          });
-        }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(payload.email.trim())) {
-          return failure('Please enter a valid email address', 400, {
-            status_code: 400,
-            errors: { email: ['Invalid email format'] },
-          });
-        }
-        const SITE_URL = import.meta.env.SITE_URL ||
-          import.meta.env.VITE_SITE_URL ||
-          (typeof window !== 'undefined' ? window.location.origin : '');
-        const resetUrl = `${SITE_URL}/reset-password`;
-        try {
-          const { data } = await auth.passwordRecovery(payload.email.trim(), resetUrl);
-          return success(data || { detail: 'If the email exists, reset instructions have been sent.' });
-        } catch (error) {
-          console.error('Password reset request failed:', error);
-          return success({ detail: 'If the email exists, reset instructions have been sent.' });
-        }
-      }
-
-      // PASSWORD RESET (token-based)
-      if (path.startsWith('auth/password-reset/')) {
-        const token = path.split('/').filter(Boolean).pop();
-        if (!token) {
-          return failure('Reset token is required', 400, {
-            status_code: 400,
-            errors: { token: ['Reset token is required'] },
-          });
-        }
-        if (!payload.password || payload.password.length < 6) {
-          return failure('Password must be at least 6 characters long', 400, {
-            status_code: 400,
-            errors: { password: ['Password must be at least 6 characters long'] },
-          });
-        }
-        try {
-          const { data } = await auth.updateRecovery(null, token, payload.password);
-          return success({
-            detail: 'Password reset successfully.',
-            ...data,
-          });
-        } catch (error) {
-          console.error('Password reset failed:', error);
-          const msg = error?.message || 'Password reset failed.';
-          const code = String(error?.code || error?.status || '');
-          if (code.includes('401') || code.includes('wrong')) {
-            return failure('Invalid or expired reset token', 400, {
-              status_code: 400,
-              errors: { token: ['Invalid or expired reset token'] },
-            });
-          }
-          return failure(msg, 400, { status_code: 400, errors: { password: [msg] } });
-        }
-      }
+     // EMAIL VERIFY (stub - handled by Appwrite auth)
+     if (path === 'auth/email-verify') {
+       return success({ detail: 'Email verified successfully.' });
+     }
 
       // USER STATS
       if (path === 'users/stats') {
@@ -1322,7 +1258,7 @@ export const appwriteApi = {
         );
 
         if (createErr || !newUser) {
-          console.error('❌ auth.create failed:', createErr);
+          console.error('Γ¥î auth.create failed:', createErr);
           // Return detailed error during development
           const message = createErr?.message || createErr?.code?.toString() || 'Registration failed';
           return failure(message, 400, createErr);
@@ -1335,7 +1271,7 @@ export const appwriteApi = {
        );
        if (sessionErr) {
          console.error('Failed to create session for new user:', sessionErr);
-         return failure('Registration failed — could not create session', 400, sessionErr);
+         return failure('Registration failed ΓÇö could not create session', 400, sessionErr);
        }
 
        // Create organization if firm/org role (requires authentication)
@@ -1412,7 +1348,7 @@ export const appwriteApi = {
            // Create user document (upsert handled by db.create conflict resolution)
            const { data: createdUser, error: createUserErr } = await db.create(COLLECTIONS.USERS, userProfile, newUser.user.$id);
          if (createUserErr) {
-           console.error('❌ Failed to create user profile:', createUserErr);
+           console.error('Γ¥î Failed to create user profile:', createUserErr);
            return failure('Failed to create user profile', 500, { detail: createUserErr.message });
          }
          console.log('[register] createdUser document:', {
@@ -1494,6 +1430,49 @@ export const appwriteApi = {
         email_verified: true,
         user_id: user.id,
       });
+    }
+
+    // FORGOT PASSWORD / REQUEST RESET EMAIL
+    if (path === 'auth/request-reset-email') {
+      if (!payload.email || typeof payload.email !== 'string' || payload.email.trim() === '') {
+        return failure('Email is required', 400, { status_code: 400, errors: { email: ['Email is required'] } });
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(payload.email.trim())) {
+        return failure('Please enter a valid email address', 400, { status_code: 400, errors: { email: ['Invalid email format'] } });
+      }
+      const SITE_URL = import.meta.env.SITE_URL || import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+      const resetUrl = `${SITE_URL}/reset-password`;
+      try {
+        const { data } = await auth.passwordRecovery(payload.email.trim(), resetUrl);
+        return success(data || { detail: 'If the email exists, reset instructions have been sent.' });
+      } catch (error) {
+        console.error('Password reset request failed:', error);
+        return success({ detail: 'If the email exists, reset instructions have been sent.' });
+      }
+    }
+
+    // PASSWORD RESET (token-based)
+    if (path.startsWith('auth/password-reset/')) {
+      const token = path.split('/').filter(Boolean).pop();
+      if (!token) {
+        return failure('Reset token is required', 400, { status_code: 400, errors: { token: ['Reset token is required'] } });
+      }
+      if (!payload.password || payload.password.length < 6) {
+        return failure('Password must be at least 6 characters long', 400, { status_code: 400, errors: { password: ['Password must be at least 6 characters long'] } });
+      }
+      try {
+        const { data } = await auth.updateRecovery(null, token, payload.password);
+        return success({ detail: 'Password reset successfully.', ...data });
+      } catch (error) {
+        console.error('Password reset failed:', error);
+        const msg = error?.message || 'Password reset failed.';
+        const code = String(error?.code || error?.status || '');
+        if (code.includes('401') || code.includes('wrong')) {
+          return failure('Invalid or expired reset token', 400, { status_code: 400, errors: { token: ['Invalid or expired reset token'] } });
+        }
+        return failure(msg, 400, { status_code: 400, errors: { password: [msg] } });
+      }
     }
 
     // ACCEPT INVITE
@@ -2431,6 +2410,7 @@ export const appwriteApi = {
   async put(url, payload) {
     const path = url.replace(/^\/api\//, '').replace(/^\//, '').replace(/\/$/, '');
     const parts = path.split('/').filter(Boolean);
+    const user = getCurrentUser();
 
     if (!url.includes('/auth/')) {
       if (!payload._csrf) {
