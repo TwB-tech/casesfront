@@ -184,10 +184,34 @@ export const auth = {
     }
   },
 
-  async updateRecovery(newPassword) {
-    // Simplified: in production integrate with password reset flow
-    console.warn('Password recovery should use dedicated reset flow');
-    return { data: {} };
+  async passwordRecovery(email, resetUrl) {
+    // Send the password recovery email via Appwrite SDK
+    return account.createRecovery(email, resetUrl);
+  },
+
+  async updateRecovery(userId, secret, newPassword) {
+    try {
+      const res = await fetch(
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/api/appwrite-proxy/account/recovery`
+          : `${DATABASE_ID}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Appwrite-Project': import.meta.env.APPWRITE_PROJECT_ID,
+          },
+          body: JSON.stringify({ userId, secret, password: newPassword }),
+        }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || 'Password recovery failed');
+      }
+      return { data: await res.json() };
+    } catch (error) {
+      return { error };
+    }
   },
 
    async deleteSession() {

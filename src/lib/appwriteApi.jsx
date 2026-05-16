@@ -419,10 +419,74 @@ export const appwriteApi = {
        });
      }
 
-     // EMAIL VERIFY (stub - handled by Appwrite auth)
-     if (path === 'auth/email-verify') {
-       return success({ detail: 'Email verified successfully.' });
-     }
+      // EMAIL VERIFY (stub - handled by Appwrite auth)
+      if (path === 'auth/email-verify') {
+        return success({ detail: 'Email verified successfully.' });
+      }
+
+      // FORGOT PASSWORD / REQUEST RESET EMAIL
+      if (path === 'auth/request-reset-email') {
+        // Validate email
+        if (!payload.email || typeof payload.email !== 'string' || payload.email.trim() === '') {
+          return failure('Email is required', 400, {
+            status_code: 400,
+            errors: { email: ['Email is required'] },
+          });
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(payload.email.trim())) {
+          return failure('Please enter a valid email address', 400, {
+            status_code: 400,
+            errors: { email: ['Invalid email format'] },
+          });
+        }
+        const SITE_URL = import.meta.env.SITE_URL ||
+          import.meta.env.VITE_SITE_URL ||
+          (typeof window !== 'undefined' ? window.location.origin : '');
+        const resetUrl = `${SITE_URL}/reset-password`;
+        try {
+          const { data } = await auth.passwordRecovery(payload.email.trim(), resetUrl);
+          return success(data || { detail: 'If the email exists, reset instructions have been sent.' });
+        } catch (error) {
+          console.error('Password reset request failed:', error);
+          return success({ detail: 'If the email exists, reset instructions have been sent.' });
+        }
+      }
+
+      // PASSWORD RESET (token-based)
+      if (path.startsWith('auth/password-reset/')) {
+        const token = path.split('/').filter(Boolean).pop();
+        if (!token) {
+          return failure('Reset token is required', 400, {
+            status_code: 400,
+            errors: { token: ['Reset token is required'] },
+          });
+        }
+        if (!payload.password || payload.password.length < 6) {
+          return failure('Password must be at least 6 characters long', 400, {
+            status_code: 400,
+            errors: { password: ['Password must be at least 6 characters long'] },
+          });
+        }
+        try {
+          const { data } = await auth.updateRecovery(null, token, payload.password);
+          return success({
+            detail: 'Password reset successfully.',
+            ...data,
+          });
+        } catch (error) {
+          console.error('Password reset failed:', error);
+          const msg = error?.message || 'Password reset failed.';
+          const code = String(error?.code || error?.status || '');
+          if (code.includes('401') || code.includes('wrong')) {
+            return failure('Invalid or expired reset token', 400, {
+              status_code: 400,
+              errors: { token: ['Invalid or expired reset token'] },
+            });
+          }
+          return failure(msg, 400, { status_code: 400, errors: { password: [msg] } });
+        }
+      }
 
       // USER STATS
       if (path === 'users/stats') {

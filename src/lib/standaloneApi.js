@@ -1972,12 +1972,31 @@ export const standaloneApi = {
       });
     }
 
-    // File Upload placeholder
+    // File Upload endpoint (standalone / mock mode)
     if (path === '/api/upload/') {
-      return success({
-        success: true,
-        message: 'Upload endpoint - configure AppWrite Storage in production',
-      });
+      const file = payload.file || (payload instanceof FormData ? payload.get('file') : null);
+      if (!file) {
+        return failure('No file provided', 400);
+      }
+      try {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(file);
+        });
+        return success({
+          success: true,
+          url: dataUrl,
+          filename: file.name || 'upload',
+          size: file.size,
+          type: file.type,
+          // Note: switch to DATABASE_MODE=appwrite to use real Appwrite Storage
+          warning: 'Running in standalone mode — file is stored as data URL. Switch DATABASE_MODE=appwrite for real storage.',
+        });
+      } catch (e) {
+        return failure('Failed to process upload: ' + e.message, 500);
+      }
     }
 
     // Document generation with AI - real document generation
