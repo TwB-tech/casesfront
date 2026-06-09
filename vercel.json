@@ -4,82 +4,24 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    {
-      "source": "/api/appwrite-proxy/(.*)",
-      "destination": "/api/appwrite-proxy.js"
-    },
-    {
-      "source": "/api/postgres-proxy",
-      "destination": "/api/postgres-proxy.js"
-    },
-    {
-      "source": "/api/reya",
-      "destination": "/api/reya.js"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1.js"
-    },
-    {
-      "source": "/assets/(.*)",
-      "destination": "/assets/$1"
-    },
-    {
-      "source": "/favicon.ico",
-      "destination": "/favicon.ico"
-    },
-    {
-      "source": "/manifest.json",
-      "destination": "/manifest.json"
-    },
-    {
-      "source": "/logo192.png",
-      "destination": "/logo192.png"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/api/appwrite-proxy/(.*)", "destination": "/api/appwrite-proxy.js" },
+    { "source": "/api/postgres-proxy",      "destination": "/api/postgres-proxy.js" },
+    { "source": "/api/reya",               "destination": "/api/reya.js" },
+    { "source": "/api/(.*)",               "destination": "/api/$1.js" },
+    { "source": "/assets/(.*)",            "destination": "/assets/$1" },
+    { "source": "/favicon.ico",            "destination": "/favicon.ico" },
+    { "source": "/manifest.json",          "destination": "/manifest.json" },
+    { "source": "/logo192.png",            "destination": "/logo192.png" },
+    { "source": "/(.*)",                  "destination": "/index.html" }
   ],
-   "headers": [
-    {
-      "source": "/",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/index.html",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "geolocation=(), microphone=(), camera=()"
-        }
-      ]
-    }
+  "headers": [
+    { "source": "/", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }] },
+    { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }] },
+    { "source": "/(.*)", "headers": [
+      { "key": "X-Frame-Options", "value": "DENY" },
+      { "key": "X-Content-Type-Options", "value": "nosniff" },
+      { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+      { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=()" }
+    ]}
   ]
 }
