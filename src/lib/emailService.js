@@ -7,7 +7,7 @@ import { USE_STANDALONE } from '../config';
 
 const RESEND_API_KEY = import.meta.env.RESEND_API_KEY;
 const ADMIN_EMAIL = import.meta.env.ADMIN_EMAIL || 'admin@techwithbrands.com';
-const NOREPLY_EMAIL = import.meta.env.NOREPLY_EMAIL || 'noreply@techwithbrands.com';
+const NOREPLY_EMAIL = import.meta.env.NOREPLY_EMAIL || 'a1kkamau@gmail.com';
 const SITE_URL =
   import.meta.env.SITE_URL ||
   (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');

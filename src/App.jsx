@@ -4,7 +4,7 @@
  * Version 2.0 - All Rights Reserved
  */
 
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import './App.css';
 import React, { lazy, Suspense, useState, useEffect } from 'react';
 import useAuth from './hooks/useAuth';
@@ -57,9 +57,7 @@ const Pricing = lazy(() => import('./pages/Pricing'));
 const Features = lazy(() => import('./pages/Features'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
-const OnboardingRequest = lazy(() => import('./components/OnboardingRequest'));
 const AddClient = lazy(() => import('./components/AddClient'));
-const ClientRegister = lazy(() => import('./pages/ClientRegister'));
 const ClientDashboard = lazy(() => import('./pages/ClientDashboard'));
 const LawFirmDirectory = lazy(() => import('./pages/FirmsMarketplace'));
 const AccountingDashboard = lazy(() => import('./pages/AccountingDashboard'));
@@ -73,7 +71,7 @@ const Notes = lazy(() => import('./pages/Notes'));
 const AdminDashboard = lazy(() => import('./Admin/AdminDashboard'));
 
 const Login = lazy(() => import('./components/authentication/SignIn'));
-const SignUp = lazy(() => import('./components/authentication/SignUpMultiStep'));
+const SignUp = lazy(() => import('./components/authentication/SignUp'));
 const ForgotPassword = lazy(() => import('./components/authentication/ForgotPassword'));
 const ResetPassword = lazy(() => import('./components/authentication/ResetPassword'));
 const PasswordResetSuccess = lazy(() => import('./components/authentication/PasswordResetSuccess'));
@@ -422,7 +420,9 @@ function AppContent() {
                        }
                      />
                       <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
-                      <Route path="/signup" element={<ErrorBoundary><SignUp /></ErrorBoundary>} />
+                       <Route path="/signup" element={<ErrorBoundary><SignUp /></ErrorBoundary>} />
+                      <Route path="/client-register" element={<Navigate to="/signup" replace />} />
+                      <Route path="/onboarding" element={<Navigate to="/signup" replace />} />
                       <Route path="/verify-email" element={<ErrorBoundary><EmailVerification /></ErrorBoundary>} />
                      <Route path="/auth/accept-invite" element={<ErrorBoundary><AcceptInvite /></ErrorBoundary>} />
                      <Route path="/forgot-password" element={<ErrorBoundary><ForgotPassword /></ErrorBoundary>} />
@@ -434,8 +434,7 @@ function AppContent() {
                      <Route path="/features" element={<ErrorBoundary><Features /></ErrorBoundary>} />
                      <Route path="/privacy" element={<ErrorBoundary><Privacy /></ErrorBoundary>} />
                      <Route path="/terms" element={<ErrorBoundary><Terms /></ErrorBoundary>} />
-                     <Route path="/onboarding" element={<ErrorBoundary><OnboardingRequest /></ErrorBoundary>} />
-                     <Route path="/client-register" element={<ErrorBoundary><ClientRegister /></ErrorBoundary>} />
+
                       <Route path="/firms" element={<ErrorBoundary><LawFirmDirectory /></ErrorBoundary>} />
                      <Route
                        path="/accounting"
