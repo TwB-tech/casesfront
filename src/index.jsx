@@ -15,6 +15,7 @@ import { AuthProvider } from './contexts/authContext.jsx';
 import ThemeProvider from './contexts/ThemeContext.jsx';
 import { CurrencyProvider } from './contexts/CurrencyContext.jsx';
 import { LicenseProvider } from './contexts/LicenseContext.jsx';
+import { ReyaProvider } from './contexts/ReyaContext.jsx';
 import LicenseVerification from './components/LicenseManager/LicenseVerification.jsx';
 import { initializeSentry } from './config/sentry';
 import { initializeSecurity } from './utils/enhancedSecurity';
