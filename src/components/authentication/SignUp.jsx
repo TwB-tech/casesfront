@@ -6,7 +6,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import LogoNoBg from '../../assets/LogoNoBg.png';
 
 const inputClass =
-  'shadow appearance-none border rounded w-full py-3 px-4 leading-tight focus:outline-none focus:shadow-outline';
+  'w-full rounded-xl py-3 px-4 outline-none transition-colors duration-200';
 
 function SignUp() {
   const [userType, setUserType] = useState('');
@@ -26,11 +26,16 @@ function SignUp() {
     'law firm name': '',
     'institution name': '',
     'clinic name': '',
-    'nationality': '',
+    nationality: '',
     occupation: '',
     'date of birth': '',
     'id number or passport number': '',
     'marital status': '',
+    service_consultation: false,
+    service_document_review: false,
+    service_contract_drafting: false,
+    service_court_representation: false,
+    service_legal_advice: false,
   });
   const { register } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
@@ -38,11 +43,13 @@ function SignUp() {
   const navigate = useNavigate();
 
   const bgColor = isFuturistic ? '#0a0a0f' : '#F2E0D6';
-  const cardBg = isFuturistic ? '#1a1a24' : '#ebe9d8';
-  const inputBg = isFuturistic ? '#12121a' : '#e0cfc8';
-  const textColor = isFuturistic ? '#f8fafc' : '#1a1a1a';
+  const cardBg = isFuturistic ? '#0f0f18' : '#ffffff';
+  const inputBg = isFuturistic ? '#1a1a24' : '#F9F5FF';
+  const textColor = isFuturistic ? '#ffffff' : '#1f2937';
   const mutedText = isFuturistic ? '#94a3b8' : '#6b7280';
-  const borderColor = isFuturistic ? '#2a2a3a' : '#d1d5db';
+  const borderColor = isFuturistic ? '#4c1d95' : '#ddd6fe';
+  const accent = isFuturistic ? '#7c3aed' : '#4c1d95';
+  const accentHover = isFuturistic ? '#6d28d9' : '#5b21b6';
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -67,19 +74,11 @@ function SignUp() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      if (!formData.email || formData.email.trim() === '') {
-        throw new Error('Email is required');
-      }
-
-      if (!formData.password || formData.password.length < 6) {
+      if (!formData.email || formData.email.trim() === '') throw new Error('Email is required');
+      if (!formData.password || formData.password.length < 6)
         throw new Error('Password must be at least 6 characters long');
-      }
-
-      if (formData.password !== formData['confirm password']) {
-        throw new Error('Passwords do not match');
-      }
+      if (formData.password !== formData['confirm password']) throw new Error('Passwords do not match');
 
       const lower_userType = mapRoleToBackend(userType);
       await register(formData, lower_userType);
@@ -111,7 +110,12 @@ function SignUp() {
       onChange: handleChange,
       placeholder: `Enter ${field.replace(/_/g, ' ')}`,
       className: inputClass,
-      style: { backgroundColor: inputBg, color: textColor, borderColor, borderRadius: '8px' },
+      style: {
+        backgroundColor: inputBg,
+        color: textColor,
+        border: `1px solid ${borderColor}`,
+        borderRadius: '12px',
+      },
     };
 
     if (field === 'bio') {
@@ -123,7 +127,13 @@ function SignUp() {
           placeholder="Tell us about yourself or your organization..."
           rows={3}
           className={inputClass}
-          style={{ backgroundColor: inputBg, color: textColor, borderColor, borderRadius: '8px', resize: 'vertical' }}
+          style={{
+            backgroundColor: inputBg,
+            color: textColor,
+            border: `1px solid ${borderColor}`,
+            borderRadius: '12px',
+            resize: 'vertical',
+          }}
         />
       );
     }
@@ -137,7 +147,13 @@ function SignUp() {
           onChange={handleChange}
           placeholder="Confirm your password"
           className={inputClass}
-          style={{ backgroundColor: inputBg, color: textColor, borderColor, borderRadius: '8px' }}
+          style={{
+            backgroundColor: inputBg,
+            color: textColor,
+            border: `1px solid ${borderColor}`,
+            borderRadius: '12px',
+          }}
+          required
         />
       );
     }
@@ -151,83 +167,19 @@ function SignUp() {
           onChange={handleChange}
           placeholder="Create a password"
           className={inputClass}
-          style={{ backgroundColor: inputBg, color: textColor, borderColor, borderRadius: '8px' }}
+          style={{
+            backgroundColor: inputBg,
+            color: textColor,
+            border: `1px solid ${borderColor}`,
+            borderRadius: '12px',
+          }}
+          required
         />
       );
     }
 
-    if (field === 'services offered') {
-      const accent = isFuturistic ? '#6366f1' : '#1A365D';
-      return (
-        <div className="space-y-3">
-          <label className="block text-sm font-medium mb-2" style={{ color: textColor }}>
-            Select the legal services you offer:
-          </label>
-          {[
-            { key: 'consultation', label: 'Legal Consultation (30-60 min calls)' },
-            { key: 'document_review', label: 'Document Review & Analysis' },
-            { key: 'contract_drafting', label: 'Contract Drafting & Negotiation' },
-            { key: 'court_representation', label: 'Court Representation' },
-            { key: 'legal_advice', label: 'General Legal Advice' },
-          ].map((service) => (
-            <label key={service.key} className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                name={`service_${service.key}`}
-                checked={formData[`service_${service.key}`] || false}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    [`service_${service.key}`]: e.target.checked,
-                  }))
-                }
-                className="rounded border-gray-300 focus:ring-blue-500"
-                style={{ accentColor: accent }}
-              />
-              <span style={{ color: textColor, fontSize: '14px' }}>{service.label}</span>
-            </label>
-          ))}
-        </div>
-      );
-    }
-
-    if (field === 'consultation availability') {
-      const accent = isFuturistic ? '#6366f1' : '#1A365D';
-      return (
-        <div className="space-y-3">
-          <label className="block text-sm font-medium mb-2" style={{ color: textColor }}>
-            When are you available for consultations?
-          </label>
-          {[
-            { key: 'weekdays_9_5', label: 'Weekdays 9 AM - 5 PM' },
-            { key: 'weekdays_evening', label: 'Weekdays Evening (5 PM - 8 PM)' },
-            { key: 'weekends', label: 'Weekends' },
-            { key: 'flexible', label: 'Flexible Schedule' },
-          ].map((option) => (
-            <label key={option.key} className="flex items-center space-x-3">
-              <input
-                type="radio"
-                name="consultation_availability"
-                value={option.key}
-                checked={formData.consultation_availability === option.key}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    consultation_availability: option.key,
-                  }))
-                }
-                className="border-gray-300 focus:ring-blue-500"
-                style={{ accentColor: accent }}
-              />
-              <span style={{ color: textColor, fontSize: '14px' }}>{option.label}</span>
-            </label>
-          ))}
-        </div>
-      );
-    }
-
     const type = field.includes('password') ? 'password' : 'text';
-    return <input type={type} {...common} />;
+    return <input type={type} {...common} required />;
   };
 
   const fieldsForRole = () => {
@@ -313,89 +265,50 @@ function SignUp() {
           <h1 className="text-3xl font-bold mb-2" style={{ color: textColor }}>
             Create your Account
           </h1>
-          <p style={{ color: mutedText }}>
-            Join WakiliWorld. Choose your account type to get started.
-          </p>
+          <p style={{ color: mutedText }}>Join WakiliWorld. Choose your account type to get started.</p>
         </div>
 
         <form
           onSubmit={handleSubmit}
           className="rounded-2xl p-8"
-          style={{
-            backgroundColor: cardBg,
-            border: isFuturistic ? `1px solid ${borderColor}` : '1px solid transparent',
-          }}
+          style={{ backgroundColor: cardBg, border: `1px solid ${borderColor}` }}
         >
           {!isTypeSelected ? (
             <div className="space-y-8">
-              <div>
-                <p className="text-sm font-semibold uppercase mb-3" style={{ color: mutedText }}>
-                  Legal Professionals
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {['Advocate', 'Law Firm'].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setUserType(type)}
-                      className="w-full text-left px-5 py-4 rounded-xl transition-all font-bold shadow-sm hover:shadow-md"
-                      style={{
-                        backgroundColor: isFuturistic ? '#12121a' : '#ffffff',
-                        color: textColor,
-                        border: `1px solid ${borderColor}`,
-                      }}
-                    >
-                      {type}
-                    </button>
-                  ))}
+              {['Legal Professionals', 'Institutions', 'Other'].map((group) => (
+                <div key={group}>
+                  <p className="mb-3 text-sm font-bold uppercase tracking-wide" style={{ color: mutedText }}>
+                    {group}
+                  </p>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {userTypeOptions
+                      .filter((opt) => opt.group === group)
+                      .map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setUserType(type.label)}
+                          className="w-full rounded-xl px-5 py-4 text-left font-bold transition-colors"
+                          style={{
+                            backgroundColor: inputBg,
+                            color: textColor,
+                            border: `1px solid ${borderColor}`,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = accent;
+                            e.currentTarget.style.color = '#ffffff';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = inputBg;
+                            e.currentTarget.style.color = textColor;
+                          }}
+                        >
+                          {type.label}
+                        </button>
+                      ))}
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold uppercase mb-3" style={{ color: mutedText }}>
-                  Institutions
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {['Law School', 'Legal Clinic'].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setUserType(type)}
-                      className="w-full text-left px-5 py-4 rounded-xl transition-all font-bold shadow-sm hover:shadow-md"
-                      style={{
-                        backgroundColor: isFuturistic ? '#12121a' : '#ffffff',
-                        color: textColor,
-                        border: `1px solid ${borderColor}`,
-                      }}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold uppercase mb-3" style={{ color: mutedText }}>
-                  Other
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {['Individual', 'Organization'].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setUserType(type)}
-                      className="w-full text-left px-5 py-4 rounded-xl transition-all font-bold shadow-sm hover:shadow-md"
-                      style={{
-                        backgroundColor: isFuturistic ? '#12121a' : '#ffffff',
-                        color: textColor,
-                        border: `1px solid ${borderColor}`,
-                      }}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
           ) : (
             <div className="space-y-6">
@@ -406,20 +319,17 @@ function SignUp() {
                 <button
                   type="button"
                   onClick={() => setUserType('')}
-                  className="text-sm font-bold px-4 py-2 rounded-lg transition-colors"
-                  style={{ color: textColor, backgroundColor: inputBg }}
+                  className="rounded-lg px-4 py-2 text-sm font-bold transition-colors"
+                  style={{ color: textColor, backgroundColor: inputBg, border: `1px solid ${borderColor}` }}
                 >
                   ← Back
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 {visibleFields.map((field) => (
                   <div key={field} className={field === 'bio' || field === 'address' ? 'md:col-span-2' : ''}>
-                    <label
-                      className="block text-sm font-bold mb-2 uppercase tracking-wide"
-                      style={{ color: textColor }}
-                    >
+                    <label className="mb-2 block text-sm font-bold uppercase tracking-wide" style={{ color: textColor }}>
                       {field.replace(/_/g, ' ')}
                     </label>
                     {renderField(field)}
@@ -427,24 +337,30 @@ function SignUp() {
                 ))}
               </div>
 
-              <div className="flex items-center justify-between pt-6 border-t" style={{ borderColor: borderColor }}>
+              <div className="flex items-center justify-between border-t pt-6" style={{ borderColor: borderColor }}>
                 <button
                   type="button"
                   onClick={() => setUserType('')}
-                  className="font-bold py-3 px-6 rounded-lg transition-colors"
-                  style={{ color: textColor, backgroundColor: inputBg }}
+                  className="rounded-lg px-6 py-3 font-bold transition-colors"
+                  style={{ color: textColor, backgroundColor: inputBg, border: `1px solid ${borderColor}` }}
                 >
                   Back
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="font-bold py-3 px-8 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  className="rounded-lg px-8 py-3 font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
                   style={{
-                    backgroundColor: '#111827',
+                    backgroundColor: accent,
                     color: '#ffffff',
                     opacity: loading ? 0.7 : 1,
                     cursor: loading ? 'not-allowed' : 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading) e.currentTarget.style.backgroundColor = accentHover;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = accent;
                   }}
                 >
                   {loading ? 'Submitting...' : 'Create Account'}
@@ -457,7 +373,7 @@ function SignUp() {
         <div className="mt-8 text-center">
           <p style={{ color: mutedText }}>
             Already have an account?{' '}
-            <Link to="/login" className="font-bold" style={{ color: '#1A365D' }}>
+            <Link to="/login" className="font-bold" style={{ color: accent }}>
               Log In
             </Link>
           </p>

@@ -1,37 +1,77 @@
-# WakiliWorld Standalone Frontend
+# WakiliWorld — Neon Postgres Migration
 
-This is a rebuilt, Vercel-ready React frontend for `TwB-Cases / WakiliWorld`.
+This repo now supports running against Neon Postgres via `DATABASE_MODE=postgres`.
 
-The app now works in standalone mode:
+## Quick start
 
-- Authentication is handled locally.
-- Cases, clients, tasks, documents, invoices, chats, settings, and onboarding requests persist in `localStorage`.
-- The existing UI is preserved, but it no longer depends on the old backend to be useful.
+1. Copy `.env.example` to `.env` and set:
+   - `DATABASE_MODE=postgres`
+   - `NEON_DATABASE_URL=postgres://user:pass@host/db`
+   - `SENDER_EMAIL=a1kkamau@gmail.com`
+2. Install dependencies: `npm install`
+3. Provision schema: `npm run db:setup-neon`
+4. Run: `npm run dev`
 
-## Demo Accounts
+## Environment
 
-- Advocate: `advocate@wakiliworld.local` / `demo1234`
-- Client: `client@wakiliworld.local` / `demo1234`
-- Admin: `admin@wakiliworld.local` / `demo1234`
+- `DATABASE_MODE=postgres` is required to use the Postgres/Neon proxy.
+- Frontend never sees database credentials. Serverless routes in `/api/*` use `NEON_DATABASE_URL`.
 
-## Scripts
+## Neon schema
 
-```bash
-npm install
-npm start
-npm run build
-```
+The app creates these tables via `scripts/setup-neon.js`:
 
-## Deploying To Vercel
+- `users`
+- `organizations`
+- `cases`
+- `tasks`
+- `documents`
+- `communications`
+- `invites`
+- `invoices`
+- `invoice_items`
+- `chat_rooms`
+- `chat_messages`
+- `service_requests`
+- `reviews`
+- `audit_logs`
+- `expenses`
+- `payroll_runs`
+- `notes`
+- `leave_requests`
+- `admin_settings`
+- `onboarding`
+- `subscriptions`
+- `courts`
 
-This project is configured for static deployment:
+Each table includes:
+- String PK `id` except `courts` which uses `SERIAL`
+- Timestamps: `created_at`, `updated_at`
+- Org-level isolation via `organization_id`
+
+Seed accounts:
+- advocate@wakiliworld.local / demo1234
+- client@wakiliworld.local / demo1234
+- admin@wakiliworld.local / demo1234
+
+## Deploy to Vercel
 
 - Build command: `npm run build`
-- Output directory: `build`
-- SPA rewrites are defined in `vercel.json`
+- Output: `dist`
+- Env vars in Vercel:
+  - `DATABASE_MODE=postgres`
+  - `NEON_DATABASE_URL=...`
+  - `SENDER_EMAIL=a1kkamau@gmail.com`
 
-## Notes
+## Theme
 
-- Google Analytics is now opt-in through `REACT_APP_GA_ID`.
-- App data is stored locally in the browser under `wakiliworld.frontend.db.v1`.
-- To reset the app state, clear local storage in the browser.
+The registration and login forms use a purple/black design:
+- Futuristic palette: near-black backgrounds with deep purple accents and light surfaces
+- Log in and sign up are visually aligned
+- Buttons use accent purple; inputs use dark surface backgrounds
+
+## Registration notes
+
+- Registration always goes through `/auth/register` via the selected DB proxy.
+- Validation, error handling, and rate limiting are in `src/contexts/authContext.jsx`.
+- After success, users are redirected to `/login`.

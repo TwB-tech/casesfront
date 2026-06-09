@@ -2,7 +2,6 @@ import { createContext, useEffect, useMemo, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { notification } from 'antd';
 import axiosInstance from '../axiosConfig';
-import appwrite, { auth } from '../lib/appwrite';
 
 const AuthContext = createContext(null);
 const SESSION_STORAGE_KEY = 'appwrite_session_secret';
@@ -14,6 +13,18 @@ const parseStoredUser = () => {
   try {
     return JSON.parse(localStorage.getItem('userInfo') || 'null');
   } catch (error) {
+    return null;
+  }
+};
+
+// Lazy Appwrite imports so Postgres mode never tries to init Appwrite
+let appwriteModule = null;
+const loadAppwriteModule = async () => {
+  if (appwriteModule) return appwriteModule;
+  try {
+    appwriteModule = await import('../lib/appwrite');
+    return appwriteModule;
+  } catch {
     return null;
   }
 };
@@ -31,17 +42,14 @@ const parseSessionSecret = (tokensValue) => {
   }
 };
 
-// Rate limiting for registration
 const checkRegistrationRateLimit = () => {
   const RATE_LIMIT_KEY = 'wakiliworld_registration_attempts';
-  const MAX_ATTEMPTS = 3; // 3 attempts per hour
-  const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+  const MAX_ATTEMPTS = 3;
+  const WINDOW_MS = 60 * 60 * 1000;
 
   try {
     const attempts = JSON.parse(localStorage.getItem(RATE_LIMIT_KEY) || '[]');
     const now = Date.now();
-
-    // Filter out old attempts
     const recentAttempts = attempts.filter((timestamp) => now - timestamp < WINDOW_MS);
 
     if (recentAttempts.length >= MAX_ATTEMPTS) {
@@ -52,16 +60,13 @@ const checkRegistrationRateLimit = () => {
       );
     }
 
-    // Add current attempt
     recentAttempts.push(now);
     localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(recentAttempts));
-
     return true;
   } catch (error) {
     if (error.message.includes('Too many registration attempts')) {
       throw error;
     }
-    // If localStorage fails, allow registration but log the issue
     console.warn('Rate limiting check failed:', error);
     return true;
   }
@@ -73,38 +78,22 @@ const normalizeRegisterPayload = (formData, userType) => {
   }
 
   const lowered = Object.entries(formData).reduce((acc, [key, value]) => {
-    if (typeof key !== 'string') {
-      console.warn('Non-string key found in form data:', key);
-      return acc;
-    }
+    if (typeof key !== 'string') return acc;
     acc[key.toLowerCase()] = typeof value === 'string' ? value.trim() : value;
     return acc;
   }, {});
 
-  // Validate password confirmation
   const password = lowered.password;
   const confirmPassword = lowered['confirm password'];
-  if (!password || password.length < 6) {
-    throw new Error('Password must be at least 6 characters long');
-  }
-  if (password !== confirmPassword) {
-    throw new Error('Passwords do not match');
-  }
+  if (!password || password.length < 6) throw new Error('Password must be at least 6 characters long');
+  if (password !== confirmPassword) throw new Error('Passwords do not match');
 
-  // Validate email
   const email = lowered.email;
-  if (!email || email === '') {
-    throw new Error('Email is required for registration');
-  }
+  if (!email || email === '') throw new Error('Email is required for registration');
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    throw new Error('Please enter a valid email address');
-  }
+  if (!emailRegex.test(email)) throw new Error('Please enter a valid email address');
 
-  // Role is directly provided as userType
   const role = userType.toLowerCase();
-
-  // Common fields
   const base = {
     email: email.trim(),
     username: '',
@@ -115,13 +104,10 @@ const normalizeRegisterPayload = (formData, userType) => {
     bio: lowered.bio || '',
   };
 
-  // Role-specific handling
   switch (role) {
     case 'organization': {
       const orgName = lowered['organization name'];
-      if (!orgName || orgName.trim() === '') {
-        throw new Error('Organization name is required');
-      }
+      if (!orgName || orgName.trim() === '') throw new Error('Organization name is required');
       return {
         ...base,
         username: orgName.trim(),
@@ -132,11 +118,9 @@ const normalizeRegisterPayload = (formData, userType) => {
 
     case 'firm': {
       const firmName = lowered['law firm name'];
-      if (!firmName || firmName.trim() === '') {
-        throw new Error('Law firm name is required');
-      }
+      if (!firmName || firmName.trim() === '') throw new Error('Law firm name is required');
       const practiceAreas = lowered['practice areas']
-        ? lowered['practice areas'].split(',').map(a => a.trim()).filter(Boolean)
+        ? lowered['practice areas'].split(',').map((a) => a.trim()).filter(Boolean)
         : [];
       return {
         ...base,
@@ -149,9 +133,7 @@ const normalizeRegisterPayload = (formData, userType) => {
 
     case 'law_school': {
       const instName = lowered['institution name'];
-      if (!instName || instName.trim() === '') {
-        throw new Error('Institution name is required');
-      }
+      if (!instName || instName.trim() === '') throw new Error('Institution name is required');
       return {
         ...base,
         username: instName.trim(),
@@ -161,9 +143,7 @@ const normalizeRegisterPayload = (formData, userType) => {
 
     case 'legal_clinic': {
       const clinicName = lowered['clinic name'];
-      if (!clinicName || clinicName.trim() === '') {
-        throw new Error('Clinic name is required');
-      }
+      if (!clinicName || clinicName.trim() === '') throw new Error('Clinic name is required');
       return {
         ...base,
         username: clinicName.trim(),
@@ -173,11 +153,9 @@ const normalizeRegisterPayload = (formData, userType) => {
 
     case 'advocate': {
       const fullName = lowered['full name'];
-      if (!fullName || fullName.trim() === '') {
-        throw new Error('Full name is required');
-      }
+      if (!fullName || fullName.trim() === '') throw new Error('Full name is required');
       const advocatePracticeAreas = lowered['practice areas']
-        ? lowered['practice areas'].split(',').map(a => a.trim()).filter(Boolean)
+        ? lowered['practice areas'].split(',').map((a) => a.trim()).filter(Boolean)
         : [];
       return {
         ...base,
@@ -194,9 +172,7 @@ const normalizeRegisterPayload = (formData, userType) => {
     case 'individual':
     default: {
       const indName = lowered['full name'];
-      if (!indName || indName.trim() === '') {
-        throw new Error('Full name is required');
-      }
+      if (!indName || indName.trim() === '') throw new Error('Full name is required');
       return {
         ...base,
         username: indName.trim(),
@@ -213,10 +189,7 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(parseStoredUser);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
+    if (typeof window === 'undefined') return;
     if (user) {
       localStorage.setItem('userInfo', JSON.stringify(user));
     } else {
@@ -227,22 +200,20 @@ const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const { data } = await axiosInstance.post('/auth/login/', { email, password });
 
-     const userInfo = {
-       id: data?.id || data?.user?.id || null,
-       email: data?.email || data?.user?.email || email,
-       username: data?.username || data?.user?.username || email,
-       role: data?.role || data?.user?.role || 'individual',
-       organization_id: data?.organization_id || data?.user?.organization_id || null,
-       email_verified: data?.email_verified || false,
-     };
+    const userInfo = {
+      id: data?.id || data?.user?.id || null,
+      email: data?.email || data?.user?.email || email,
+      username: data?.username || data?.user?.username || email,
+      role: data?.role || data?.user?.role || 'individual',
+      organization_id: data?.organization_id || data?.user?.organization_id || null,
+      email_verified: data?.email_verified || false,
+    };
 
     const sessionSecret = parseSessionSecret(data?.tokens);
     if (sessionSecret) {
       localStorage.setItem(SESSION_STORAGE_KEY, sessionSecret);
-      auth.setSessionSecret(sessionSecret);
     } else {
       localStorage.removeItem(SESSION_STORAGE_KEY);
-      auth.setSessionSecret('');
     }
 
     if (userInfo.organization_id) {
@@ -252,49 +223,29 @@ const AuthProvider = ({ children }) => {
     }
 
     localStorage.setItem('userInfo', JSON.stringify(userInfo));
-
-    // Flush state synchronously so navigation sees updated user
-    flushSync(() => {
-      setUser(userInfo);
-    });
+    flushSync(() => setUser(userInfo));
     return userInfo;
   };
 
-   const register = async (formData, userType) => {
+  const register = async (formData, userType) => {
     try {
-      // Check rate limiting before processing
       checkRegistrationRateLimit();
 
-      // Validate required fields before processing
-      if (!formData || typeof formData !== 'object') {
-        throw new Error('Invalid form data provided');
-      }
+      if (!formData || typeof formData !== 'object') throw new Error('Invalid form data provided');
 
       const registrationData = normalizeRegisterPayload(formData, userType);
-
-      // Ensure email is present and valid
-      if (
-        !registrationData.email ||
-        typeof registrationData.email !== 'string' ||
-        registrationData.email.trim() === ''
-      ) {
+      if (!registrationData.email || typeof registrationData.email !== 'string' || registrationData.email.trim() === '') {
         throw new Error('Email is required for registration');
       }
-
-      // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(registrationData.email)) {
-        throw new Error('Please enter a valid email address');
-      }
-
-      // Ensure password is present
+      if (!emailRegex.test(registrationData.email)) throw new Error('Please enter a valid email address');
       if (!registrationData.password || registrationData.password.length < 6) {
         throw new Error('Password must be at least 6 characters long');
       }
 
-       console.log('Registration data:', { ...registrationData, password: '[REDACTED]' });
+      console.log('Registration data:', { ...registrationData, password: '[REDACTED]' });
 
-       const { data } = await axiosInstance.post('/auth/register/', registrationData);
+      const { data } = await axiosInstance.post('/auth/register/', registrationData);
 
       notification.success({
         message: 'Registration Successful',
@@ -304,7 +255,6 @@ const AuthProvider = ({ children }) => {
       return data;
     } catch (error) {
       console.error('Registration error:', error);
-
       let errorMessage = 'Unable to create your account.';
       if (error.message) {
         errorMessage = error.message;
@@ -331,23 +281,14 @@ const AuthProvider = ({ children }) => {
   };
 
   const resetPassword = async (token, newPassword, confirmPassword) => {
-    if (!token || typeof token !== 'string' || token.trim() === '') {
-      throw new Error('Invalid reset token');
-    }
-
-    if (!newPassword || newPassword.length < 6) {
-      throw new Error('Password must be at least 6 characters long');
-    }
-
-    if (newPassword !== confirmPassword) {
-      throw new Error('Passwords do not match');
-    }
+    if (!token || typeof token !== 'string' || token.trim() === '') throw new Error('Invalid reset token');
+    if (!newPassword || newPassword.length < 6) throw new Error('Password must be at least 6 characters long');
+    if (newPassword !== confirmPassword) throw new Error('Passwords do not match');
 
     try {
       await axiosInstance.post(`/auth/password-reset/${token}`, {
         password: newPassword,
       });
-
       notification.success({
         message: 'Password Reset Successful',
         description: 'Your password has been updated successfully.',
@@ -357,30 +298,44 @@ const AuthProvider = ({ children }) => {
       throw error;
     }
   };
+
   const logout = async () => {
     try {
       await axiosInstance.post('/auth/logout/');
     } catch {
-      // Ignore logout errors - user is logging out anyway
+      // ignore
     }
-    // Clear Appwrite session
-    try {
-      await auth.deleteSession();
-    } catch (e) {
-      console.warn('Failed to clear Appwrite session:', e);
+
+    const mod = await loadAppwriteModule();
+    if (mod) {
+      try {
+        await mod.auth.deleteSession();
+      } catch (e) {
+        console.warn('Failed to clear Appwrite session:', e);
+      }
     }
+
     localStorage.removeItem('userInfo');
     localStorage.removeItem('organization_id');
     localStorage.removeItem('user_permissions');
     localStorage.removeItem(SESSION_STORAGE_KEY);
-    auth.setSessionSecret('');
     setUser(null);
   };
 
   const verifyToken = async () => {
+    const mod = await loadAppwriteModule();
+    if (!mod) {
+      const stored = parseStoredUser();
+      if (stored) {
+        flushSync(() => setUser(stored));
+        return true;
+      }
+      await logout();
+      return false;
+    }
+
     try {
-      // Verify the current session directly via Appwrite
-      const { data: account } = await auth.get();
+      const { data: account } = await mod.auth.get();
       if (!account) {
         await logout();
         return false;
@@ -388,44 +343,30 @@ const AuthProvider = ({ children }) => {
 
       const userId = account.$id || account.id;
 
-      // Fetch user profile from users collection
-      const { data: userProfile, error: profileErr } = await appwrite.db.get(
-        appwrite.COLLECTIONS.USERS,
-        userId
-      );
-
-      if (profileErr) {
-        // Profile not found – create minimal user info from account
-         const userInfo = {
-           id: userId,
-           email: account.email,
-           username: account.name || account.email,
-           role: 'individual',
-           organization_id: null,
-           email_verified: false,
-         };
-        localStorage.setItem('userInfo', JSON.stringify(userInfo));
-        flushSync(() => setUser(userInfo));
-        return true;
-      }
-
-       const userInfo = {
-         id: userProfile.id,
-         email: account.email,
-         username: userProfile.username || account.name || account.email,
-         role: userProfile.role || 'individual',
-         organization_id: userProfile.organization_id || null,
-         email_verified: userProfile.email_verified || false,
-       };
+      const { data: userProfile, error: profileErr } = await mod.db.get(mod.COLLECTIONS.USERS, userId);
+      const userInfo = profileErr
+        ? {
+            id: userId,
+            email: account.email,
+            username: account.name || account.email,
+            role: 'individual',
+            organization_id: null,
+            email_verified: false,
+          }
+        : {
+            id: userProfile.id,
+            email: account.email,
+            username: userProfile.username || account.name || account.email,
+            role: userProfile.role || 'individual',
+            organization_id: userProfile.organization_id || null,
+            email_verified: userProfile.email_verified || false,
+          };
 
       localStorage.setItem('userInfo', JSON.stringify(userInfo));
       if (userInfo.organization_id) {
         localStorage.setItem('organization_id', userInfo.organization_id);
       }
-
-      flushSync(() => {
-        setUser(userInfo);
-      });
+      flushSync(() => setUser(userInfo));
       return true;
     } catch (error) {
       console.error('Token verification failed:', error);
@@ -434,15 +375,15 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-   useEffect(() => {
-     if (typeof window === 'undefined' || !localStorage.getItem('userInfo')) {
-       return;
-     }
+  useEffect(() => {
+    if (typeof window === 'undefined' || !localStorage.getItem('userInfo')) {
+      return;
+    }
 
-     queueMicrotask(() => {
-       void verifyToken();
-     });
-   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    queueMicrotask(() => {
+      void verifyToken();
+    });
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -455,7 +396,7 @@ const AuthProvider = ({ children }) => {
       resetPassword,
       logout,
     }),
-    [user] // eslint-disable-line react-hooks/exhaustive-deps
+    [user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
