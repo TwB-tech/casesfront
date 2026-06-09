@@ -1,26 +1,10 @@
 import { neon } from '@neondatabase/serverless';
 
-const sql = async (query, params) => {
-  if (!sql._client) {
-    const dbUrl = process.env.NEON_DATABASE_URL;
-    if (!dbUrl) {
-      throw new Error('NEON_DATABASE_URL is not configured');
-    }
-    sql._client = neon(dbUrl, { fetchConnectionCache: true });
-  }
-  const start = Date.now();
-  try {
-    const result = await sql._client(query, params);
-    const ms = Date.now() - start;
-    console.log(`[postgres-proxy] ${ms}ms`, query.slice(0, 120));
-    return result;
-  } catch (error) {
-    console.error('[postgres-proxy] query failed:', error.message, query);
-    throw error;
-  }
-};
-
-const json = (data, status = 200) => ({ status, body: data });
+const dbUrl = process.env.NEON_DATABASE_URL;
+if (!dbUrl) {
+  console.error('NEON_DATABASE_URL is not configured');
+}
+const sql = neon(dbUrl, { fetchConnectionCache: true });
 
 const readBody = async (req) => {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -99,12 +83,10 @@ export default async function handler(req, res) {
 }
 
 async function handleAuth(path, method, body, user) {
-  const table = (col) => `public.${col}`;
-
   if (path === '/auth/register') {
     const payload = body.payload || body;
     const email = payload.email;
-    const password = payload.password; // In production this MUST be hashed server-side
+    const password = payload.password;
     const role = payload.role || 'individual';
     const username = payload.username || email.split('@')[0];
 
@@ -112,7 +94,7 @@ async function handleAuth(path, method, body, user) {
       return failure('Email and password are required', 400);
     }
 
-    const existing = await sql(`SELECT id FROM ${table('users')} WHERE email = $1`, [email]);
+    const existing = await sql.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.length > 0) {
       return failure('A user with this email already exists', 400);
     }
@@ -122,13 +104,13 @@ async function handleAuth(path, method, body, user) {
       : `u_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
     const now = new Date().toISOString();
-    await sql(
-      `INSERT INTO ${table('users')} (id, email, username, password, role, organization_id, status, email_verified, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    await sql.query(
+      `INSERT INTO users (id, email, username, password, role, organization_id, status, email_verified, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [id, email, username, password, role, null, 'Active', false, now, now]
     );
 
     const verificationToken = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    await sql(`UPDATE ${table('users')} SET verification_token = $1 WHERE id = $2`, [verificationToken, id]);
+    await sql.query('UPDATE users SET verification_token = $1 WHERE id = $2', [verificationToken, id]);
 
     return success({
       id,
@@ -146,15 +128,9 @@ async function handleAuth(path, method, body, user) {
     const { email, password } = payload;
     if (!email || !password) return failure('Email and password are required', 400);
 
-    const rows = await sql(`SELECT * FROM ${table('users')} WHERE email = $1 LIMIT 1`, [email]);
+    const rows = await sql.query('SELECT * FROM users WHERE email = $1 LIMIT 1', [email]);
     const account = rows[0];
     if (!account) return failure('Invalid email or password', 401);
-
-    // Postgres proxy fallback warns when the schema isn't present yet.
-    const columns = rows[0] ? Object.keys(rows[0]) : [];
-    if (!columns.includes('email_verified')) {
-      console.warn('[postgres-proxy] users table missing email_verified column; add it to proceed.');
-    }
 
     if (account.password !== password) {
       return failure('Invalid email or password', 401);
@@ -181,7 +157,7 @@ async function handleAuth(path, method, body, user) {
     const { token } = body;
     if (!token) return failure('Verification token is required', 400);
 
-    const rows = await sql(`SELECT * FROM ${table('users')} WHERE verification_token = $1 LIMIT 1`, [token]);
+    const rows = await sql.query('SELECT * FROM users WHERE verification_token = $1 LIMIT 1', [token]);
     const record = rows[0];
     if (!record) return failure('Invalid verification token', 400);
 
@@ -189,7 +165,7 @@ async function handleAuth(path, method, body, user) {
       return success({ detail: 'Email already verified.', email_verified: true });
     }
 
-    await sql(`UPDATE ${table('users')} SET email_verified = true, verification_token = NULL, updated_at = $1 WHERE id = $2`, [
+    await sql.query('UPDATE users SET email_verified = true, verification_token = NULL, updated_at = $1 WHERE id = $2', [
       new Date().toISOString(),
       record.id,
     ]);
@@ -200,12 +176,12 @@ async function handleAuth(path, method, body, user) {
   if (path === '/auth/request-reset-email') {
     const { email } = body;
     if (!email) return failure('Email is required', 400);
-    const rows = await sql(`SELECT id FROM ${table('users')} WHERE email = $1 LIMIT 1`, [email]);
+    const rows = await sql.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [email]);
     if (rows.length === 0) {
       return success({ detail: 'If the email exists, reset instructions have been sent.' });
     }
     const resetToken = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    await sql(`UPDATE ${table('users')} SET verification_token = $1, updated_at = $2 WHERE id = $3`, [
+    await sql.query('UPDATE users SET verification_token = $1, updated_at = $2 WHERE id = $3', [
       resetToken,
       new Date().toISOString(),
       rows[0].id,
@@ -217,18 +193,18 @@ async function handleAuth(path, method, body, user) {
     const { token, fullName, password } = body;
     if (!token || !password) return failure('Token and password are required', 400);
 
-    const inviteRows = await sql(`SELECT * FROM ${table('invites')} WHERE token = $1 LIMIT 1`, [token]);
+    const inviteRows = await sql.query('SELECT * FROM invites WHERE token = $1 LIMIT 1', [token]);
     const invite = inviteRows[0];
     if (!invite) return failure('Invalid or expired invitation', 400);
 
     const userId = `u_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
     const now = new Date().toISOString();
-    await sql(
-      `INSERT INTO ${table('users')} (id, email, username, password, role, organization_id, status, email_verified, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    await sql.query(
+      `INSERT INTO users (id, email, username, password, role, organization_id, status, email_verified, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [userId, invite.email, fullName || invite.email, password, invite.role || 'employee', invite.organization_id, 'Active', true, now, now]
     );
 
-    await sql(`UPDATE ${table('invites')} SET status = 'accepted', updated_at = $1 WHERE id = $2`, [now, invite.id]);
+    await sql.query('UPDATE invites SET status = accepted, updated_at = $1 WHERE id = $2', [now, invite.id]);
 
     return success({ id: userId, email: invite.email, username: fullName || invite.email, role: invite.role });
   }
@@ -237,11 +213,10 @@ async function handleAuth(path, method, body, user) {
 }
 
 async function handleUsers(path, method, body, user) {
-  const table = (col) => `public.${col}`;
   if (!user) return failure('Unauthorized - login required', 401);
 
   if (path === '/users' && method === 'GET') {
-    const rows = await sql(`SELECT id, email, username, role, organization_id, email_verified FROM ${table('users')}`);
+    const rows = await sql.query('SELECT id, email, username, role, organization_id, email_verified FROM users');
     return success({ results: rows });
   }
 
@@ -249,15 +224,13 @@ async function handleUsers(path, method, body, user) {
 }
 
 async function handleGeneric(path, method, body, user) {
-  const table = (col) => `public.${col}`;
   if (!user) return failure('Unauthorized - login required', 401);
 
-  // Generic CRUD stub for core collections - expand as needed
   const collection = path.split('/').filter(Boolean)[0];
   if (!collection) return failure('Collection path is required', 400);
 
   if (method === 'GET') {
-    const rows = await sql(`SELECT * FROM ${table(collection)}`);
+    const rows = await sql.query(`SELECT * FROM ${collection}`);
     return success({ results: rows });
   }
 
@@ -271,8 +244,8 @@ async function handleGeneric(path, method, body, user) {
     const placeholders = columns.map((_, idx) => `$${idx + 1}`).join(',');
     const params = [id, ...values, now, now];
 
-    const result = await sql(
-      `INSERT INTO ${table(collection)} (${columns.join(',')}) VALUES (${placeholders}) RETURNING *`,
+    const result = await sql.query(
+      `INSERT INTO ${collection} (${columns.join(',')}) VALUES (${placeholders}) RETURNING *`,
       params
     );
     return success({ ...result[0], id }, 201);
@@ -286,8 +259,8 @@ async function handleGeneric(path, method, body, user) {
     const keys = Object.keys(payload).filter((k) => k !== 'id' && k !== 'created_at');
     const sets = keys.map((k, idx) => `${k} = $${idx + 2}`).join(', ');
     const params = [id, ...keys.map((k) => payload[k])];
-    const result = await sql(
-      `UPDATE ${table(collection)} SET ${sets}, updated_at = $${params.length + 1} WHERE id = $1 RETURNING *`,
+    const result = await sql.query(
+      `UPDATE ${collection} SET ${sets}, updated_at = $${params.length + 1} WHERE id = $1 RETURNING *`,
       [...params, new Date().toISOString()]
     );
     return success(result[0]);
@@ -296,7 +269,7 @@ async function handleGeneric(path, method, body, user) {
   if (method === 'DELETE') {
     const id = body.id || path.split('/').pop();
     if (!id) return failure('Record id is required', 400);
-    await sql(`DELETE FROM ${table(collection)} WHERE id = $1`, [id]);
+    await sql.query(`DELETE FROM ${collection} WHERE id = $1`, [id]);
     return success({ success: true });
   }
 
