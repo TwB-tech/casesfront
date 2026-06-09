@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { useAuth } from '../../contexts/authContext';
+import { AuthContext } from '../../contexts/authContext';
 import { notification } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';

@@ -3,7 +3,7 @@
  * Centralized config for Appwrite-only production
  */
 
-// Database mode: only 'appwrite' is supported in production
+// Database mode: 'appwrite' | 'postgres' | 'standalone'
 const dbMode =
   import.meta.env.DATABASE_MODE ||
   import.meta.env.VITE_DATABASE_MODE ||
@@ -11,6 +11,7 @@ const dbMode =
   'standalone';
 
 export const USE_APPWRITE = dbMode === 'appwrite';
+export const USE_POSTGRES = dbMode === 'postgres';
 export const USE_STANDALONE = dbMode === 'standalone';
 
 // Appwrite Configuration (required in production)
@@ -71,6 +72,7 @@ if (import.meta.env.DEV) {
 
 export default {
   USE_APPWRITE,
+  USE_POSTGRES,
   USE_STANDALONE,
   APPWRITE_CONFIG,
   SECURITY_CONFIG,

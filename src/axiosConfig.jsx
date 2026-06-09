@@ -1,7 +1,8 @@
 import DOMPurify from 'dompurify';
-import { USE_APPWRITE, USE_STANDALONE } from './config';
+import { USE_APPWRITE, USE_POSTGRES, USE_STANDALONE } from './config';
 import appwriteApi from './lib/appwriteApi';
 import { standaloneApi } from './lib/standaloneApi';
+import postgresApi from './lib/postgresApi';
 
 // Sanitization helper
 const sanitizeResponse = (value) => {
@@ -119,11 +120,14 @@ if (USE_APPWRITE) {
     console.warn('Initializing Appwrite API');
     apiInstance = appwriteApi;
   }
-} else if (USE_STANDALONE) {
-  console.warn('Initializing standalone API (DATABASE_MODE=standalone)');
-  apiInstance = standaloneApi;
-} else {
-  throw new Error('Unsupported DATABASE_MODE. Use "appwrite" or "standalone".');
-}
+  } else if (USE_STANDALONE) {
+    console.warn('Initializing standalone API (DATABASE_MODE=standalone)');
+    apiInstance = standaloneApi;
+  } else if (USE_POSTGRES) {
+    console.warn('Initializing Postgres API (DATABASE_MODE=postgres)');
+    apiInstance = postgresApi;
+  } else {
+    throw new Error('Unsupported DATABASE_MODE. Use "appwrite", "postgres", or "standalone".');
+  }
 
 export default apiInstance;
