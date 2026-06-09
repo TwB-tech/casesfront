@@ -616,7 +616,7 @@ const ReyaAssistant = ({ context = 'dashboard' }) => {
            <div
              className={`w-full rounded-2xl shadow-2xl border flex flex-col ${
                isFuturistic ? 'bg-cyber-card border-cyber-border' : 'bg-white border-gray-200'
-             } ${isMinimized ? 'h-16' : 'h-[70vh] md:h-[600px] max-h-[600px]'}`}
+             } ${isMinimized ? 'h-16' : 'h-[50vh] md:h-[420px] max-h-[450px]'}`}
            >
             {/* Header */}
             <div
